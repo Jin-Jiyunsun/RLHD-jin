@@ -493,6 +493,14 @@ class SceneUploader {
 					plugin.configGroundBlending &&
 					textureId == -1 &&
 					!proceduralGenerator.useDefaultColor(tile, override);
+
+				if (!plugin.configGroundBlending) {
+					swColor = swColor & ~0x7F | Math.min(swColor & 0x7F, 55);
+					seColor = seColor & ~0x7F | Math.min(seColor & 0x7F, 55);
+					nwColor = nwColor & ~0x7F | Math.min(nwColor & 0x7F, 55);
+					neColor = neColor & ~0x7F | Math.min(neColor & 0x7F, 55);
+				}
+
 				GroundMaterial groundMaterial = null;
 				if (override != TileOverride.NONE) {
 					groundMaterial = override.groundMaterial;

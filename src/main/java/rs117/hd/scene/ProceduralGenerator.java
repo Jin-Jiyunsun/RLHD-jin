@@ -56,21 +56,27 @@ public class ProceduralGenerator {
 	public static final int[] DEPTH_LEVEL_SLOPE = new int[] { 150, 300, 470, 610, 700, 750, 820, 920, 1080, 1300, 1350, 1380 };
 
 	public static final int VERTICES_PER_FACE = 3;
-	public static final boolean[][] TILE_OVERLAY_TRIS = new boolean[][]
-		{
-			/*  0 */ { true, true, true, true }, // Used by tilemodels of varying tri counts?
-			/*  1 */ { false, true },
-			/*  2 */ { false, false, true },
-			/*  3 */ { false, false, true },
-			/*  4 */ { false, true, true },
-			/*  5 */ { false, true, true },
-			/*  6 */ { false, false, true, true },
-			/*  7 */ { false, false, false, true },
-			/*  8 */ { false, true, true, true },
-			/*  9 */ { false, false, false, true, true, true },
-			/* 10 */ { true, true, true, false, false, false },
-			/* 11 */ { true, true, false, false, false, false },
-		};
+	public static final boolean[][] TILE_OVERLAY_TRIS = new boolean[][] {
+		/*  0 */ { true, true, true, true }, // Used by tilemodels of varying tri counts?
+		/*  1 */ { false, true },
+		/*  2 */ { false, false, true },
+		/*  3 */ { false, false, true },
+		/*  4 */ { false, true, true },
+		/*  5 */ { false, true, true },
+		/*  6 */ { false, false, true, true },
+		/*  7 */ { false, false, false, true },
+		/*  8 */ { false, true, true, true },
+		/*  9 */ { false, false, false, true, true, true },
+		/* 10 */ { true, true, true, false, false, false },
+		/* 11 */ { true, true, false, false, false, false },
+	};
+
+	public static final int[] MAX_BRIGHTNESS_LOOKUP_TABLE = new int[8];
+
+	static {
+		for (int i = 0; i < 8; i++)
+			MAX_BRIGHTNESS_LOOKUP_TABLE[i] = (int) (127 - 72 * Math.pow(i / 7f, .05));
+	}
 
 	@Inject
 	private HdPlugin plugin;
