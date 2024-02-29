@@ -73,16 +73,22 @@ public class ProceduralGenerator {
 
 	public static final int[] MAX_BRIGHTNESS_LOOKUP_TABLE = new int[8];
 
-	static {
-		for (int i = 0; i < 8; i++)
-			MAX_BRIGHTNESS_LOOKUP_TABLE[i] = (int) (127 - 72 * Math.pow(i / 7f, .05));
-	}
-
 	@Inject
 	private HdPlugin plugin;
 
 	@Inject
 	private TileOverrideManager tileOverrideManager;
+
+	public int clampBrightness(int color) {
+		for (int i = 0; i < 8; i++)
+			MAX_BRIGHTNESS_LOOKUP_TABLE[i] = (int) (127 - 72 * Math.pow(i / 7f, .05));
+
+		int maxBrightness = 55;
+		if (!plugin.configLegacyGreyColors)
+			maxBrightness = MAX_BRIGHTNESS_LOOKUP_TABLE[color >> 7 & 7];
+
+		return color & ~0x7F | Math.min(color & 0x7F, maxBrightness);
+	}
 
 	public void generateSceneData(SceneContext sceneContext)
 	{
@@ -299,9 +305,8 @@ public class ProceduralGenerator {
 					Math.abs(Math.min(dot, 0))
 				)
 			);
-			final int maxBrightness = 55; // reduces overexposure
-			lightness = Math.min(lightness, maxBrightness);
 			color = color & ~0x7F | lightness;
+			color = clampBrightness(color);
 
 			boolean isOverlay = false;
 			Material material = Material.DIRT_1;
