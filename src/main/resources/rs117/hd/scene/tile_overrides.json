@@ -5811,7 +5811,7 @@
     "replacements": {
       "SEASONAL_GRASS": "s >= 2",
       "SEASONAL_DIRT": "s == 1",
-      "WINTER_DIRT": true
+      "WINTER_DIRT": "season == WINTER"
     }
   },
   {

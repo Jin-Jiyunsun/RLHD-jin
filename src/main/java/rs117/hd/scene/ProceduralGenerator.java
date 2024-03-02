@@ -81,7 +81,7 @@ public class ProceduralGenerator {
 
 	public int clampBrightness(int color) {
 		for (int i = 0; i < 8; i++)
-			MAX_BRIGHTNESS_LOOKUP_TABLE[i] = (int) (127 - 72 * Math.pow(i / 7f, .05));
+			MAX_BRIGHTNESS_LOOKUP_TABLE[i] = (int) (127 - 72 * Math.pow(i / 7f, .115));
 
 		int maxBrightness = 55;
 		if (!plugin.configLegacyGreyColors)
