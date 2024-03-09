@@ -26428,8 +26428,8 @@
   {
     "description": "WARPED_SCEPTER_SPELL",
     "alignment": "CENTER",
-    "radius": 200,
-    "strength": 10,
+    "radius": 275,
+    "strength": 25,
     "color": [
       170,
       20,
@@ -26438,6 +26438,7 @@
     "type": "FLICKER",
     "duration": 0,
     "range": 10,
+    "fadeInDuration": 250,
     "fadeOutDuration": 250,
     "projectileIds": [
       2569
