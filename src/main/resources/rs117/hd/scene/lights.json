@@ -19037,10 +19037,50 @@
     ]
   },
   {
-    "description": "TEMPOROSS",
+    "description": "TEMPOROSS_MAIN",
+    "height": 50,
+    "alignment": "CENTER",
+    "radius": 900,
+    "strength": 17.5,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "PULSE",
+    "duration": 3200,
+    "range": 20,
+    "fadeInDuration": 300,
+    "fadeOutDuration": 300,
+    "npcIds": [
+      10572
+    ]
+  },
+  {
+    "description": "TEMPOROSS_ACCENT",
+    "height": 800,
+    "alignment": "SOUTH",
+    "radius": 700,
+    "strength": 6,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "PULSE",
+    "duration": 3200,
+    "range": 20,
+    "npcIds": [
+      10572,
+      10573,
+      10574
+    ]
+  },
+  {
+    "description": "TEMPOROSS_TRANSITIONS",
     "height": 250,
     "alignment": "CENTER",
-    "radius": 800,
+    "radius": 400,
     "strength": 17.5,
     "color": [
       0,
@@ -19051,7 +19091,8 @@
     "duration": 3200,
     "range": 20,
     "npcIds": [
-      10572
+      10573,
+      10574
     ]
   },
   {
@@ -19074,11 +19115,125 @@
     ]
   },
   {
-    "description": "TEMPOROSS_SPIRIT_POOL",
-    "height": 5,
+    "description": "TEMPOROSS_SPIRIT_POOL_INACTIVE",
+    "height": 20,
     "alignment": "CENTER",
-    "radius": 500,
-    "strength": 17.5,
+    "radius": 250,
+    "strength": 3.5,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "PULSE",
+    "duration": 3200,
+    "fadeInDuration": 150,
+    "fadeOutDuration": 150,
+    "range": 20,
+    "npcIds": [
+      10570
+    ]
+  },
+  {
+    "description": "TEMPOROSS_SPIRIT_POOL_ACTIVE",
+    "height": 20,
+    "alignment": "CENTER",
+    "radius": 400,
+    "strength": 10.5,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "PULSE",
+    "duration": 3200,
+    "fadeOutDuration": 300,
+    "range": 20,
+    "npcIds": [
+      10571
+    ]
+  },
+  {
+    "description": "TEMPOROSS_SHRINE",
+    "height": 150,
+    "alignment": "FRONT",
+    "radius": 200,
+    "strength": 8.8,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 30,
+    "objectIds": [
+      41236
+    ]
+  },
+  {
+    "description": "TEMPOROSS_FIRE",
+    "height": 40,
+    "alignment": "CENTER",
+    "radius": 450,
+    "strength": 10.0,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "fadeInDuration": 150,
+    "fadeOutDuration": 150,
+    "objectIds": [
+      37582
+    ]
+  },
+  {
+    "description": "TEMPOROSS_LIGHTNING",
+    "height": 250,
+    "alignment": "CENTER",
+    "radius": 1000,
+    "strength": 8,
+    "color": "#91c7ff",
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "fadeOutDuration": 700,
+    "npcIds": [ 10580 ],
+    "animationIds": [ 8878 ]
+  },
+  {
+    "description": "ELECTRIFIED_HARPOONFISH_CANNON",
+    "height": 50,
+    "alignment": "CENTER",
+    "radius": 300,
+    "strength": 8.8,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 40,
+    "fadeInDuration": 100,
+    "fadeOutDuration": 100,
+    "objectIds": [
+      41242,
+      41243,
+      41244,
+      41245
+    ]
+  },
+  {
+    "description": "TEMPOROSS_REWARD_POOL_FULL",
+    "height": 50 ,
+    "alignment": "CENTER",
+    "radius": 200,
+    "strength": 5.5,
     "color": [
       0,
       255,
@@ -19087,8 +19242,50 @@
     "type": "PULSE",
     "duration": 3200,
     "range": 20,
-    "npcIds": [
-      10571
+    "objectIds": [
+      41304,
+      41303,
+      41302,
+      41301
+    ]
+  },
+  {
+    "description": "TEMPOROSS_REWARD_POOL_HALF",
+    "height": 50 ,
+    "alignment": "CENTER",
+    "radius": 200,
+    "strength": 3,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "PULSE",
+    "duration": 3200,
+    "range": 20,
+    "objectIds": [
+      41300,
+      41299,
+      41298
+    ]
+  },
+  {
+    "description": "TEMPOROSS_REWARD_POOL_LOW",
+    "height": 50 ,
+    "alignment": "CENTER",
+    "radius": 200,
+    "strength": 3,
+    "color": [
+      0,
+      255,
+      255
+    ],
+    "type": "PULSE",
+    "duration": 3200,
+    "range": 20,
+    "objectIds": [
+      41297,
+      41296
     ]
   },
   {
