@@ -33228,5 +33228,414 @@
     "projectileIds": [
       2642
     ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_N",
+    "height": 160,
+    "radius": 200,
+    "strength": 50,
+    "offset": [ 0, 35, 133 ],
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 30,
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9239 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_N",
+    "height": 160,
+    "radius": 200,
+    "strength": 500,
+    "offset": [ 0, 35, 133 ],
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 300,
+    "fadeInDuration": 150,
+    "fadeOutDuration": 500,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9230 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_NE",
+    "height": 160,
+    "offset": [ 96, 35, 105 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9240 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_NE",
+    "height": 160,
+    "offset": [ 96, 35, 105 ],
+    "radius": 200,
+    "strength": 500,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 150,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 300,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9231 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_E",
+    "height": 160,
+    "offset": [ 135, 35, -1 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9241 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_E",
+    "height": 160,
+    "offset": [ 135, 35, -1 ],
+    "radius": 200,
+    "strength": 500,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 300,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9232 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_SE",
+    "height": 160,
+    "offset": [ 102, 35, -100 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9242 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_SE",
+    "height": 160,
+    "offset": [ 102, 35, -100 ],
+    "radius": 200,
+    "strength": 500,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 300,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9233 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_S",
+    "height": 160,
+    "offset": [ 2, 35, -136 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9243 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_S",
+    "height": 160,
+    "offset": [ 2, 35, -136 ],
+    "radius": 200,
+    "strength": 500,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 300,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9234 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_SW",
+    "height": 160,
+    "offset": [ -97, 35, -96 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9244 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_SW",
+    "height": 160,
+    "offset": [ -97, 35, -96 ],
+    "radius": 200,
+    "strength": 500,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 5300,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9235 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_W",
+    "height": 160,
+    "offset": [ -132, 35, -1 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9245 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_W",
+    "height": 160,
+    "offset": [ -132, 35, -1 ],
+    "radius": 200,
+    "strength": 500,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 300,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9236 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_IDLE_NW",
+    "height": 160,
+    "offset": [ -94, 35, 92 ],
+    "radius": 200,
+    "strength": 50,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9246 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_FIRING_NW",
+    "height": 160,
+    "offset": [ -94, 35, 92 ],
+    "radius": 200,
+    "strength": 300,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 10,
+    "fadeOutDuration": 500,
+    "duration": 0,
+    "range": 30,
+    "spawnDelay": 500,
+    "objectIds": [ 43027 ],
+    "animationIds": [ 9237 ]
+  },
+  {
+    "description": "shattered cannon top",
+    "height": 250,
+    "alignment": "CENTER",
+    "radius": 0,
+    "strength": 10,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 1000,
+    "fadeOutDuration": 100,
+    "duration": 0,
+    "range": 20,
+    "objectIds": [ 43027 ]
+  },
+  {
+    "description": "shattered cannon candle",
+    "height": 20,
+    "radius": 100,
+    "strength": 30,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 1000,
+    "fadeOutDuration": 100,
+    "duration": 0,
+    "range": 30,
+    "offset": [ 0, 38, -99 ],
+    "objectIds": [ 43027 ]
+  },
+  {
+    "description": "SHATTERED_CANNON_BALL",
+    "height": 0,
+    "radius": 200,
+    "strength": 30,
+    "color": [
+      4,
+      205,
+      228
+    ],
+    "type": "FLICKER",
+    "fadeInDuration": 1000,
+    "fadeOutDuration": 100,
+    "duration": 0,
+    "range": 30,
+    "projectileIds": [ 2018 ]
+  },
+  {
+    "description": "TRAILBLAZER_DEATH",
+    "height": 20,
+    "alignment": "CENTER",
+    "radius": 250,
+    "strength": 25,
+    "fixedDespawnTime": true,
+    "despawnDelay" : 2400,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "fadeInDuration": 1350,
+    "fadeOutDuration": 450,
+    "graphicsObjectIds": [
+      2610
+    ]
+  },
+  {
+    "description": "TRAILBLAZER_RESPAWN",
+    "height": 20,
+    "alignment": "CENTER",
+    "radius": 200,
+    "strength": 25,
+    "fixedDespawnTime": true,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "fadeInDuration": 125,
+    "fadeOutDuration": 450,
+    "despawnDelay" : 900,
+    "graphicsObjectIds": [
+      2611
+    ]
   }
 ]
