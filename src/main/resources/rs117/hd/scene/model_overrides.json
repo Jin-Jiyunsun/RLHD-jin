@@ -1144,7 +1144,8 @@
       26260,
       26261,
       26262,
-      26263
+      26263,
+      29227
     ],
     "uvType": "BOX",
     "uvScale": 0.8,
@@ -8758,7 +8759,10 @@
       6764,
       6765,
       6766,
-      6767
+      6767,
+      41125,
+      41127,
+      41129
     ],
     "baseMaterial": "FINE_CARPET",
     "uvType": "WORLD_XZ",
@@ -8766,16 +8770,94 @@
     "castShadows": false
   },
   {
-    "description": "POH superior garden zen theme carpet",
+    "description": "POH superior garden zen theme grass",
+    "baseMaterial": "PLANT_GRUNGE_2",
     "objectIds": [
-      29242,
-      29243,
       29244,
       29245,
       29246
     ],
     "flatNormals": true,
     "castShadows": false
+  },
+  {
+    "description": "POH superior garden zen theme sand corner",
+    "baseMaterial": "SAND_1",
+    "objectIds": [
+      29243
+    ],
+    "uvType": "MODEL_XZ_MIRROR_B",
+    "uvOrientation": 700,
+    "castShadows": false
+  },
+  {
+    "description": "POH superior garden zen theme sand",
+    "baseMaterial": "SAND_1",
+    "objectIds": [
+      29242
+    ],
+    "uvType": "MODEL_XZ",
+    "castShadows": false
+  },
+  {
+    "description": "POH superior garden otherworldly theme grass",
+    "baseMaterial": "PLANT_GRUNGE_2",
+    "objectIds": [
+      29250,
+      29251,
+      29251
+    ],
+    "uvType": "BOX",
+    "flatNormals": false,
+    "castShadows": false
+  },
+  {
+    "description": "POH superior garden otherworldly theme dirt",
+    "baseMaterial": "DIRT_1",
+    "objectIds": [
+      29248,
+      29249
+    ],
+    "uvType": "WORLD_XZ"
+  },
+  {
+    "description": "poh topiary bush",
+    "baseMaterial": "PLANT_GRUNGE_2",
+    "objectIds": [
+      29230,
+      29231,
+      29232,
+      29233,
+      29234,
+      29235,
+      29236
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "poh topiary bush",
+    "baseMaterial": "PLANT_GRUNGE_2",
+    "objectIds": [
+      29230,
+      29231,
+      29232,
+      29233,
+      29234,
+      29235,
+      29236,
+      31985,
+      34654,
+      37630
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "poh fiery ornate pool of rejuvenation",
+    "baseMaterial": "ROCK_3_SMOOTH",
+    "objectIds": [
+      49993
+    ],
+    "uvType": "BOX"
   },
   {
     "description": "POH basement filler objects",
