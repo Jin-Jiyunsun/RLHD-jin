@@ -1658,9 +1658,11 @@
     "castShadows": false
   },
   {
-    "description": "Fixes weird pattern made by grass in POH",
+    "description": "Fixes weird pattern made by grass in POH and garden objects that have grass around them",
     "areas": [ "PLAYER_OWNED_HOUSE" ],
     "objectIds": [
+      4527,
+      4528,
       4530
     ],
     "baseMaterial": "GRAY_65",
