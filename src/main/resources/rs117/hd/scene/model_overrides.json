@@ -15502,6 +15502,34 @@
     "uvScale": 0.8
   },
   {
+    "description": "White Brick Stone Walls - Kourend and Isle of Souls",
+    "baseMaterial": "STONE_NORMALED",
+    "objectIds": [
+      7467,
+      7468,
+      7469,
+      7470,
+      7471,
+      7472,
+      7473,
+      7474,
+      7475,
+      7476,
+      7477,
+      7478,
+      7484,
+      7485,
+      7486,
+      7487,
+      7488,
+      7489,
+      7490,
+      7491
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.7
+  },
+  {
     "description": "Isle of Souls - Dead and Burnt Trees",
     "baseMaterial": "LIGHT_BARK",
     "objectIds": [
