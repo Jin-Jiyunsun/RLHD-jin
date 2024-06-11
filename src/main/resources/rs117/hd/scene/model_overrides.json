@@ -14581,7 +14581,9 @@
     "description": "Spinning Wheel",
     "baseMaterial": "WOOD_GRAIN_3",
     "objectIds": [
-      4309
+      4309,
+      40734,
+      40735
     ],
     "uvType": "BOX"
   },
@@ -17955,6 +17957,7 @@
     "baseMaterial": "FINE_CARPET",
     "objectIds": [
       23061,
+      40731,
       42044
     ],
     "uvType": "BOX"
