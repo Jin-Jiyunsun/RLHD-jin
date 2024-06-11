@@ -12979,6 +12979,15 @@
     "uvScale": 0.6
   },
   {
+    "description": "Generic Animal Burrow",
+    "baseMaterial": "DIRT_1",
+    "objectIds": [
+      3940
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.6
+  },
+  {
     "description": "Picatoris - Walls - Colony Walls",
     "baseMaterial": "GRUNGE_2",
     "objectIds": [
