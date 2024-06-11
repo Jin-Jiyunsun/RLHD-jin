@@ -13973,7 +13973,7 @@
   {
     "description": "Bone Objects",
     "baseMaterial": "BONE",
-    "objectIds": [ 668, 697, 699, 700, 701, 702, 703, 736, 737 ],
+    "objectIds": [ 668, 697, 699, 700, 701, 702, 703, 736, 737, 21440 ],
     "uvType": "BOX",
     "uvScale": 0.4
   },
@@ -15521,6 +15521,7 @@
       40750,
       40751,
       40752,
+      40754,
       40756,
       40760
     ],
@@ -15602,6 +15603,15 @@
     ],
     "uvType": "BOX",
     "uvScale": 0.7
+  },
+  {
+    "description": "Isle of Souls - Bones",
+    "baseMaterial": "BONE",
+    "objectIds": [
+      40738
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.5
   },
   {
     "description": "Isle of Souls Dungeon - Walls - Rock Walls",
