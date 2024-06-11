@@ -15487,6 +15487,17 @@
     "uvScale": 0.8
   },
   {
+    "description": "Isle of Souls - Dead and Burnt Trees",
+    "baseMaterial": "LIGHT_BARK",
+    "objectIds": [
+      40720,
+      40721,
+      40722
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.75
+  },
+  {
     "description": "Isle of Souls Dungeon - Walls - Rock Walls",
     "baseMaterial": "STONE_NORMALED",
     "objectIds": [ 37854, 37859 ],
