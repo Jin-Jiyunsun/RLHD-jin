@@ -15502,6 +15502,88 @@
     "uvScale": 0.75
   },
   {
+    "description": "Isle of Souls - Trees and Stumps",
+    "baseMaterial": "GRUNGE_3_NOGLOSS",
+    "objectIds": [
+      40714,
+      40713,
+      40750,
+      40751,
+      40752,
+      40756,
+      40760
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.75
+  },
+  {
+    "description": "Isle of Souls - Trees - Teak",
+    "baseMaterial": "GRAY_65",
+    "objectIds": [
+      40758
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.75
+  },
+  {
+    "description": "Isle of Souls - Thick Trees - Trunk",
+    "baseMaterial": "LIGHT_BARK",
+    "objectIds": [
+      40508,
+      40509,
+      40510,
+      40517,
+      40518,
+      40519,
+      40526,
+      40527,
+      40528,
+      40535,
+      40536,
+      40537
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.75
+  },
+  {
+    "description": "Isle of Souls - Thick Trees - Leaves",
+    "baseMaterial": "GRUNGE_3_NOGLOSS",
+    "objectIds": [
+      40511,
+      40512,
+      40513,
+      40514,
+      40515,
+      40516,
+      40520,
+      40521,
+      40522,
+      40523,
+      40524,
+      40525,
+      40529,
+      40530,
+      40531,
+      40532,
+      40533,
+      40534,
+      40538,
+      40539,
+      40540,
+      40541,
+      40542,
+      40543
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "Isle of Souls - Bush",
+    "baseMaterial": "PLANT_GRUNGE_2",
+    "objectIds": [
+      33638
+    ]
+  },
+  {
     "description": "Isle of Souls Dungeon - Walls - Rock Walls",
     "baseMaterial": "STONE_NORMALED",
     "objectIds": [ 37854, 37859 ],
