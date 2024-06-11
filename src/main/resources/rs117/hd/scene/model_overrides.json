@@ -15666,6 +15666,14 @@
     "uvOrientation": 768
   },
   {
+    "description": "Isle of Souls Dungeon - Walls - Filler",
+    "baseMaterial": "STONE_NORMALED",
+    "areas": [ "ISLE_OF_SOULS_DUNGEON" ],
+    "objectIds": [ 37860 ],
+    "uvType": "BOX",
+    "uvScale": 0.75
+  },
+  {
     "description": "Isle of Souls Dungeon - Objects - Dungeon Entrance",
     "baseMaterial": "STONE_NORMALED",
     "objectIds": [ 40737 ],
