@@ -16633,9 +16633,10 @@
     "uvScale": 0.4
   },
   {
-    "description": "Varlamore, Well, MODEL_YZ is used with intent",
+    "description": "Well, MODEL_YZ is used with intent",
     "baseMaterial": "GRUNGE_2",
     "objectIds": [
+      3646,
       46805
     ],
     "uvType": "MODEL_YZ",
