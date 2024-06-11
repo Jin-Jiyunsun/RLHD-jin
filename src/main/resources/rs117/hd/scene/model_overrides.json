@@ -15595,6 +15595,15 @@
     ]
   },
   {
+    "description": "Isle of Souls Dungeon - Cave Entrance",
+    "baseMaterial": "DIRT_2_DARK",
+    "objectIds": [
+      40736
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.7
+  },
+  {
     "description": "Isle of Souls Dungeon - Walls - Rock Walls",
     "baseMaterial": "STONE_NORMALED",
     "objectIds": [ 37854, 37859 ],
