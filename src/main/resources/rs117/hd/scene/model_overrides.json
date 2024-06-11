@@ -15530,6 +15530,22 @@
     "uvScale": 0.7
   },
   {
+    "description": "Isle of Souls - Gravestones",
+    "baseMaterial": "STONE_NORMALED",
+    "objectIds": [
+      40491,
+      40492,
+      40493,
+      40494,
+      40495,
+      40496,
+      40497,
+      40498,
+      40499
+    ],
+    "uvType": "BOX"
+  },
+  {
     "description": "Isle of Souls - Dead and Burnt Trees",
     "baseMaterial": "LIGHT_BARK",
     "objectIds": [
