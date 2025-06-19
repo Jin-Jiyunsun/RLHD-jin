@@ -2045,8 +2045,8 @@
   },
   {
     "description": "Short grass which shouldn't cast shadows",
-    "baseMaterial": "GRAY_75",
-    "flatNormals": true,
+    "baseMaterial": "GRASS_TEXTURE",
+    "uvType": "BOX",
     "inheritTileColorType": "UNDERLAY",
     "castShadows": false,
     "objectIds": [
@@ -2412,7 +2412,9 @@
   },
   {
     "description": "Varlamore, Fortis and Avium Grass",
-    "baseMaterial": "GRAY_75",
+    "baseMaterial": "GRASS_TEXTURE",
+    "uvType": "BOX",
+    "inheritTileColorType": "UNDERLAY",
     "objectIds": [
       "AVIUM_GRASS_1",
       "AVIUM_GRASS_2",

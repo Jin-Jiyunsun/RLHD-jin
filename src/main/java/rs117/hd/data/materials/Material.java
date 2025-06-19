@@ -338,6 +338,10 @@ public enum Material {
 	SNOW_4_N,
 	SNOW_4(p -> p.setNormalMap(SNOW_4_N).setSpecular(0.4f, 20)),
 
+	GRASS_TEXTURE(p -> p
+		.setUnlit(true)
+		.setBrightness(1.5f)
+	),
 	GRASS_1,
 	GRASS_2,
 	GRASS_3,
