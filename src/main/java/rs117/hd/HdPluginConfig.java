@@ -1030,6 +1030,16 @@ public interface HdPluginConfig extends Config
 		return false;
 	}
 
+	String KEY_HIDE_UI = "hideUi";
+	@ConfigItem(
+		keyName = KEY_HIDE_UI,
+		name = "Hide Ui",
+		description = "Hides the UI.",
+		section = experimentalSettings
+	)
+	default boolean hideui() {
+		return false;
+	}
 	/*====== Internal settings ======*/
 
 	@ConfigItem(keyName = "pluginUpdateMessage", hidden = true, name = "", description = "")
