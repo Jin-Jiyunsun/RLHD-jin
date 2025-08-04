@@ -7876,6 +7876,23 @@
     "setLightness": 72
   },
   {
+    "name": "Doom of Mokhaiotl FLoor",
+    "area": "Doom of Mokhaiotl",
+    "underlayIds": [
+      63,
+      67,
+      72,
+      167,
+      176
+    ],
+    "overlayIds": [
+      427
+    ],
+    "groundMaterial": "PLAIN_DIRT",
+    "uvScale": 1.25,
+    "uvOrientation": 256
+  },
+  {
     "name": "UNDERLAY_SNOW",
     "area": "SNOWY_REGIONS",
     "underlayIds": [

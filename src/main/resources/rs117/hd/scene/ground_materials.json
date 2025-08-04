@@ -115,6 +115,12 @@
     ]
   },
   {
+    "name": "PLAIN_DIRT",
+    "materials": [
+      "DIRT_1"
+    ]
+  },
+  {
     "name": "VARIED_DIRT_SHINY",
     "materials": [
       "GRAVEL_SHINY",
