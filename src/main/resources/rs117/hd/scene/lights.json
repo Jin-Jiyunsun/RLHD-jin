@@ -39853,5 +39853,28 @@
     "objectIds": [
       "MACRO_EVIL_BOB_UNCOOK_POT"
     ]
+  },
+  {
+    "description": "Doom of Mokhaiotl Fire",
+    "height": 40,
+    "alignment": "CENTER",
+    "radius": 450,
+    "strength": 12.5,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "objectIds": [
+      "TONALI_FIRE01",
+      "TONALI_FIRE02",
+      "TONALI_FIRE03",
+      "TONALI_FIRE04",
+      "TONALI_FIRE01_OFFSET01",
+      "TONALI_FIRE01_OFFSET02"
+    ]
   }
 ]
