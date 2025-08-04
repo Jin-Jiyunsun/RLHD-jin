@@ -1963,21 +1963,18 @@
   },
   {
     "area": "Doom of Mokhaiotl - Floor 1",
-    "directionalStrength": 2,
-    "ambientStrength": 2,
-    "sunAngles": [ 90, 140 ]
+    "directionalStrength": 0.3,
+    "ambientStrength": 2.5
   },
   {
   "area": "Doom of Mokhaiotl - Floors 2 to 5",
-    "directionalStrength": 2.5,
-    "ambientStrength": 2.5,
-    "sunAngles": [ 90, 140 ]
+    "directionalStrength": 0.3,
+    "ambientStrength": 3.25
   },
   {
     "area": "Doom of Mokhaiotl - Floors 6 to 8",
-    "directionalStrength": 2.5,
-    "ambientStrength": 2.5,
-    "sunAngles": [ 90, 140 ]
+    "directionalStrength": 0.3,
+    "ambientStrength": 3.25
   },
   {
     "key": "OVERWORLD",
