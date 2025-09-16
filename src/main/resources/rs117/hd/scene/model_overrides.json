@@ -2835,6 +2835,126 @@
     ]
   },
   {
+    "description": "Farming - Allotment - Snape Grass",
+    "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
+    "uvType": "BOX",
+    "uvScale": 0.2,
+    "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+    "windDisplacementModifier": -1,
+    "objectIds": [
+      "SNAPEGRASS_SEEDLING",
+      "SNAPEGRASS_SEED_WATERED",
+      "SNAPEGRASS_1",
+      "SNAPEGRASS_2",
+      "SNAPEGRASS_3",
+      "SNAPEGRASS_4",
+      "SNAPEGRASS_5",
+      "SNAPEGRASS_6",
+      "SNAPEGRASS_FULLYGROWN",
+      "SNAPEGRASS_1_WATERED",
+      "SNAPEGRASS_2_WATERED",
+      "SNAPEGRASS_3_WATERED",
+      "SNAPEGRASS_4_WATERED",
+      "SNAPEGRASS_5_WATERED",
+      "SNAPEGRASS_6_WATERED",
+      "SNAPEGRASS_1_DISEASED",
+      "SNAPEGRASS_2_DISEASED",
+      "SNAPEGRASS_3_DISEASED",
+      "SNAPEGRASS_4_DISEASED",
+      "SNAPEGRASS_5_DISEASED",
+      "SNAPEGRASS_6_DISEASED",
+      "SNAPEGRASS_1_DEAD",
+      "SNAPEGRASS_2_DEAD",
+      "SNAPEGRASS_3_DEAD",
+      "SNAPEGRASS_4_DEAD",
+      "SNAPEGRASS_5_DEAD",
+      "SNAPEGRASS_6_DEAD"
+    ],
+    "colorOverrides": [
+      {
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -1,
+        "colors": "h == 10",
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.25
+      }
+    ]
+  },
+  {
+    "description": "Farming - Flowers - White Lily",
+    "baseMaterial": "GRAY_75",
+    "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+    "windDisplacementModifier": -2,
+    "objectIds": [
+      "LILY_SEED",
+      "LILY_SEED_WATERED",
+      "LILY_1",
+      "LILY_2",
+      "LILY_3",
+      "LILY_FULLYGROWN",
+      "LILY_1_WATERED",
+      "LILY_2_WATERED",
+      "LILY_3_WATERED",
+      "LILY_1_DISEASED",
+      "LILY_2_DISEASED",
+      "LILY_3_DISEASED",
+      "LILY_1_DEAD",
+      "LILY_2_DEAD",
+      "LILY_3_DEAD",
+      "LILY_FULLYGROWN_DEAD"
+    ]
+  },
+  {
+    "description": "Farming - Flowers - Limpwurt",
+    "baseMaterial": "GRAY_90",
+    "windDisplacementMode": "VERTEX_WITH_HEMISPHERE_BLEND",
+    "windDisplacementModifier": -3,
+    "objectIds": [
+      "LIMPWURT_SEED",
+      "LIMPWURT_SEED_WATERED",
+      "LIMPWURT_FULLYGROWN",
+      "LIMPWURT_1",
+      "LIMPWURT_2",
+      "LIMPWURT_3",
+      "LIMPWURT_1_WATERED",
+      "LIMPWURT_2_WATERED",
+      "LIMPWURT_3_WATERED",
+      "LIMPWURT_1_DISEASED",
+      "LIMPWURT_2_DISEASED",
+      "LIMPWURT_3_DISEASED",
+      "LIMPWURT_1_DEAD",
+      "LIMPWURT_2_DEAD",
+      "LIMPWURT_3_DEAD",
+      "LIMPWURT_FULLYGROWN_DEAD"
+    ],
+    "colorOverrides": [
+      {
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -3,
+        "colors": "h == 8",
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.45
+      }
+    ]
+  },
+  {
+    "description": "Farming - Herbs - Ranaar",
+    "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
+    "uvType": "BOX",
+    "uvScale": 0.4,
+    "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+    "windDisplacementModifier": -1,
+    "objectIds": [
+      "HERB_RANARR_WEED_FULLYGROWN",
+      "HERB_RANARR_WEED_SEED",
+      "HERB_RANARR_WEED_1",
+      "HERB_RANARR_WEED_2",
+      "HERB_RANARR_WEED_3"
+    ]
+  },
+  {
     "description": "Kharidian Desert Grass",
     "baseMaterial": "GRAY_75",
     "objectIds": [ "REGICIDE_GRASS1", "REGICIDE_GRASS2", "REGICIDE_GRASS3" ],

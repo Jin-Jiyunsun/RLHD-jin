@@ -1555,6 +1555,11 @@
     "brightness": 1.083
   },
   {
+    "name": "LEAF_VEINS_VERY_LIGHT",
+    "parent": "LEAF_VEINS",
+    "brightness": 1.2
+  },
+  {
     "name": "LEAF_VEINS_DARK",
     "parent": "LEAF_VEINS",
     "brightness": 0.881
