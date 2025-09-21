@@ -1869,6 +1869,10 @@
     ]
   },
   {
+    "name": "SMOOTH_STONE",
+    "normalMap": "STONE_N"
+  },
+  {
     "name": "GEM_STONE",
     "normalMap": "METALLIC_2_N",
     "brightness": 1.1,
