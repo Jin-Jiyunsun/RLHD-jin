@@ -3002,9 +3002,7 @@
   },
   {
     "description": "Farming - Bush - Redberry",
-    "baseMaterial": "LIGHT_BARK",
-    "uvType": "BOX",
-    "uvScale": 0.3,
+    "baseMaterial": "GRUNGE_3",
     "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
     "windDisplacementModifier": -2,
     "objectIds": [
@@ -3032,17 +3030,26 @@
     ],
     "colorOverrides": [
       {
-        "colors": "s == 5",
+        "colors": "h == 21",
         "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
         "windDisplacementModifier": -2,
         "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
         "uvType": "BOX",
-        "uvScale": 0.4
+        "uvScale": 0.25
+      },
+      {
+        "colors": "h == 5",
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -2,
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.3
       }
     ]
   },
   {
     "description": "Farming - Bush - Cadavaberry",
+    "baseMaterial": "GRUNGE_3",
     "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
     "windDisplacementModifier": -2,
     "objectIds": [
@@ -3073,17 +3080,26 @@
     ],
     "colorOverrides": [
       {
-        "colors": "s == 4",
+        "colors": "h == 24",
         "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
         "windDisplacementModifier": -2,
         "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
         "uvType": "BOX",
-        "uvScale": 0.4
+        "uvScale": 0.25
+      },
+      {
+        "colors": "h == 10",
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -2,
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.3
       }
     ]
   },
   {
     "description": "Farming - Bush - Dwellberry",
+    "baseMaterial": "GRUNGE_3",
     "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
     "windDisplacementModifier": -2,
     "objectIds": [
@@ -3117,12 +3133,20 @@
     ],
     "colorOverrides": [
       {
-        "colors": "s == 4",
+        "colors": "h == 21",
         "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
         "windDisplacementModifier": -2,
         "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
         "uvType": "BOX",
-        "uvScale": 0.4
+        "uvScale": 0.25
+      },
+      {
+        "colors": "h == 8",
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -2,
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.3
       }
     ]
   },
@@ -3164,17 +3188,26 @@
     ],
     "colorOverrides": [
       {
-        "colors": "s == 4",
+        "colors": "h == 14",
         "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
         "windDisplacementModifier": -2,
         "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
         "uvType": "BOX",
-        "uvScale": 0.4
+        "uvScale": 0.25
+      },
+      {
+        "colors": "h == 9",
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -2,
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.3
       }
     ]
   },
   {
     "description": "Farming - Bush - Whiteberry",
+    "baseMaterial": "GRUNGE_3",
     "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
     "windDisplacementModifier": -2,
     "objectIds": [
@@ -3211,12 +3244,20 @@
     ],
     "colorOverrides": [
       {
-        "colors": "s == 4",
+        "colors": "h == 14",
         "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
         "windDisplacementModifier": -2,
         "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
         "uvType": "BOX",
-        "uvScale": 0.4
+        "uvScale": 0.25
+      },
+      {
+        "colors": "h == 8",
+        "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
+        "windDisplacementModifier": -2,
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvScale": 0.3
       }
     ]
   },
@@ -3263,7 +3304,7 @@
         "windDisplacementModifier": -2,
         "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
         "uvType": "BOX",
-        "uvScale": 0.4
+        "uvScale": 0.25
       }
     ]
   },
