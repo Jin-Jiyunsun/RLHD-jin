@@ -2835,6 +2835,52 @@
     ]
   },
   {
+    "description": "Farming - Allotment - Watermelon",
+    "baseMaterial": "GRUNGE_3",
+    "objectIds": [
+      "WATERMELON_SEED",
+      "WATERMELON_SEED_WATERED",
+      "WATERMELON_1",
+      "WATERMELON_2",
+      "WATERMELON_3",
+      "WATERMELON_4",
+      "WATERMELON_5",
+      "WATERMELON_6",
+      "WATERMELON_7",
+      "WATERMELON_FULLYGROWN",
+      "WATERMELON_1_WATERED",
+      "WATERMELON_2_WATERED",
+      "WATERMELON_3_WATERED",
+      "WATERMELON_4_WATERED",
+      "WATERMELON_5_WATERED",
+      "WATERMELON_6_WATERED",
+      "WATERMELON_7_WATERED",
+      "WATERMELON_1_DISEASED",
+      "WATERMELON_2_DISEASED",
+      "WATERMELON_3_DISEASED",
+      "WATERMELON_4_DISEASED",
+      "WATERMELON_5_DISEASED",
+      "WATERMELON_6_DISEASED",
+      "WATERMELON_7_DISEASED",
+      "WATERMELON_1_DEAD",
+      "WATERMELON_2_DEAD",
+      "WATERMELON_3_DEAD",
+      "WATERMELON_4_DEAD",
+      "WATERMELON_5_DEAD",
+      "WATERMELON_6_DEAD",
+      "WATERMELON_7_DEAD"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 7",
+        "baseMaterial": "LIGHT_BARK",
+        "uvType": "BOX",
+        "uvOrientation": 100,
+        "uvScale": 0.15
+      }
+    ]
+  },
+  {
     "description": "Farming - Allotment - Snape Grass",
     "baseMaterial": "LEAF_VEINS_VERY_LIGHT",
     "uvType": "BOX",
