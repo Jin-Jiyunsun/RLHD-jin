@@ -48,6 +48,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -352,6 +353,7 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 	private AWTContext awtContext;
 	private Callback debugCallback;
 	private ComputeMode computeMode = ComputeMode.OPENGL;
+	private boolean isAmdGpu;
 
 	private static final String LINUX_VERSION_HEADER =
 		"#version 420\n" +
@@ -575,11 +577,11 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 				useLowMemoryMode = config.lowMemoryMode();
 				BUFFER_GROWTH_MULTIPLIER = useLowMemoryMode ? 1.333f : 2;
 
-				String glRenderer = glGetString(GL_RENDERER);
+				String glRenderer = Objects.requireNonNullElse(glGetString(GL_RENDERER), "Unknown");
+				String glVendor = Objects.requireNonNullElse(glGetString(GL_VENDOR), "Unknown");
 				String arch = System.getProperty("sun.arch.data.model", "Unknown");
-				if (glRenderer == null)
-					glRenderer = "Unknown";
-				log.info("Using device: {}", glRenderer);
+				isAmdGpu = glRenderer.contains("AMD") || glRenderer.contains("Radeon") || glVendor.contains("ATI");
+				log.info("Using device: {} ({})", glRenderer, glVendor);
 				log.info("Using driver: {}", glGetString(GL_VERSION));
 				log.info("Client is {}-bit", arch);
 				log.info("Low memory mode: {}", useLowMemoryMode);
@@ -919,6 +921,7 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 			.define("CHARACTER_DISPLACEMENT", configCharacterDisplacement)
 			.define("MAX_CHARACTER_POSITION_COUNT", max(1, UBOCompute.MAX_CHARACTER_POSITION_COUNT))
 			.define("WIREFRAME", config.wireframe())
+			.define("WINDOWS_HDR_CORRECTION", config.windowsHdrCorrection())
 			.addInclude(
 				"MATERIAL_CONSTANTS", () -> {
 					StringBuilder include = new StringBuilder();
@@ -956,7 +959,10 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 		uiProgram.compile(includes);
 
 		if (configDynamicLights != DynamicLights.NONE && configTiledLighting) {
-			if (GL_CAPS.GL_ARB_shader_image_load_store && tiledLightingImageStoreProgram.isViable() && configTiledLightingImageLoadStore) {
+			if (!isAmdGpu && configTiledLightingImageLoadStore &&
+				GL_CAPS.GL_ARB_shader_image_load_store &&
+				tiledLightingImageStoreProgram.isViable()
+			) {
 				try {
 					tiledLightingImageStoreProgram.compile(includes
 						.define("TILED_IMAGE_STORE", true)
@@ -2813,6 +2819,7 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 							case KEY_CHARACTER_DISPLACEMENT:
 							case KEY_WIREFRAME:
 							case KEY_PIXELATED_SHADOWS:
+							case KEY_WINDOWS_HDR_CORRECTION:
 								recompilePrograms = true;
 								break;
 							case KEY_ANTI_ALIASING_MODE:
