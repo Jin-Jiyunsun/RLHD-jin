@@ -1246,6 +1246,11 @@
     "brightness": 1.177
   },
   {
+    "name": "CARPET_VERY_LIGHT",
+    "parent": "CARPET",
+    "brightness": 1.6
+  },
+  {
     "name": "CARPET_DARK",
     "parent": "CARPET",
     "brightness": 0.701

@@ -8182,6 +8182,17 @@
     "uvScale": 0.5
   },
   {
+    "name": "THEATRE_OF_BLOOD_MAIDEN_FLOOR_FIX",
+    "area": "THEATRE_OF_BLOOD_MAIDEN_FLOOR_FIX",
+    "overlayIds": [
+      11
+    ],
+    "groundMaterial": "CARPET",
+    "shiftHue": 1,
+    "setLightness": 21,
+    "blended": false
+  },
+  {
     "name": "TOB_VERZIK_CARPET",
     "area": "THEATRE_OF_BLOOD_VERZIK",
     "overlayIds": [

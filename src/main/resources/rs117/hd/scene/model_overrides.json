@@ -45137,7 +45137,7 @@
   },
   {
     "description": "Theatre of Blood - Stone Floor",
-    "baseMaterial": "STONE_NORMALED",
+    "baseMaterial": "CARPET_VERY_LIGHT",
     "objectIds": [
       "TOB_DUNGEON_WALKWAY_TOP_STEPS_01",
       "TOB_DUNGEON_WALKWAY_TOP_STEPS_02",
@@ -45187,7 +45187,7 @@
       "TOB_DUNGEON_WALKWAY_CORNER_LARGE_L"
     ],
     "uvType": "MODEL_XZ",
-    "uvOrientation": 100
+    "uvScale": 1.1
   },
   {
     "description": "Theatre of Blood - Stone Walls",
@@ -45206,7 +45206,6 @@
       "TOB_DUNGEON_WALKWAY_TOP_SIDE",
       "TOB_DUNGEON_WALKWAY_TOP_SIDE_BATLAMP",
       "TOB_DUNGEON_WALKWAY_TOP_SIDE_TALL",
-      "TOB_DUNGEON_WALKWAY_TOP_CORNER",
       "TOB_DUNGEON_WALKWAY_TOP_CORNER_NOTILE",
       "TOB_DUNGEON_WALKWAY_TOP_CORNER_BLANKTILE",
       "TOB_DUNGEON_WALKWAY_BOTTOM_SIDE_STEPS",
@@ -45269,10 +45268,25 @@
       {
         "colors": "s > 4",
         "baseMaterial": "NONE"
+      }
+    ]
+  },
+  {
+    "description": "Theatre of Blood - Stone Walls - Corner",
+    "baseMaterial": "STONE_NORMALED",
+    "objectIds": [
+      "TOB_DUNGEON_WALKWAY_TOP_CORNER"
+    ],
+    "uvType": "BOX",
+    "uvOrientation": 100,
+    "colorOverrides": [
+      {
+        "colors": "s > 4",
+        "baseMaterial": "NONE"
       },
       {
-        "colors": "l > 20",
-        "baseMaterial": "ROCK_3",
+        "colors": "l == 15 && s == 0 || l == 11 && s == 0",
+        "baseMaterial": "GRUNGE_3_LIGHT",
         "uvType": "BOX"
       }
     ]
@@ -45494,7 +45508,7 @@
   },
   {
     "description": "Theatre of Blood - Door Arch",
-    "baseMaterial": "STONE_NORMALED",
+    "baseMaterial": "STONE_NORMALED_LIGHT",
     "objectIds": [
       "TOB_DUNGEON_WALKWAY_TOP_ENTRANCE",
       "TOB_DUNGEON_WALKWAY_TOP_ENTRANCE_MIRROR"
@@ -45510,8 +45524,7 @@
   },
   {
     "description": "Theatre of Blood - Barrier",
-    "baseMaterial": "GRAY_90",
-    "shadowOpacityThreshold": 0.1,
+    "castShadows": false,
     "objectIds": [
       "TOB_ARENA_BARRIER",
       "TOB_WALKWAY_VERZIK_BARRIER",

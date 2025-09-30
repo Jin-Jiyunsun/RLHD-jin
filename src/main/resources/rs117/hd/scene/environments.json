@@ -401,13 +401,25 @@
     "fogDepth": 40
   },
   {
+    "area": "THEATRE_OF_BLOOD_VERZIK",
+    "ambientColor": "#8282b0",
+    "ambientStrength": 5,
+    "directionalColor": "#dfc0c0",
+    "directionalStrength": 2,
+    "fogColor": "#040407",
+    "fogDepth": 30,
+    "groundFogEnd": -1000,
+    "groundFogStart": -200,
+    "groundFogOpacity": 0.3
+  },
+  {
     "area": "THEATRE_OF_BLOOD",
     "ambientColor": "#8282b0",
-    "ambientStrength": 3.5,
+    "ambientStrength": 4,
     "directionalColor": "#dfc0c0",
     "directionalStrength": 1.5,
     "fogColor": "#040407",
-    "fogDepth": 40,
+    "fogDepth": 30,
     "groundFogEnd": -1000,
     "groundFogStart": -200,
     "groundFogOpacity": 0.3

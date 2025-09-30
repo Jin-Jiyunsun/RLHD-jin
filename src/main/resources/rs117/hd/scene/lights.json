@@ -26036,7 +26036,7 @@
     "description": "TOB_BARRIER",
     "height": 100,
     "alignment": "CENTER",
-    "radius": 350,
+    "radius": 400,
     "strength": 6,
     "color": [
       255,

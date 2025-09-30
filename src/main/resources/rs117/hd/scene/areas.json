@@ -6040,6 +6040,13 @@
     "regions": [ 12611 ]
   },
   {
+    "name": "THEATRE_OF_BLOOD_MAIDEN_FLOOR_FIX",
+    "aabbs": [
+      [ 3193, 4449 ],
+      [ 3193, 4444 ]
+    ]
+  },
+  {
     "name": "TOA_ENTRANCE_LOBBY",
     "aabbs": [
       [ 3344, 9102, 3375, 9135 ]
