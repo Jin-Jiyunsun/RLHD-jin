@@ -45268,6 +45268,11 @@
       {
         "colors": "s > 4",
         "baseMaterial": "NONE"
+      },
+      {
+        "colors": "l > 20",
+        "baseMaterial": "ROCK_3_LIGHT",
+        "uvType": "BOX"
       }
     ]
   },
@@ -45397,7 +45402,7 @@
   },
   {
     "description": "Theatre of Blood - Nylocas Arena Pillars",
-    "baseMaterial": "ROCK_3",
+    "baseMaterial": "ROCK_3_LIGHT",
     "objectIds": [
       "TOB_NYLOCAS_SUPPORT_PRISTINE",
       "TOB_DUNGEON_NYLOCAS_PLATFORM_03",
@@ -45407,7 +45412,7 @@
   },
   {
     "description": "Theatre of Blood - Nylocas Arena Floor",
-    "baseMaterial": "ROCK_3",
+    "baseMaterial": "ROCK_3_LIGHT",
     "objectIds": [
       "TOB_DUNGEON_NYLOCAS_PLATFORM_01",
       "TOB_DUNGEON_NYLOCAS_PLATFORM_04",
@@ -45457,7 +45462,7 @@
       },
       {
         "colors": 272,
-        "baseMaterial": "STONE_NORMALED",
+        "baseMaterial": "STONE_NORMALED_LIGHT",
         "uvType": "BOX"
       }
     ]
