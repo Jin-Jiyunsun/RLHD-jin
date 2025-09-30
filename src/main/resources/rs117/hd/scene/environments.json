@@ -386,7 +386,6 @@
       80,
       190
     ],
-    "fogColor": "#040407",
     "fogDepth": 20
   },
   {
@@ -410,6 +409,7 @@
     "fogDepth": 30,
     "groundFogEnd": -1000,
     "groundFogStart": -200,
+    "sunAngles": [ 130, 165 ],
     "groundFogOpacity": 0.3
   },
   {

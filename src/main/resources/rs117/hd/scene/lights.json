@@ -25960,8 +25960,8 @@
   {
     "description": "TOB_WALL_TORCH",
     "offset": [ -100, 250, -100 ],
-    "radius": 300,
-    "strength": 7.5,
+    "radius": 400,
+    "strength": 11,
     "color": [
       252,
       148,
@@ -26107,7 +26107,7 @@
   {
     "description": "TOB_VERZIK_WINDOW",
     "offset": [ 0, 500, -100 ],
-    "radius": 800,
+    "radius": 1000,
     "strength": 10,
     "color": [
       162,
@@ -26123,9 +26123,9 @@
   },
   {
     "description": "TOB_VERZIK_WINDOW_FLOOR",
-    "offset": [ 0, 150, -100 ],
-    "radius": 600,
-    "strength": 15,
+    "offset": [ 0, 200, -120 ],
+    "radius": 700,
+    "strength": 17.5,
     "color": [
       162,
       0,
