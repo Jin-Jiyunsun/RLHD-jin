@@ -9575,6 +9575,16 @@
     "uvScale": 0.7
   },
   {
+    "description": "Amethyst Mine Walls",
+    "baseMaterial": "GRUNGE_1_LIGHT",
+    "objectIds": [
+      "MGUILD_WALL",
+      "MGUILD_WALL_LEFT",
+      "MGUILD_WALL_RIGHT"
+    ],
+    "uvType": "BOX"
+  },
+  {
     "description": "Motherlode Mine Walls Lighten",
     "baseMaterial": "DIRT_2_LIGHT",
     "areas": [ "Motherlode Mine Dark Wall Fix" ],
@@ -9622,15 +9632,50 @@
     "uvOrientation": 256
   },
   {
-    "description": "Amathyst mine walls",
-    "baseMaterial": "STONE_NORMALED",
+    "description": "Amathyst Ore Walls - Full",
+    "baseMaterial": "GRUNGE_1_LIGHT",
     "objectIds": [
       "AMETHYSTROCK1",
-      "AMETHYSTROCK2",
+      "AMETHYSTROCK2"
+    ],
+    "uvType": "BOX",
+    "colorOverrides": [
+      {
+        "colors": "h == 58",
+        "baseMaterial": "GRAY_110"
+      }
+    ]
+  },
+  {
+    "description": "Amathyst Ore Walls - Empty",
+    "baseMaterial": "GRUNGE_1_LIGHT",
+    "objectIds": [
       "ROCKS3",
       "AMETHYSTROCK_EMPTY"
     ],
     "uvType": "BOX"
+  },
+  {
+    "description": "Amathyst Mine - Rocks with Tools",
+    "baseMaterial": "ROCK_3_LIGHT",
+    "objectIds": [
+      "MGUILD_MINING_STONE_PICKAXE"
+    ],
+    "uvType": "BOX",
+    "colorOverrides": [
+      {
+        "colors": "h == 0",
+        "baseMaterial": "METALLIC_1_LIGHT"
+      },
+      {
+        "colors": "h == 7",
+        "baseMaterial": "WOOD_GRAIN_3",
+        "uvType": "BOX",
+        "uvOrientationZ": 800,
+        "uvOrientationY": 256,
+        "uvScale": 0.3
+      }
+    ]
   },
   {
     "description": "Motherlode Mine Rockfall",
