@@ -9576,6 +9576,7 @@
   },
   {
     "description": "Amethyst Mine Walls",
+    "areas": [ "AMETHYST_MINES" ],
     "baseMaterial": "GRUNGE_1_LIGHT",
     "objectIds": [
       "MGUILD_WALL",
