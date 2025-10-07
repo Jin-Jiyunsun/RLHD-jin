@@ -2057,6 +2057,11 @@
     "ambientStrength": 2.5
   },
   {
+    "area": "CERBERUS ENTRANCE",
+    "directionalStrength": 0.5,
+    "ambientStrength": 1.5
+  },
+  {
     "key": "OVERWORLD",
     "area": "OVERWORLD",
     "ambientColor": "#97baff",
