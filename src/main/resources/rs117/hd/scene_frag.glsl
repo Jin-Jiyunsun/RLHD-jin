@@ -420,8 +420,8 @@ void main() {
                 chessboard = chessboard - floor(chessboard);
                 chessboard *= 2;
 
-                float str = sin(((mod(elapsedTime, 10)) / 10.0 ) * PI) * 0.5;
-                outputColor.rgb += mix(vec3(0.59, 0.58, 0.94), vec3(0.98, 0.78, 0.83), chessboard) * str;
+                float str = sin(((mod(elapsedTime, 2)) / 2.0 ) * PI) * 0.34;
+                outputColor.rgb += mix(vec3(0.59, 0.58, 0.94), vec3(1.98, 0.78, 2.83), chessboard) * str;
             }
         }
         #endif
