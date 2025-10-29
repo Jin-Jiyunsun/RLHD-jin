@@ -30,6 +30,7 @@
 #include <uniforms/water_types.glsl>
 
 #include MATERIAL_CONSTANTS
+#include HIGHLIGHT_MODEL_OVERRIDE_NONE
 
 uniform sampler2DArray textureArray;
 uniform sampler2D shadowMap;
@@ -401,6 +402,29 @@ void main() {
         if (isUnderwater) {
             sampleUnderwater(outputColor.rgb, waterType, waterDepth, lightDotNormals);
         }
+
+        #if HIGHLIGHT_MODEL_OVERRIDE_NONE
+        if(!isTerrain) {
+            bool highlight = false;
+            for(int i = 0; i < 3; i ++) {
+                if((vMaterialData[i] >> MATERIAL_FLAG_HIGHLIGHT_MODELS_WITHOUT_OVERRIDE & 1) == 1) {
+                    highlight = true;
+                    break;
+                }
+            }
+            if(highlight) {
+                float offset = elapsedTime * 25.0;
+                vec3 adjustedWorldPos = floor((IN.position + vec3(offset, offset, 0)) / 20.0);
+                float chessboard = adjustedWorldPos.x + adjustedWorldPos.y + adjustedWorldPos.z;
+                chessboard = chessboard * 0.5;
+                chessboard = chessboard - floor(chessboard);
+                chessboard *= 2;
+
+                float str = sin(((mod(elapsedTime, 10)) / 10.0 ) * PI) * 0.5;
+                outputColor.rgb += mix(vec3(0.59, 0.58, 0.94), vec3(0.98, 0.78, 0.83), chessboard) * str;
+            }
+        }
+        #endif
     }
 
     vec2 tiledist = abs(floor(IN.position.xz / 128) - floor(cameraPos.xz / 128));

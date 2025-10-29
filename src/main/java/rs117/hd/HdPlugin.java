@@ -921,6 +921,7 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 			.define("MAX_CHARACTER_POSITION_COUNT", max(1, UBOCompute.MAX_CHARACTER_POSITION_COUNT))
 			.define("WIREFRAME", config.wireframe())
 			.define("WINDOWS_HDR_CORRECTION", config.windowsHdrCorrection())
+			.define("HIGHLIGHT_MODEL_OVERRIDE_NONE", config.highlightModelOverrides())
 			.addInclude(
 				"MATERIAL_CONSTANTS", () -> {
 					StringBuilder include = new StringBuilder();
@@ -2819,6 +2820,7 @@ public class HdPlugin extends Plugin implements DrawCallbacks {
 							case KEY_WIREFRAME:
 							case KEY_PIXELATED_SHADOWS:
 							case KEY_WINDOWS_HDR_CORRECTION:
+							case KEY_HIGHLIGHT_MODEL_OVERRIDES:
 								recompilePrograms = true;
 								break;
 							case KEY_ANTI_ALIASING_MODE:

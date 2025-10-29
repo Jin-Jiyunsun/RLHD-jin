@@ -994,6 +994,18 @@ public interface HdPluginConfig extends Config
 		return false;
 	}
 
+	String KEY_HIGHLIGHT_MODEL_OVERRIDES = "highlightModelOverrides";
+	@ConfigItem(
+		keyName = KEY_HIGHLIGHT_MODEL_OVERRIDES,
+		name = "Highlight Model Overrides",
+		description =
+			"Highlights models which don't have a model override specified",
+		section = miscellaneousSettings
+	)
+	default boolean highlightModelOverrides() {
+		return false;
+	}
+
 
 	/*====== Experimental settings ======*/
 
