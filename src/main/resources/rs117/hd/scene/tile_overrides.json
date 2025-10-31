@@ -5951,6 +5951,12 @@
     "blended": false
   },
   {
+    "name": "Morytania River Blending Fix",
+    "area": "Morytania River Blending Fix",
+    "underlayIds": [ 54, 96 ],
+    "waterType": "WATER"
+  },
+  {
     "name": "OVERLAY_WOOD_PLANKS",
     "area": "ALL",
     "overlayIds": [
