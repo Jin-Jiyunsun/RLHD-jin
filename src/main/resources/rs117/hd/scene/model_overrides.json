@@ -45019,7 +45019,7 @@
     "description": "Karamja Bamboo bridge",
     "baseMaterial": "LIGHT_BARK",
     "uvType": "BOX",
-    "uvScale": 0.5,
+    "uvScale": 0.3,
     "uvOrientation": 1024,
     "uvOrientationZ": 162,
     "colorOverrides": [
