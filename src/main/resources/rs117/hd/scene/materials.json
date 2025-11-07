@@ -1009,6 +1009,12 @@
     "brightness": 1.25
   },
   {
+    "name": "UNLIT_GRAY_125",
+    "parent": "NONE",
+    "unlit": true,
+    "brightness": 1.25
+  },
+  {
     "name": "GRAY_110",
     "parent": "NONE",
     "brightness": 1.1
