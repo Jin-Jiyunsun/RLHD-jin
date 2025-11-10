@@ -3957,7 +3957,7 @@
   },
   {
     "description": "Falador - Stone - Brick Walls",
-    "baseMaterial": "MARBLE_3_SEMIGLOSS",
+    "baseMaterial": "SMOOTH_STONE",
     "uvType": "BOX",
     "uvScale": 0.6,
     "flatNormals": true,
@@ -4057,7 +4057,7 @@
   },
   {
     "description": "Falador - Stone - Glass - Wooden walls With Windows",
-    "baseMaterial": "MARBLE_3_SEMIGLOSS",
+    "baseMaterial": "SMOOTH_STONE",
     "uvType": "BOX",
     "uvScale": 0.6,
     "flatNormals": true,
@@ -4082,7 +4082,7 @@
   },
   {
     "description": "Falador - Stone - Glass - Brick Walls - With Windows",
-    "baseMaterial": "MARBLE_3_SEMIGLOSS",
+    "baseMaterial": "SMOOTH_STONE",
     "uvType": "BOX",
     "uvScale": 0.6,
     "flatNormals": true,
@@ -4256,7 +4256,9 @@
   },
   {
     "description": "FALADOR_STEPS_1",
-    "baseMaterial": "GRUNGE_1",
+    "baseMaterial": "SMOOTH_STONE",
+    "uvType": "BOX",
+    "uvScale": 0.7,
     "objectIds": [
       "RD_SKEWSTEPS",
       "RD_SKEWSTEPS_CORNER"
@@ -39311,7 +39313,7 @@
   },
   {
     "description": "Deaths office - Entrances roof - Falador",
-    "baseMaterial": "GRUNGE_1",
+    "baseMaterial": "SMOOTH_STONE_DARK",
     "uvType": "BOX",
     "uvScale": 0.6,
     "flatNormals": true,
@@ -39330,7 +39332,7 @@
   },
   {
     "description": "Deaths office - Entrances - Falador",
-    "baseMaterial": "GRUNGE_1",
+    "baseMaterial": "SMOOTH_STONE_DARK",
     "uvType": "BOX",
     "uvScale": 0.6,
     "flatNormals": true,
