@@ -61565,6 +61565,15 @@
     "uvType": "BOX"
   },
   {
+    "description": "Darken sailing water ripple",
+    "baseMaterial": "GRAY_80",
+    "objectIds": [
+      "SAILING_CHARTING_HINT_MARKER_DUCK"
+    ],
+    "uvType": "BOX",
+    "castShadows": false
+  },
+  {
     "description": "Tonali Caverns - Temple Wall - Simple",
     "baseMaterial": "STONE_NORMALED",
     "objectIds": [
