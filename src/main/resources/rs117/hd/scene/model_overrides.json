@@ -3029,6 +3029,14 @@
     ]
   },
   {
+    "description": "Fix depth bias on poh pools",
+    "depthBias": 210,
+    "objectIds": [
+      "LEAGUE_4_POH_POOL_REJUVENATION",
+      "POH_POOL_REJUVENATION"
+    ]
+  },
+  {
     "description": "Short grass which shouldn't cast shadows but should inherit tile color, this is required to make the grass around the edges white and not green in winter",
     "baseMaterial": "GRAY_75",
     "windDisplacementMode": "OBJECT",
