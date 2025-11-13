@@ -336,7 +336,7 @@ public class HdPlugin extends Plugin {
 
 	public int shadowMapResolution;
 	public int fboShadowMap;
-	private int texShadowMap;
+	public int texShadowMap;
 
 	public int[] tiledLightingResolution;
 	public int tiledLightingLayerCount;
@@ -361,7 +361,9 @@ public class HdPlugin extends Plugin {
 	public boolean configModelCaching;
 	public boolean configShadowsEnabled;
 	public boolean configRoofShadows;
+	public boolean configShadowTransparency;
 	public boolean configExpandShadowDraw;
+	public boolean configShadowCasterCulling;
 	public boolean configUseFasterModelHashing;
 	public boolean configUndoVanillaShading;
 	public boolean configPreserveVanillaNormals;
@@ -490,7 +492,7 @@ public class HdPlugin extends Plugin {
 				INTEL_GPU = glRenderer.contains("Intel");
 				NVIDIA_GPU = glRenderer.toLowerCase().contains("nvidia");
 
-				SUPPORTS_INDIRECT_DRAW = NVIDIA_GPU || config.forceIndirectDraw();
+				SUPPORTS_INDIRECT_DRAW = NVIDIA_GPU && !APPLE || config.forceIndirectDraw();
 
 				renderer = config.legacyRenderer() ?
 					injector.getInstance(LegacyRenderer.class) :
@@ -797,8 +799,11 @@ public class HdPlugin extends Plugin {
 			.define("NORMAL_MAPPING", config.normalMapping())
 			.define("PARALLAX_OCCLUSION_MAPPING", config.parallaxOcclusionMapping())
 			.define("SHADOW_MODE", configShadowMode)
-			.define("SHADOW_TRANSPARENCY", config.enableShadowTransparency())
+			.define("SHADOW_TRANSPARENCY", configShadowTransparency)
 			.define("PIXELATED_SHADOWS", config.pixelatedShadows())
+			.define("SHADOW_CONSTANT_BIAS", config.shadowResolution().getConstantBias())
+			.define("SHADOW_SLOPE_BIAS", config.shadowResolution().getSlopeBias())
+			.define("GROUND_SHADOWS", config.enableGroundShadows())
 			.define("VANILLA_COLOR_BANDING", config.vanillaColorBanding())
 			.define("UNDO_VANILLA_SHADING", configUndoVanillaShading)
 			.define("LEGACY_GREY_COLORS", configLegacyGreyColors)
@@ -1265,7 +1270,7 @@ public class HdPlugin extends Plugin {
 		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
-			GL_DEPTH_COMPONENT24,
+			GL_DEPTH_COMPONENT32F,
 			shadowMapResolution,
 			shadowMapResolution,
 			0,
@@ -1277,6 +1282,11 @@ public class HdPlugin extends Plugin {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+
+		if(renderer instanceof ZoneRenderer && !configShadowTransparency) {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+		}
 
 		float[] color = { 1, 1, 1, 1 };
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
@@ -1483,6 +1493,7 @@ public class HdPlugin extends Plugin {
 		configShadowMode = config.shadowMode();
 		configShadowsEnabled = configShadowMode != ShadowMode.OFF;
 		configRoofShadows = config.roofShadows();
+		configShadowTransparency = config.enableShadowTransparency();
 		configGroundTextures = config.groundTextures();
 		configGroundBlending = config.groundBlending();
 		configModelTextures = config.modelTextures();
@@ -1498,6 +1509,7 @@ public class HdPlugin extends Plugin {
 		configTiledLighting = config.tiledLighting();
 		configTiledLightingImageLoadStore = config.tiledLightingImageLoadStore();
 		configExpandShadowDraw = config.expandShadowDraw();
+		configShadowCasterCulling = config.shadowCasterCulling();
 		configUseFasterModelHashing = config.fasterModelHashing();
 		configUndoVanillaShading = config.shadingMode() != ShadingMode.VANILLA;
 		configPreserveVanillaNormals = config.preserveVanillaNormals();
@@ -1641,6 +1653,7 @@ public class HdPlugin extends Plugin {
 							case KEY_WIREFRAME:
 							case KEY_PIXELATED_SHADOWS:
 							case KEY_WINDOWS_HDR_CORRECTION:
+							case KEY_GROUND_SHADOWS:
 								recompilePrograms = true;
 								break;
 							case KEY_ANTI_ALIASING_MODE:
@@ -1649,10 +1662,9 @@ public class HdPlugin extends Plugin {
 								break;
 							case KEY_SHADOW_MODE:
 							case KEY_SHADOW_TRANSPARENCY:
-								recompilePrograms = true;
-								// fall-through
 							case KEY_SHADOW_RESOLUTION:
 								recreateShadowMapFbo = true;
+								recompilePrograms = true;
 								break;
 							case KEY_ATMOSPHERIC_LIGHTING:
 							case KEY_LEGACY_TOB_ENVIRONMENT:
