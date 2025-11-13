@@ -2636,7 +2636,8 @@
     "blended": false,
     "blendedAsOpposite": true,
     "replacements": {
-      "WINTER_EDGEVILLE_PATH": "season == SeasonalTheme.WINTER"
+      "WINTER_EDGEVILLE_PATH": "season == SeasonalTheme.WINTER",
+      "NONE": "!textures"
     }
   },
   {
@@ -2652,7 +2653,8 @@
     "shiftLightness": 12,
     "blendedAsOpposite": true,
     "replacements": {
-      "WINTER_EDGEVILLE_PATH": "season == SeasonalTheme.WINTER"
+      "WINTER_EDGEVILLE_PATH": "season == SeasonalTheme.WINTER",
+      "NONE": "!textures"
     }
   },
   {
