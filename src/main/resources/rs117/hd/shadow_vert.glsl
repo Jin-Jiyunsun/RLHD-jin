@@ -79,8 +79,8 @@ void main() {
     if (isGroundPlaneTile) {
         vec3 groundNormal = normalize(vNormal);
         float upFactor = clamp(dot(groundNormal, vec3(0.0, -1.0, 0.0)), 0.0, 1.0);
-        float bias = mix(64, 128, 1.0 - upFactor);
-       pos -= groundNormal * bias;
+        float bias = mix(0, 32, upFactor);
+        pos -= groundNormal * bias;
     }
     #else
     isShadowDisabled = isShadowDisabled || isGroundPlaneTile;
