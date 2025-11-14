@@ -38,6 +38,7 @@ layout (location = 6) in int vWorldViewId;
 layout (location = 7) in ivec2 vSceneBase;
 
 #include <utils/constants.glsl>
+#include <utils/color_utils.glsl>
 
 #if SHADOW_MODE == SHADOW_MODE_DETAILED
     // Pass to geometry shader
@@ -48,11 +49,17 @@ layout (location = 7) in ivec2 vSceneBase;
     flat out int gWorldViewId;
     #if SHADOW_TRANSPARENCY
         flat out float gOpacity;
+        #if SHADOW_TRANSPARENCY == SHADOW_TRANSPARENCY_ENABLED_WITH_TINT
+            flat out vec3 gColor;
+        #endif
     #endif
 #else
     #if SHADOW_TRANSPARENCY
         // Pass to fragment shader
         out float fOpacity;
+        #if SHADOW_TRANSPARENCY == SHADOW_TRANSPARENCY_ENABLED_WITH_TINT
+            out vec3 fColor;
+        #endif
     #endif
 #endif
 
@@ -96,11 +103,17 @@ void main() {
         gWorldViewId = vWorldViewId;
         #if SHADOW_TRANSPARENCY
             gOpacity = opacity;
+            #if SHADOW_TRANSPARENCY == SHADOW_TRANSPARENCY_ENABLED_WITH_TINT
+                gColor = packedHslToSrgb(vAlphaBiasHsl);
+            #endif
         #endif
     #else
         gl_Position = directionalCamera.viewProj * getWorldViewProjection(vWorldViewId) * vec4(pos, shouldCastShadow);
         #if SHADOW_TRANSPARENCY
             fOpacity = opacity;
+            #if SHADOW_TRANSPARENCY == SHADOW_TRANSPARENCY_ENABLED_WITH_TINT
+                fColor = packedHslToSrgb(vAlphaBiasHsl);
+            #endif
         #endif
     #endif
 }
