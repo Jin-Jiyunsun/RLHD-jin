@@ -20810,7 +20810,24 @@
     "objectIds": [
       "MISC_LANTERN",
       "VC_LANTERN_DECOR",
-      "QUEST_LUNAR_HANGING_LANTERN",
+      "QUEST_LUNAR_HANGING_LANTERN"
+    ]
+  },
+  {
+    "description": "Shilo Mine Lantern",
+    "offset": [ -8, 115, 30 ],
+    "alignment": "CENTER",
+    "radius": 500,
+    "strength": 16,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "objectIds": [
       "ATJUN_MINE_WALL_LAMP"
     ]
   },
@@ -22621,16 +22638,16 @@
     "description": "POH_PORTAL_NEXUS",
     "height": 200,
     "alignment": "CENTER",
-    "radius": 400,
-    "strength": 12.5,
+    "radius": 600,
+    "strength": 16.5,
     "color": [
       31,
       225,
       255
     ],
     "type": "PULSE",
-    "duration": 1250,
-    "range": 20,
+    "duration": 2250,
+    "range": 8,
     "objectIds": [
       "LEAGUE_5_POH_SPIRIT_RING",
       "POH_NEXUS_PORTAL_1",
@@ -22887,11 +22904,11 @@
     "description": "SCRYING_POOL",
     "height": 170,
     "alignment": "CENTER",
-    "radius": 400,
-    "strength": 12.5,
+    "radius": 600,
+    "strength": 22.5,
     "color": [
-      144,
-      0,
+      120,
+      100,
       255
     ],
     "type": "PULSE",
@@ -22922,9 +22939,9 @@
   },
   {
     "description": "POH_PORTAL_ARCEUUS_LIBRARY",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       235,
@@ -22944,7 +22961,7 @@
     "description": "POH_PORTAL_DRAYNOR_MANOR",
     "height": 120,
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       172,
@@ -22962,9 +22979,9 @@
   },
   {
     "description": "POH_PORTAL_BATTLEFRONT",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       79,
@@ -22982,7 +22999,7 @@
   },
   {
     "description": "POH_PORTAL_VARROCK",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
     "radius": 400,
     "strength": 12.5,
@@ -23009,7 +23026,7 @@
   },
   {
     "description": "POH_PORTAL_MIND_ALTAR",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
     "radius": 400,
     "strength": 12.5,
@@ -23029,7 +23046,7 @@
   },
   {
     "description": "POH_PORTAL_LUMBRIDGE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
     "radius": 400,
     "strength": 12.5,
@@ -23049,9 +23066,9 @@
   },
   {
     "description": "POH_PORTAL_FALADOR",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       174,
@@ -23069,9 +23086,9 @@
   },
   {
     "description": "POH_PORTAL_SALVE_GRAVEYARD",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23089,9 +23106,9 @@
   },
   {
     "description": "POH_PORTAL_CAMELOT",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23112,9 +23129,9 @@
   },
   {
     "description": "POH_PORTAL_FENKENSTRAINS_CASTLE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23132,9 +23149,9 @@
   },
   {
     "description": "POH_PORTAL_ARDOUGNE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23152,9 +23169,9 @@
   },
   {
     "description": "POH_PORTAL_YANILLE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       0,
@@ -23175,9 +23192,9 @@
   },
   {
     "description": "POH_PORTAL_SENNTISTEN",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       55,
@@ -23195,9 +23212,9 @@
   },
   {
     "description": "POH_PORTAL_WEST_ARDOUGNE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23215,9 +23232,9 @@
   },
   {
     "description": "POH_PORTAL_MARIM",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23235,9 +23252,9 @@
   },
   {
     "description": "POH_PORTAL_HARMONY_ISLAND",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       153,
@@ -23255,9 +23272,9 @@
   },
   {
     "description": "POH_PORTAL_KHARYLL",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23275,9 +23292,9 @@
   },
   {
     "description": "POH_PORTAL_LUNAR_ISLE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       219,
@@ -23295,9 +23312,9 @@
   },
   {
     "description": "POH_PORTAL_KOUREND",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       69,
@@ -23315,9 +23332,9 @@
   },
   {
     "description": "POH_PORTAL_CEMETERY",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       247,
@@ -23326,7 +23343,7 @@
     ],
     "type": "PULSE",
     "duration": 4100,
-    "range": 20,
+    "range": 15,
     "objectIds": [
       "POH_PORTAL_MAG_CEMETERY",
       "POH_PORTAL_TEAK_CEMETERY",
@@ -23335,9 +23352,9 @@
   },
   {
     "description": "POH_PORTAL_WATERBIRTH_ISLE",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       122,
@@ -23346,7 +23363,7 @@
     ],
     "type": "PULSE",
     "duration": 4100,
-    "range": 20,
+    "range": 15,
     "objectIds": [
       "POH_PORTAL_MAG_WATERBIRTH",
       "POH_PORTAL_TEAK_WATERBIRTH",
@@ -23355,9 +23372,9 @@
   },
   {
     "description": "POH_PORTAL_BARROWS",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       202,
@@ -23375,9 +23392,9 @@
   },
   {
     "description": "POH_PORTAL_CARRALANGAR",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       226,
@@ -23395,9 +23412,9 @@
   },
   {
     "description": "POH_PORTAL_FISHING_GUILD",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       0,
@@ -23415,9 +23432,9 @@
   },
   {
     "description": "POH_PORTAL_CATHERBY",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23435,9 +23452,9 @@
   },
   {
     "description": "POH_PORTAL_ANNAKARL",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       150,
@@ -23455,9 +23472,9 @@
   },
   {
     "description": "POH_PORTAL_APE_ATOLL_DUNGEON",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23475,9 +23492,9 @@
   },
   {
     "description": "POH_PORTAL_GHORROCK",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       252,
@@ -23495,9 +23512,9 @@
   },
   {
     "description": "POH_PORTAL_TROLL_STRONGHOLD",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -23515,9 +23532,9 @@
   },
   {
     "description": "POH_PORTAL_WEISS",
-    "height": 120,
+    "offset": [ 0, 120, 75 ],
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       0,
@@ -23823,7 +23840,7 @@
     "description": "TELEPORT_PLATFORM",
     "height": 50,
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       0,
@@ -24046,7 +24063,7 @@
     "description": "CORRUPTED_TELEPORT_PLATFORM",
     "height": 50,
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -24064,7 +24081,7 @@
     "description": "CORRUPTED_GAUNTLET_TOOL_STORAGE",
     "height": 180,
     "alignment": "CENTER",
-    "radius": 400,
+    "radius": 520,
     "strength": 12.5,
     "color": [
       255,
@@ -29239,7 +29256,9 @@
     "type": "STATIC",
     "duration": 0,
     "range": 0,
-    "fadeInDuration": 500,
+    "fadeInDuration": 300,
+    "fadeOutDuration": 100,
+    "fadeOverlap": true,
     "projectileIds": [
       "FIREBREATH_TRAVEL"
     ]
@@ -30371,7 +30390,7 @@
   {
     "description": "Wyrm Magic Attack",
     "offset": [ 0, 0, 0 ],
-    "radius": 220,
+    "radius": 250,
     "strength": 20,
     "color": [
       0,
@@ -30380,16 +30399,15 @@
     ],
     "type": "FLICKER",
     "duration": 1,
-    "range": 80,
+    "range": 60,
     "projectileIds": [ "WYRM_RANGE_PROJ" ],
-    "spawnDelay": 400,
     "fadeInDuration": 300,
-    "fadeOutDuration": 100
+    "fadeOutDuration": 300
   },
   {
     "description": "Shadow Wyrm Magic Attack",
     "offset": [ 0, 0, 0 ],
-    "radius": 220,
+    "radius": 250,
     "strength": 50,
     "color": [
       0,
@@ -30400,9 +30418,8 @@
     "duration": 10,
     "range": 70,
     "projectileIds": [ "SUPERIOR_WYRM_RANGE_PROJ" ],
-    "spawnDelay": 400,
     "fadeInDuration": 300,
-    "fadeOutDuration": 100
+    "fadeOutDuration": 300
   },
   {
     "description": "KARUULM_INDOOR_LAVA_1",
@@ -39203,7 +39220,7 @@
     "description": "Mastering Mixology - Godray lights - Hovering in mid air to add depth to scene",
     "height": -70,
     "alignment": "CENTER",
-    "radius": 600,
+    "radius": 750,
     "strength": 15,
     "color": [
       255,
@@ -39215,6 +39232,35 @@
     "range": 0,
     "objectIds": [
       "MM_LAB_LIGHT_GODRAY02_LARGE01_BRIGHT01"
+    ]
+  },
+  {
+    "description": "Mastering Mixology - Retort Fire",
+    "height": 90,
+    "alignment": "CENTER",
+    "radius": 120,
+    "strength": 7.5,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "fadeOutDuration": 150,
+    "fadeInDuration": 150,
+    "objectIds": [
+      "MM_LAB_MACHINE_RETORT_MAL",
+      "MM_LAB_MACHINE_RETORT_MMM",
+      "MM_LAB_MACHINE_RETORT_MMA",
+      "MM_LAB_MACHINE_RETORT_MML",
+      "MM_LAB_MACHINE_RETORT_AAA",
+      "MM_LAB_MACHINE_RETORT_AAM",
+      "MM_LAB_MACHINE_RETORT_AAL",
+      "MM_LAB_MACHINE_RETORT_LLL",
+      "MM_LAB_MACHINE_RETORT_LLA",
+      "MM_LAB_MACHINE_RETORT_LLM"
     ]
   },
   {
@@ -40231,6 +40277,134 @@
     "fadeInDuration": 300,
     "fadeOutDuration": 200,
     "graphicsObjectIds": [ "SPECIAL_ATLATL_SPOTANIM" ]
+  },
+  {
+    "description": "Scorching Bow Special Attack - Arrow",
+    "offset": [ 0, -25, 0 ],
+    "radius": 175,
+    "strength": 12,
+    "fadeOutDuration": 575,
+    "fadeInDuration": 200,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "projectileIds": [ "VFX_SCORCHING_BOW_PROJECTILE" ]
+  },
+  {
+    "description": "Emberlight Special Attack Player",
+    "offset": [ 0, 75, 0 ],
+    "radius": 230,
+    "strength": 11.5,
+    "spawnDelay": 450,
+    "fixedDespawnTime": true,
+    "despawnDelay": 900,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "STATIC",
+    "fadeInDuration": 175,
+    "fadeOutDuration": 375,
+    "graphicsObjectIds": [ "VFX_EMBERLIGHT_SPEC_02" ]
+  },
+  {
+    "description": "Emberlight Special Attack Impact",
+    "offset": [ 0, 75, 90 ],
+    "radius": 260,
+    "spawnDelay": 1150,
+    "fixedDespawnTime": true,
+    "despawnDelay": 650,
+    "strength": 11.5,
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "STATIC",
+    "fadeInDuration": 150,
+    "fadeOutDuration": 275,
+    "graphicsObjectIds": [ "VFX_EMBERLIGHT_SPEC_02" ]
+  },
+  {
+    "description": "Scorching Bow Special Attack - Shot Firing",
+    "offset": [ 0, 80, 50 ],
+    "radius": 165,
+    "strength": 12,
+    "fixedDespawnTime": true,
+    "despawnDelay": 1000,
+    "spawnDelay": 150,
+    "fadeOutDuration": 175,
+    "fadeInDuration": 250,
+
+    "color": [
+      252,
+      148,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "graphicsObjectIds": [ "VFX_HUMAN_SCORCHING_BOW_SPECIAL_ATTACK_01" ]
+  },
+  {
+    "description": "Abyssal Dagger Special Attack Right 1",
+    "offset": [ 30, 150, 60 ],
+    "radius": 175,
+    "spawnDelay": 150,
+    "fixedDespawnTime": true,
+    "despawnDelay": 300,
+    "strength": 10,
+    "color": [
+      0,
+      255,
+      0
+    ],
+    "type": "STATIC",
+    "fadeInDuration": 175,
+    "fadeOutDuration": 275,
+    "graphicsObjectIds": [ "ABYSSAL_DAGGER_SPECIAL_SPOTANIM" ]
+  },
+  {
+    "description": "Abyssal Dagger Special Attack Right 2",
+    "offset": [ 30, 150, 60 ],
+    "radius": 175,
+    "spawnDelay": 750,
+    "fixedDespawnTime": true,
+    "despawnDelay": 300,
+    "strength": 10,
+    "color": [
+      0,
+      255,
+      0
+    ],
+    "type": "STATIC",
+    "fadeInDuration": 175,
+    "fadeOutDuration": 275,
+    "graphicsObjectIds": [ "ABYSSAL_DAGGER_SPECIAL_SPOTANIM" ]
+  },
+  {
+    "description": "Abyssal Dagger Special Attack Left",
+    "offset": [ -30, 150, 60 ],
+    "radius": 175,
+    "spawnDelay": 350,
+    "fixedDespawnTime": true,
+    "despawnDelay": 500,
+    "strength": 10,
+    "color": [
+      0,
+      255,
+      0
+    ],
+    "type": "STATIC",
+    "fadeInDuration": 175,
+    "fadeOutDuration": 275,
+    "graphicsObjectIds": [ "ABYSSAL_DAGGER_SPECIAL_SPOTANIM" ]
   },
   {
     "description": "Varlamore - Ruins of Tapoyauik - Brazier",
