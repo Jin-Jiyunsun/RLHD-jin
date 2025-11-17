@@ -65903,25 +65903,6 @@
     ]
   },
   {
-    "description": "Depth Bias Fix - PoH Pools & Ponds",
-    "objectIds": [
-      "POH_POOL_REJUVENATION",
-      "POH_POOL_REGENERATION",
-      "LEAGUE_4_POH_POOL_REJUVENATION",
-      "XMAS20_POH_POOL_REJUVENATION",
-      "POH_POOL_RESTORATION",
-      "POH_POOL_REVITALISATION",
-      "POH_POOL_RECOVERY",
-      "XMAS20_POH_POOL_RESTORATION",
-      "XMAS20_POH_POOL_REVITALISATION",
-      "XMAS20_POH_POOL_RECOVERY",
-      "XMAS20_POH_POOL_REGENERATION",
-      "POH_CRUDE_GARDEN_CENTREPIECE3",
-      "POH_CRUDE_GARDEN_CENTREPIECE4"
-    ],
-    "depthBias": 210
-  },
-  {
     "description": "Depth Bias Fix - Mounted Glory/Digsite/Xeric",
     "objectIds": [
       "POH_TROPHY_AMULETOFGLORY_4",
