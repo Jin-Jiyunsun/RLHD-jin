@@ -66388,7 +66388,14 @@
     "graphicsObjectIds": [
       "TEMPOROSS_FISHING_SPOTANIM"
     ],
-    "depthBias": 255
+    "depthBias": 255,
+    "colorOverrides": [
+      {
+        "colors": "h == 32 && s == 1 && a == 255 || a == 127 || a == 175 || a == 223 || a == 207 || a == 95|| a == 79|| a == 127|| a == 31 || a == 159",
+        "castShadows": false,
+        "baseMaterial": "TRANSPARENT"
+      }
+    ]
   },
   {
     "description": "Depth Bias Fix - Grotesque Guardians Lightning / Flames",
