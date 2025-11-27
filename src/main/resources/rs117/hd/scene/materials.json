@@ -2122,7 +2122,6 @@
   },
   {
     "name": "HD_BRICK",
-    "normalMap": "HD_BRICK_N",
     "displacementMap": "HD_BRICK_D",
     "displacementScale": 0.05,
     "specularStrength": 0.3,
@@ -2158,7 +2157,6 @@
   },
   {
     "name": "HD_BRICK_BROWN",
-    "normalMap": "HD_BRICK_BROWN_N",
     "displacementMap": "HD_BRICK_BROWN_D",
     "displacementScale": 0.05,
     "specularStrength": 0.35,
