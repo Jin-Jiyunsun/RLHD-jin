@@ -9426,6 +9426,32 @@
     "regions": [ 11811 ]
   },
   {
+    "name": "MINOTAURS_REST_CAVE",
+    "regions": [ 7828 ],
+    "hideOtherAreas": true
+  },
+  {
+    "name": "DEEPFIN_POINT_MINE_CAVE",
+    "regionBoxes": [
+      [ 7823, 8335 ]
+    ],
+    "hideOtherAreas": true
+  },
+  {
+    "name": "LAGUNA_KURASK_LAIR",
+    "regions": [
+      4751
+    ],
+    "hideOtherAreas": true
+  },
+  {
+    "name": "SUNBLEAK_ISLAND",
+    "aabbs": [
+      [2221, 2368, 2239, 2381],
+      [2178, 2306, 2238, 2367]
+    ]
+  },
+  {
     "name": "CATHERBY_DEPTH_BIAS_FIX",
     "aabbs": [
       [ 2809, 3448, 2809, 3449, 1 ]
