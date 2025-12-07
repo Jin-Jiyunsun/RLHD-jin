@@ -262,12 +262,12 @@
     "unlit": true,
     "flowMapStrength": 0.05,
     "flowMapDuration": [
-      12.0,
-      4.0
+      14.0,
+      9.0
     ],
     "scrollSpeed": [
       -0.0,
-      0.33333334
+      0.4
     ]
   },
   {
