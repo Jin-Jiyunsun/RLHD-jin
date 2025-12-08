@@ -1581,7 +1581,27 @@
       "YEW_TREE_DEAD_FULLYGROWN",
       "YEWTREE",
       "TREE_YEW_DEFAULT01",
-      "YEWTREE_NOOP",
+      "YEWTREE_NOOP"
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.8,
+    "materialOverrides": {
+      "LEAVES_SIDE": {
+        "windDisplacementMode": "VERTEX",
+        "textureMaterial": "SEASONLESS_LEAVES_SIDE"
+      },
+      "LEAVES_TOP": {
+        "windDisplacementMode": "VERTEX",
+        "textureMaterial": "SEASONLESS_LEAVES_TOP"
+      }
+    }
+  },
+  {
+    "description": "Warm Region - Objects - Tree - Yew - No Terrain Vertex Snapping",
+    "areas": [ "WARM_REGIONS" ],
+    "baseMaterial": "BARK",
+    "windDisplacementMode": "VERTEX_WITH_HEMISPHERE_BLEND",
+    "objectIds": [
       "YEWTREE_UPDATE2"
     ],
     "uvType": "BOX",
@@ -1660,7 +1680,26 @@
       "YEW_TREE_DEAD_FULLYGROWN",
       "YEWTREE",
       "TREE_YEW_DEFAULT01",
-      "YEWTREE_NOOP",
+      "YEWTREE_NOOP"
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.8,
+    "materialOverrides": {
+      "LEAVES_SIDE": {
+        "windDisplacementMode": "VERTEX",
+        "textureMaterial": "LEAVES_SIDE"
+      },
+      "LEAVES_TOP": {
+        "windDisplacementMode": "VERTEX",
+        "textureMaterial": "LEAVES_TOP"
+      }
+    }
+  },
+  {
+    "description": "Objects - Tree - Yew - No Terrain Vertex Snapping",
+    "baseMaterial": "BARK",
+    "windDisplacementMode": "VERTEX_WITH_HEMISPHERE_BLEND",
+    "objectIds": [
       "YEWTREE_UPDATE2"
     ],
     "uvType": "BOX",
@@ -69365,7 +69404,7 @@
     ],
     "colorOverrides": [
       {
-        "description": "Bias ladder slightly less so it doesnt overlap the rocky trim",
+        "description": "Bias ladder slightly less so it doesn't overlap the rocky trim",
         "colors": "h == 6",
         "baseMaterial": "WOOD_GRAIN_2_SMOOTH",
         "uvOrientationZ": 512,
