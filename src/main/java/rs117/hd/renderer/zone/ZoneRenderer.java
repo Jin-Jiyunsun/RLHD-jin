@@ -213,6 +213,7 @@ public class ZoneRenderer implements Renderer {
 
 	@Override
 	public void waitUntilIdle() {
+		sceneManager.completeAllStreaming();
 		glFinish();
 	}
 
