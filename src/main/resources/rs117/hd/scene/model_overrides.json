@@ -72004,7 +72004,7 @@
   },
   {
     "description": "Grimstone - Snowy Rocks",
-    "baseMaterial": "SNOW_4",
+    "baseMaterial": "SMOOTH_SNOW",
     "objectIds": [
       "ROCKSLIDE_SNOW01_LARGE02_LIGHTGREY",
       "ROCKSLIDE_SNOW01_LARGE01_LIGHTGREY",
@@ -72025,7 +72025,7 @@
   },
   {
     "description": "Relleka Hunter Iceberg",
-    "baseMaterial": "SNOW_2_SEMI_DARK",
+    "baseMaterial": "SMOOTH_SNOW_SEMI_DARK",
     "uvType": "BOX",
     "objectIds": [
       "HUNTING_POLAR_CAVEWALL_FACE1",
