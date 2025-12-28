@@ -65830,12 +65830,15 @@
       "SAILING_CHANCE_ENCOUNTER_LOST_GOODS_TEAK",
       "SAILING_CHANCE_ENCOUNTER_LOST_GOODS_MAHOGANY",
       "SAILING_CHANCE_ENCOUNTER_LOST_GOODS_CAMPHOR",
-      "SAILING_CHANCE_ENCOUNTER_LOST_GOODS_IRONWOOD"
+      "SAILING_CHANCE_ENCOUNTER_LOST_GOODS_IRONWOOD",
+      "DUCK",
+      "DUCK_FEMALE",
+      "DUCK_UPDATE_DUCKLINGS"
     ],
     "colorOverrides": [
       {
         "description": "Fake Ripples",
-        "colors": "a < 255 || h == 37 && l == 71",
+        "colors": "a < 255 || h == 37 && l == 71 || h == 42",
         "baseMaterial": "TRANSPARENT",
         "isWaterEffect": true
       }
