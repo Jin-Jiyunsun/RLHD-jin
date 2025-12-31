@@ -44175,7 +44175,9 @@
     "duration": 0,
     "range": 20,
     "objectIds": [
-      "TEMPLEFIRE_ALTAR",
+      "TEMPLEFIRE_ALTAR"
+    ],
+    "graphicsObjectIds": [
       "TEMPLE_PYRE_FIRE"
     ]
   }
