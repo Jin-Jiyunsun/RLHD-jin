@@ -410,6 +410,7 @@ public class HdPlugin extends Plugin {
 	public boolean enableDetailedTimers;
 	public boolean enableFreezeFrame;
 	public boolean orthographicProjection;
+	public boolean freezeCulling;
 
 	@Getter
 	private boolean isActive;
