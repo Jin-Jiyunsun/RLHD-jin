@@ -11065,9 +11065,10 @@
     ]
   },
   {
-    "name": "CATHERBY_DEPTH_BIAS_FIX",
+    "name": "TIMBER_WALL_DEPTH_BIAS_FIX",
     "aabbs": [
-      [ 2821, 3443 ]
+      [ 2821, 3443 ],
+      [ 2642, 3320 ]
     ]
   },
   {
