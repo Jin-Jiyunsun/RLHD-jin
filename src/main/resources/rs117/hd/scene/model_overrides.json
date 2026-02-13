@@ -67096,8 +67096,9 @@
       {
         "description": "Water",
         "colors": "h >= 30",
-        "baseMaterial": "GRUNGE_3",
-        "uvType": "BOX"
+        "baseMaterial": "GRAY_75",
+        "upwardsNormals": true,
+        "receiveShadows": false
       }
     ]
   },
