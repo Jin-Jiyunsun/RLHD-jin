@@ -17228,6 +17228,33 @@
     "uvType": "VANILLA"
   },
   {
+    "description": "Wilderness - Graveyard of Shadows - Vet'ion Sign",
+    "baseMaterial": "WOOD_GRAIN_3",
+    "objectIds": [
+      "WILD_VETION_SIGN01"
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.65,
+    "flatNormals": true,
+    "uvOrientation": 512,
+    "colorOverrides": [
+      {
+        "colors": "h == 5 && s == 0",
+        "baseMaterial": "GRAY_65",
+        "depthBias": 50
+      },
+      {
+        "colors": "h == 0 && s == 1",
+        "baseMaterial": "GRAY_65",
+        "depthBias": 70
+      },
+      {
+        "colors": "h == 0",
+        "baseMaterial": "METALLIC_1_LIGHT"
+      }
+    ]
+  },
+  {
     "description": "Wilderness - Artio/Callisto Lair Entrance",
     "baseMaterial": "STONE_NORMALED",
     "objectIds": [
@@ -17658,15 +17685,32 @@
       "WILD_SLAYER_CAVE_SOUTH_EXIT",
       "WILD_SLAYER_CAVE_NORTH_EXIT",
       "WILD_SLAYER_CAVE_LEDGE",
-      "WILDERNESS_SLAYER_CAVE_CREVICE"
+      "WILDERNESS_SLAYER_CAVE_CREVICE",
+      "WILD_CAVE_EXIT_MID",
+      "WILD_CAVE_EXIT_HIGH",
+      "WILD_CAVE_AGILITY_JUMP_START_LEFT",
+      "WILD_CAVE_AGILITY_FALLOFF_EDGE_RIGHT",
+      "WILD_CAVE_AGILITY_JUMP_START_RIGHT",
+      "WILD_CAVE_AGILITY_FALLOFF_STRAIGHT",
+      "WILD_CAVE_AGILITY_FALLOFF_EDGE_LEFT",
+      "WILD_CAVE_AGILITY_STAND_TILE",
+      "WILD_CAVE_AGILITY_JUMP_START_MIDDLE"
     ],
     "uvType": "BOX",
     "colorOverrides": [
       {
-        "colors": "hsl == 2",
+        "colors": "l == 2 && a == 255",
         "baseMaterial": "PURE_BLACK"
       }
     ]
+  },
+  {
+    "description": "Wilderness - Rev Cave - Agility Rock",
+    "baseMaterial": "ROCK_3",
+    "objectIds": [
+      "WILD_CAVE_AGILITY_JUMP"
+    ],
+    "uvType": "BOX"
   },
   {
     "description": "Wilderness - Slayer Cave - Small Rocks",
@@ -17677,14 +17721,15 @@
       "SLICE_DUGUPSOIL_07",
       "WILD_VETION_RUBBLE01",
       "WILD_VETION_ROCKS01",
-      "WILD_VETION_ROCKS02"
+      "WILD_VETION_ROCKS02",
+      "WILD_CAVE_RUBBLE",
+      "WILD_CAVE_EXIT_LOW"
     ],
     "uvType": "BOX",
     "uvScale": 0.5
   },
   {
     "description": "Wilderness - Slayer Cave - Wall Filler",
-    "areas": [ "Wilderness Slayer Cave" ],
     "baseMaterial": "PURE_BLACK",
     "objectIds": [
       "WILD_CAVETOP"
