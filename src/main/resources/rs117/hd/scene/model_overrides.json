@@ -28920,11 +28920,13 @@
         "colors": "s == 0",
         "baseMaterial": "METALLIC_1_LIGHT",
         "uvType": "BOX",
+        "uvScale": 0.3,
         "uvOrientation": 192
       }
     ],
     "objectIds": [
       "TRAPDOOR",
+      "TRAPDOOR_NONACTIVE",
       "MOURNING_HIDEOUT_TRAP_DOOR_BATTLE"
     ]
   },
