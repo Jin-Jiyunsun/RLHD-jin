@@ -17958,9 +17958,10 @@
   },
   {
     "description": "Chaos Altar",
-    "baseMaterial": "SMOOTH_STONE",
+    "baseMaterial": "STONE_NORMALED",
     "objectIds": [
-      "CHAOSALTAR"
+      "CHAOSALTAR",
+      "THRANTAXALTAR"
     ],
     "uvType": "BOX",
     "colorOverrides": [
@@ -17972,7 +17973,7 @@
       },
       {
         "colors": "h == 8 || h == 9",
-        "baseMaterial": "METALLIC_1_VERY_LIGHT"
+        "baseMaterial": "METALLIC_1_LIGHT"
       }
     ]
   },
