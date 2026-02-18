@@ -35628,8 +35628,7 @@
   },
   {
     "description": "GNOME_LAMP",
-    "height": 130,
-    "alignment": "BACK",
+    "offset": [ -60, 120, 0 ],
     "radius": 400,
     "strength": 7,
     "color": [
