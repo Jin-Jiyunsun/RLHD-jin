@@ -29273,7 +29273,7 @@
   },
   {
     "description": "Ore - Tin - Rock",
-    "baseMaterial": "ROCK_3_ORE",
+    "baseMaterial": "GEM_STONE",
     "objectIds": [
       "NEWBIETINROCK",
       "TINROCK1",
@@ -29284,7 +29284,7 @@
   },
   {
     "description": "Ore - Copper - Rock",
-    "baseMaterial": "ROCK_3_ORE",
+    "baseMaterial": "GEM_STONE",
     "objectIds": [
       "NEWBIECOPPERROCK",
       "COPPERROCK1",
