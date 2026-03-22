@@ -5455,7 +5455,7 @@
   },
   {
     "description": "APE_ATOLL_DUNGEON_WALLS",
-    "baseMaterial": "GRUNGE_1",
+    "baseMaterial": "DIRT_1_LIGHT",
     "objectIds": [
       "CAVEWALL_FACE1_NOT_LOW_DETAIL"
     ]
@@ -8023,7 +8023,7 @@
   {
     "description": "Hide weird wall piece above other walls in Canifis pub basement",
     "objectIds": [ "CAVEWALL_FACE1" ],
-    "baseMaterial": "GRUNGE_1",
+    "baseMaterial": "DIRT_1",
     "hideInAreas": [
       [ 3469, 9845 ]
     ],
@@ -8164,7 +8164,8 @@
   },
   {
     "description": "ROUNDED_CAVE_WALLS_TOP",
-    "baseMaterial": "GRUNGE_1",
+    "baseMaterial": "DIRT_1",
+    "uvType": "BOX",
     "objectIds": [
       "CAVEWALL_TOP"
     ]
@@ -11027,7 +11028,7 @@
   },
   {
     "description": "Motherlode Mine Walls",
-    "baseMaterial": "DIRT_2",
+    "baseMaterial": "LAVA",
     "objectIds": [
       "MOTHERLODE_WALL",
       "MOTHERLODE_SUPPORT_LEFT",
@@ -11054,7 +11055,7 @@
       "AMETHYST_MINES"
     ],
     "description": "Amethyst Mine Walls",
-    "baseMaterial": "GRUNGE_1_LIGHT",
+    "baseMaterial": "DIRT_1_LIGHT",
     "objectIds": [
       "MGUILD_WALL",
       "MGUILD_WALL_LEFT",
@@ -11064,7 +11065,7 @@
   },
   {
     "description": "Motherlode Mine Walls Lighten",
-    "baseMaterial": "DIRT_2_LIGHT",
+    "baseMaterial": "DIRT_1_LIGHT",
     "areas": [ "Motherlode Mine Dark Wall Fix" ],
     "objectIds": [
       "MOTHERLODE_WALL",
@@ -11111,7 +11112,7 @@
   },
   {
     "description": "Amathyst Ore Walls - Full",
-    "baseMaterial": "GRUNGE_1_LIGHT",
+    "baseMaterial": "DIRT_1_LIGHT",
     "objectIds": [
       "AMETHYSTROCK1",
       "AMETHYSTROCK2"
@@ -11126,7 +11127,7 @@
   },
   {
     "description": "Amathyst Ore Walls - Empty",
-    "baseMaterial": "GRUNGE_1_LIGHT",
+    "baseMaterial": "DIRT_1",
     "objectIds": [
       "ROCKS3",
       "AMETHYSTROCK_EMPTY"
