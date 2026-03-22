@@ -8021,15 +8021,6 @@
     "uvOrientation": 400
   },
   {
-    "description": "Hide weird wall piece above other walls in Canifis pub basement",
-    "objectIds": [ "CAVEWALL_FACE1" ],
-    "baseMaterial": "DIRT_1",
-    "hideInAreas": [
-      [ 3469, 9845 ]
-    ],
-    "uvType": "BOX"
-  },
-  {
     "description": "Obors lair exit",
     "baseMaterial": "GRUNGE_1",
     "uvType": "BOX",
@@ -8161,14 +8152,6 @@
     "uvType": "BOX",
     "uvScale": 0.75,
     "uvOrientation": 100
-  },
-  {
-    "description": "ROUNDED_CAVE_WALLS_TOP",
-    "baseMaterial": "DIRT_1",
-    "uvType": "BOX",
-    "objectIds": [
-      "CAVEWALL_TOP"
-    ]
   },
   {
     "description": "ROUNDED_CAVE_WALLS_TOP_TRANSITIONS",
@@ -8608,7 +8591,6 @@
     "baseMaterial": "GRUNGE_1",
     "objectIds": [
       "SLAYER_DUNGEON_ENTRANCE",
-      "TROLLROMANCE_STRONGHOLD_EXIT_TUNNEL",
       "ROUTE_CAVEWALLTUNNEL",
       "MDAUGHTER_CAVEEXIT",
       "DWARF_CAVEWALL_TUNNEL",
@@ -79981,6 +79963,23 @@
         "uvType": "BOX",
         "uvScale": 0.3
       }
+    ]
+  },
+  {
+    "description": "Hide weird wall piece above other walls in Canifis pub basement",
+    "objectIds": [ "CAVEWALL_FACE1" ],
+    "baseMaterial": "DIRT_1",
+    "hideInAreas": [
+      [ 3469, 9845 ]
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "ROUNDED_CAVE_WALLS_TOP",
+    "baseMaterial": "DIRT_1",
+    "uvType": "BOX",
+    "objectIds": [
+      "CAVEWALL_TOP"
     ]
   }
 ]
