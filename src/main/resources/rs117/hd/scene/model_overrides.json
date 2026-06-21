@@ -21159,7 +21159,7 @@
   },
   {
     "description": "Wilderness - Chaos Fanatic Rift",
-    "baseMaterial": "DIRT_1_VERY_DARK",
+    "baseMaterial": "DIRT_1",
     "uvType": "BOX",
     "objectIds": [
       "CHAOS_FANATIC_RIFT"
@@ -21174,7 +21174,7 @@
   {
     "description": "Wilderness - Chaos Fanatic Rift - Lighter",
     "areas": [ "CHAOS_FANATIC_RIFT_LIGHTER" ],
-    "baseMaterial": "DIRT_1_DARK",
+    "baseMaterial": "DIRT_1",
     "uvType": "BOX",
     "objectIds": [
       "CHAOS_FANATIC_RIFT"
