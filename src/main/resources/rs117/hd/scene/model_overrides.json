@@ -81365,6 +81365,23 @@
     ]
   },
   {
+    "description": "Hide sailing charting npcs and objects",
+    "areas": [ "ALL" ],
+    "hide": true,
+    "objectIds": [
+      "SAILING_CHARTING_HINT_MARKER_SPYGLASS",
+      "SAILING_CHARTING_HINT_MARKER_DUCK"
+    ],
+    "npcIds": [
+      "SAILING_CHARTING_MERMAID_GUIDE_1",
+      "SAILING_CHARTING_MERMAID_GUIDE_3",
+      "SAILING_CHARTING_MERMAID_GUIDE_2",
+      "SAILING_CHARTING_MERMAID_GUIDE_4",
+      "SAILING_CHARTING_MERMAID_GUIDE_5",
+      "SAILING_CHARTING_WEATHER_TROLL"
+    ]
+  },
+  {
     "description": "Sailing - Salvaging Station",
     "baseMaterial": "METALLIC_1_VERY_LIGHT_SMOOTH",
     "objectIds": [
