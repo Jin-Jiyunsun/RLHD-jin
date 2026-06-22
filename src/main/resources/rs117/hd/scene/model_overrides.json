@@ -9183,7 +9183,7 @@
   },
   {
     "description": "SLAYER_DUNGEON_EXIT",
-    "baseMaterial": "ROCK_3",
+    "baseMaterial": "ROCK_3_VERY_DARK",
     "undoVanillaShading": false,
     "objectIds": [
       "SLAYER_DUNGEON_EXIT"
