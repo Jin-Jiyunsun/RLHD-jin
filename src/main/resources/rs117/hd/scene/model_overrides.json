@@ -9184,6 +9184,7 @@
   {
     "description": "SLAYER_DUNGEON_EXIT",
     "baseMaterial": "ROCK_3",
+    "undoVanillaShading": false,
     "objectIds": [
       "SLAYER_DUNGEON_EXIT"
     ],
@@ -9192,10 +9193,12 @@
     "uvOrientation": 256,
     "colorOverrides": [
       {
+        "colors": "s == 0 && l < 65",
+        "baseMaterial": "GRAY_75"
+      },
+      {
         "colors": "s == 0",
-        "baseMaterial": "GRAY_55",
-        "uvType": "BOX",
-        "uvOrientation": 157
+        "baseMaterial": "GRAY_65"
       }
     ]
   },
