@@ -26356,8 +26356,7 @@
   },
   {
     "description": "TUNNEL_EXIT",
-    "height": 50,
-    "alignment": "FRONT",
+    "offset": [ 0, 70, -40 ],
     "radius": 800,
     "strength": 12.5,
     "color": [

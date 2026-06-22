@@ -9165,7 +9165,6 @@
     "description": "Pale rock walls",
     "baseMaterial": "ROCK_3",
     "objectIds": [
-      "SLAYER_DUNGEON_EXIT",
       "DEATH_TROLLROCKSUPPLY",
       "DEATH_MOUNTAIN_CAVEWALL_FACE1",
       "DEATH_MOUNTAINCAVEWALL_TOP_HIGHER",
@@ -9181,6 +9180,24 @@
     "uvType": "BOX",
     "uvScale": 0.7,
     "uvOrientation": 256
+  },
+  {
+    "description": "SLAYER_DUNGEON_EXIT",
+    "baseMaterial": "ROCK_3",
+    "objectIds": [
+      "SLAYER_DUNGEON_EXIT"
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.7,
+    "uvOrientation": 256,
+    "colorOverrides": [
+      {
+        "colors": "s == 0",
+        "baseMaterial": "GRAY_55",
+        "uvType": "BOX",
+        "uvOrientation": 157
+      }
+    ]
   },
   {
     "description": "Pale rock walls - Window and Door",
