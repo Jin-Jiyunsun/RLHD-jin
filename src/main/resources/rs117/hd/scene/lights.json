@@ -21740,6 +21740,7 @@
   },
   {
     "description": "WALL_TORCH_MID",
+    "areas": [ "LIGHT_TEST" ],
     "offset": [ 0, 185, 0 ],
     "radius": 250,
     "strength": 7.5,

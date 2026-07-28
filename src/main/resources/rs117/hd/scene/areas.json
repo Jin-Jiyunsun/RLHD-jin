@@ -973,6 +973,12 @@
     ]
   },
   {
+    "name": "LIGHT_TEST",
+    "aabbs": [
+      [ 3215, 9617 ]
+    ]
+  },
+  {
     "name": "DRAYNOR_MANOR_FOREST",
     "aabbs": [
       [ 3076, 3315, 3119, 3393 ],
