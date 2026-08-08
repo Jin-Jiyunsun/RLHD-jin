@@ -1031,6 +1031,18 @@
     ]
   },
   {
+    "description": "FIX_CASTLE_DRAKAN_WALL_ROOF_REMOVAL",
+    "areas": [ "FIX_CASTLE_DRAKAN_WALL_ROOF_REMOVAL" ],
+    "hide": true,
+    "objectIds": [
+      "WALLKIT_DRAKAN01_UPPER01_DARKMEYER",
+      "WALLKIT_DRAKAN01_WINDOW02_DARKMEYER",
+      "WALLKIT_DRAKAN01_WALLTOP01",
+      "CASTLE_DRAKAN_MORY_DOOR_NOOP",
+      "CASTLE_DRAKAN_MORY_DOOR_M_NOOP"
+    ]
+  },
+  {
     "description": "Unicorn Overbrightness and vanilla shadow removal Fix",
     "hideVanillaShadows": true,
     "baseMaterial": "GRAY_65",

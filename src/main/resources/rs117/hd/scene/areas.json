@@ -7,6 +7,18 @@
     "hideOtherAreas": true
   },
   {
+    "name": "FIX_CASTLE_DRAKAN_WALL_ROOF_REMOVAL",
+    "aabbs": [
+      [ 3168, 7704, 3174, 7718, 1 ]
+    ]
+  },
+  {
+    "name": "FIX_CASTLE_DRAKAN_WALL_ROOF_REMOVAL_TILE",
+    "aabbs": [
+      [ 3169, 7705, 3169, 7717 ]
+    ]
+  },
+  {
     "name": "VERTICAL_DIRT_FIX_NEAR_FALADOR",
     "aabbs": [
       [ 2941, 3402, 3072, 3548 ]
