@@ -99914,10 +99914,11 @@
         "description": "Spike",
         "colors": "h == 0 && s > 3",
         "baseMaterial": "WOOD_GRAIN_3",
-        "shiftLightness": 6,
+        "shiftLightness": 17,
         "uvType": "BOX",
         "uvScale": 0.45,
-        "uvOrientation": 512
+        "uvOrientation": 512,
+        "undoVanillaShading": false
       }
     ]
   },
@@ -100118,7 +100119,7 @@
         "description": "Spike",
         "colors": "h == 0 && s > 2",
         "baseMaterial": "WOOD_GRAIN_3",
-        "shiftSaturation": -1,
+        "shiftLightness": 17,
         "uvType": "BOX",
         "uvScale": 0.45,
         "uvOrientation": 512,
@@ -100716,9 +100717,10 @@
         "description": "Planks",
         "colors": "h == 0 && s > 0 && s < 7",
         "baseMaterial": "WOOD_GRAIN_3",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.58,
-        "shiftLightness": 9
+        "shiftLightness": 11
       }
     ],
     "objectIds": [
@@ -100786,7 +100788,7 @@
         "uvType": "BOX",
         "uvScale": 0.25,
         "uvOrientation": 187,
-        "shiftLightness": 10
+        "shiftLightness": 13
       }
     ],
     "objectIds": [
