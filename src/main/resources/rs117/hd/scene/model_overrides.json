@@ -99511,6 +99511,13 @@
         "shiftLightness": 3,
         "castShadows": false,
         "inheritTileColorType": "UNDERLAY"
+      },
+      {
+        "colors": "h == 7",
+        "baseMaterial": "BONE",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "shiftLightness": -3
       }
     ]
   },
