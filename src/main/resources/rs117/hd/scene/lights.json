@@ -34378,9 +34378,9 @@
   },
   {
     "description": "Wyrm Slithering Light",
-    "offset": [ 0, 0, 0 ],
-    "radius": 170,
-    "strength": 25,
+    "offset": [ 0, 25, 0 ],
+    "radius": 270,
+    "strength": 7.5,
     "color": [
       0,
       200,
@@ -34391,13 +34391,13 @@
     "range": 70,
     "npcIds": [ "WYRM_DARK" ],
     "fadeInDuration": 100,
-    "fadeOutDuration": 100
+    "fadeOutDuration": 500
   },
   {
     "description": "Shadow Wyrm Slithering Light",
-    "offset": [ 0, 0, 0 ],
+    "offset": [ 0, 30, 0 ],
     "radius": 270,
-    "strength": 35,
+    "strength": 25,
     "color": [
       0,
       50,
@@ -34410,11 +34410,10 @@
     "fadeInDuration": 100,
     "fadeOutDuration": 100
   },
-
   {
-    "description": "Wyrm Magic Attack",
+    "description": "Wyrm Magic Attack - Projectile",
     "offset": [ 0, 0, 0 ],
-    "radius": 250,
+    "radius": 200,
     "strength": 20,
     "color": [
       0,
@@ -34425,6 +34424,26 @@
     "duration": 1,
     "range": 60,
     "projectileIds": [ "WYRM_RANGE_PROJ" ],
+    "fadeInDuration": 300,
+    "fadeOutDuration": 300
+  },
+  {
+    "description": "Wyrm Magic Attack - Impact",
+    "offset": [ 0, 50, 0 ],
+    "radius": 150,
+    "strength": 20,
+    "color": [
+      0,
+      200,
+      255
+    ],
+    "type": "FLICKER",
+    "duration": 1,
+    "range": 60,
+    "waitForAnimation": true,
+    "fixedDespawnTime": true,
+    "despawnDelay": 700,
+    "graphicsObjectIds": [ "WYRM_RANGE_IMPACT" ],
     "fadeInDuration": 300,
     "fadeOutDuration": 300
   },
