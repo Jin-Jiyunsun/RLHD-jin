@@ -17172,7 +17172,9 @@
       "AREA_SANGUINE_MINE_DUGUPSOIL_04",
       "AREA_SANGUINE_MINE_DUGUPSOIL_05",
       "AREA_SANGUINE_MINE_DUGUPSOIL_06",
-      "AREA_SANGUINE_MINE_DUGUPSOIL_07"
+      "AREA_SANGUINE_MINE_DUGUPSOIL_07",
+      "GHORROCK_DUGUPSOIL_1",
+      "GHORROCK_DUGUPSOIL_2"
     ],
     "uvType": "BOX",
     "uvScale": 0.45
@@ -89868,6 +89870,53 @@
     "objectIds": [
       "BCS_TOMB_WALLTOP",
       "CAVEKIT_SNOW03_DEFAULT01_DARK02_WALLTOP"
+    ]
+  },
+  {
+    "description": "Ynysdail Cavern - Walls",
+    "baseMaterial": "SMOOTH_STONE",
+    "shiftLightness": 1,
+    "uvType": "BOX",
+    "uvOrientation": 200,
+    "undoVanillaShading": false,
+    "objectIds": [
+      "YNYSDAIL_CAVE_WALL_LOWER"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "l == 2",
+        "baseMaterial": "PURE_BLACK"
+      }
+    ]
+  },
+  {
+    "description": "Ynysdail Cavern - Stalgtites",
+    "baseMaterial": "STONE_NORMALED",
+    "maxLightness": 15,
+    "uvType": "BOX",
+    "uvOrientation": 200,
+    "objectIds": [
+      "YNYSDAIL_STALAGTITE_02",
+      "YNYSDAIL_STALAGTITE_01"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "l == 2",
+        "baseMaterial": "PURE_BLACK"
+      }
+    ]
+  },
+  {
+    "description": "Ynysdail Cavern - Water Drops",
+    "areas": [ "YNYSDAIL_CAVERN" ],
+    "shiftAlpha": -150,
+    "minAlpha": 30,
+    "depthBias": 1,
+    "setSaturation": 4,
+    "shiftLightness": -27,
+    "setHue": 37,
+    "objectIds": [
+      "MAH3_SEWER_WATER_DROPS"
     ]
   },
   {

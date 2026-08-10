@@ -10999,6 +10999,22 @@
     }
   },
   {
+    "name": "YNYSDAIL_CAVERN_FLOOR",
+    "area": "YNYSDAIL_CAVERN",
+    "underlayIds": [ 232, 233 ],
+    "groundMaterial": "PACKED_EARTH",
+    "minLightness": 8,
+    "maxLightness": 20
+  },
+  {
+    "name": "YNYSDAIL_CAVERN_WATER",
+    "area": "YNYSDAIL_CAVERN",
+    "overlayIds": [
+      96
+    ],
+    "waterType": "CAVE_WATER_MURKY"
+  },
+  {
     "name": "Ferox - Fix Path at Deaths Office",
     "area": "Ferox - Fix Path at Deaths Office",
     "underlayIds": [ 50 ],

@@ -12246,6 +12246,11 @@
     ]
   },
   {
+    "name": "YNYSDAIL_CAVERN",
+    "regionBoxes": [ [ 9113, 9114 ] ],
+    "hideOtherAreas": true
+  },
+  {
     "name": "SEWER_ENTRANCE_FIXES",
     "aabbs": [
       [ 2632, 3294 ],
