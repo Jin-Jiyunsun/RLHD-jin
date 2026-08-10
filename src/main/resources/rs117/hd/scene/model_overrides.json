@@ -12240,7 +12240,8 @@
       "DEEPFIN_CAVE_ENTRANCE",
       "WILD_FALLOFF_CAVEENTRANCE",
       "TLATI_DRAGON_NEST_CAVE_ENTRY",
-      "RANTZOGRECAVEENTRANCE"
+      "RANTZOGRECAVEENTRANCE",
+      "YNYSDAIL_CAVE_ENTRANCE"
     ],
     "uvType": "BOX",
     "uvScale": 0.5
@@ -89886,6 +89887,23 @@
       {
         "colors": "l == 2",
         "baseMaterial": "PURE_BLACK"
+      }
+    ]
+  },
+  {
+    "description": "Ynysdail Cavern - Walls",
+    "baseMaterial": "SMOOTH_STONE",
+    "shiftLightness": 1,
+    "uvType": "BOX",
+    "uvOrientation": 200,
+    "undoVanillaShading": false,
+    "objectIds": [
+      "YNYSDAIL_CAVE_EXIT"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 37 && l > 50",
+        "baseMaterial": "GRAY_200"
       }
     ]
   },
