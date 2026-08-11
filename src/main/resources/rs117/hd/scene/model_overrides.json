@@ -89904,7 +89904,20 @@
       {
         "colors": "h == 37 && l > 50",
         "baseMaterial": "GRAY_200"
+      },
+      {
+        "colors": "l == 2",
+        "baseMaterial": "BLACK"
       }
+    ]
+  },
+  {
+    "description": "Ynysdail Cavern - Disable Shadows on Wall Filler",
+    "areas": [ "YNYSDAIL_CAVERN" ],
+    "baseMaterial": "BLACK",
+    "castShadows": false,
+    "objectIds": [
+      "CAVEKIT_ROCK01_DEFAULT05_WALLTOP"
     ]
   },
   {
