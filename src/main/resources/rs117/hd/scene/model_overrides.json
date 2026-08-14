@@ -103023,7 +103023,8 @@
     "uvOrientationY": 512,
     "uvOrientationZ": 560,
     "objectIds": [
-      "WYRMSCRAIG_CATHEDRAL_PEW_BROKEN_CLIMB"
+      "WYRMSCRAIG_CATHEDRAL_PEW_BROKEN_CLIMB",
+      "WYRMSCRAIG_CATHEDRAL_PEW_BROKEN_EXIT"
     ],
     "colorOverrides": [
       {
@@ -103110,6 +103111,30 @@
         "baseMaterial": "METALLIC_1_SEMIGLOSS",
         "uvType": "BOX",
         "uvScale": 0.1
+      }
+    ]
+  },
+  {
+    "description": "Wyrmscraig - Mad Angel - Hide Vanilla Shadow",
+    "npcIds": [
+      "MAD_ANGEL",
+      "MAD_ANGEL_INITIAL",
+      "MAD_ANGEL_ANIM",
+      "MAD_ANGEL_DEAD",
+      "MAD_ANGEL_QUEST",
+      "MAD_ANGEL_INITIAL_QUEST",
+      "MAD_ANGEL_ANIM_QUEST",
+      "MAD_ANGEL_DEAD_QUEST",
+      "MAD_ANGEL_CATHEDRAL",
+      "MAD_ANGEL_CATHEDRAL_VIS",
+      "MAD_ANGEL_CATHEDRAL_VIS_QUEST"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Hide vanilla shadow",
+        "colors": "h == 0 && a < 255",
+        "baseMaterial": "NONE",
+        "hide": true
       }
     ]
   },
