@@ -103166,6 +103166,13 @@
     ]
   },
   {
+    "description": "Wyrmscraig - Mad Angel - Darken Light Tennis Shadow Slightly",
+    "baseMaterial": "GRAY_125",
+    "graphicsObjectIds": [
+      "GARGBOSS_DEBRIS_SHADOW_150"
+    ]
+  },
+  {
     "description": "Forthos - Metallic - Couldron - DYNAMIC - ANIMATED",
     "baseMaterial": "METALLIC_1",
     "uvType": "BOX",
