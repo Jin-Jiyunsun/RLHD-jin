@@ -103167,10 +103167,17 @@
   },
   {
     "description": "Wyrmscraig - Mad Angel - Darken Light Tennis Shadow Slightly",
+    "areas": [ "WYRMSCRAIG" ],
     "baseMaterial": "GRAY_125",
     "graphicsObjectIds": [
       "GARGBOSS_DEBRIS_SHADOW_150"
     ]
+  },
+  {
+    "description": "Wyrmscraig - Mad Angel - Darken Light Tennis Shadow Slightly",
+    "areas": [ "WYRMSCRAIG" ],
+    "shiftLightness": 3,
+    "objectIds": [ "WYRMSCRAIG_CATHEDRAL_LIGHTRAY01" ]
   },
   {
     "description": "Forthos - Metallic - Couldron - DYNAMIC - ANIMATED",
