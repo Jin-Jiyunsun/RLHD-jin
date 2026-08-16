@@ -664,10 +664,6 @@
       "KAHLITH_ALCHEMICAL_HUNTER",
       "HYDRA",
       "SULPHUR_LIZARD",
-      "HYDRABOSS",
-      "HYDRABOSS_P1_TRANSITION",
-      "HYDRABOSS_3",
-      "HYDRABOSS_2",
       "SLAYER_MASTER_8",
       "KEBOS_SPEAR_SALESMEN",
       "SLAYER_LARRAN",
@@ -90430,7 +90426,8 @@
       "CRANDOR_LAB_CHEST_OPEN",
       "UNGAEL_LAB_CHEST_OPEN",
       "UNGAEL_LAB_CHEST_CLOSED",
-      "UNGAEL_LAB_CHEST_OPEN_QUEST"
+      "UNGAEL_LAB_CHEST_OPEN_QUEST",
+      "KARUULM_CRATE_NOTES_7"
     ]
   },
   {
@@ -103240,6 +103237,128 @@
     ],
     "objectIds": [
       "HOSDUN_TEMPLE_SYMBOL"
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Floor",
+    "baseMaterial": "METALLIC_1_LIGHT_SEMIGLOSS",
+    "uvType": "MODEL_XZ",
+    "uvScale": 0.2,
+    "objectIds": [
+      "CRANDOR_LAB_FLOOR_MIDDLE_CRACKED2",
+      "CRANDOR_LAB_FLOOR_MIDDLE",
+      "CRANDOR_LAB_FLOOR_MIDDLE_CRACKED4",
+      "CRANDOR_LAB_FLOOR_EDGE_INSIDE",
+      "CRANDOR_LAB_FLOOR_EDGE_OUTER",
+      "CRANDOR_LAB_FLOOR_EDGE",
+      "CRANDOR_LAB_FLOOR_MIDDLE_CRACKED1",
+      "CRANDOR_LAB_FLOOR_MIDDLE_CRACKED3",
+      "CRANDOR_LAB_FLOOR_CORNER",
+      "CRANDOR_LAB_FLOOR_MIDDLE_CRACKED5"
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Pipe",
+    "baseMaterial": "WATER_FOUNTAIN_FLAT",
+    "uvType": "BOX",
+    "uvScale": 0.6,
+    "uvOrientation": 512,
+    "shiftLightness": 10,
+    "upwardsNormals": true,
+    "objectIds": [
+      "KARUULM_HYDRA_ROOM_FLOOR_LONG_PIPE_RED",
+      "KARUULM_HYDRA_ROOM_FLOOR_LONG_PIPE_GREEN",
+      "KARUULM_HYDRA_ROOM_FLOOR_LONG_PIPE_BLUE"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0 && s == 0 || h == 0 && s == 2",
+        "baseMaterial": "METALLIC_1_LIGHT_GLOSS",
+        "uvType": "BOX",
+        "uvScale": 0.2
+      }
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Wall & Pipe",
+    "upwardsNormals": true,
+    "shiftLightness": 6,
+    "objectIds": [
+      "KARUULM_HYDRA_ROOM_WALL_PIPE_GREEN",
+      "KARUULM_HYDRA_ROOM_WALL_PIPE_RED",
+      "KARUULM_HYDRA_ROOM_WALL_PIPE_BLUE",
+      "KARUULM_HYDRA_ROOM_WALL"
+    ],
+    "colorOverrides": [
+      {
+        "description": "LAVA",
+        "colors": "h == 10",
+        "baseMaterial": "NONE"
+      },
+      {
+        "colors": "h == 0 && s < 3",
+        "baseMaterial": "METALLIC_1",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "uvOrientation": 512
+      }
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Vats",
+    "upwardsNormals": true,
+    "shiftLightness": 6,
+    "objectIds": [
+      "KARUULM_HYDRA_ROOM_FLOOR_VIAL_LARGE_GREEN",
+      "KARUULM_HYDRA_ROOM_FLOOR_VIAL_LARGE_BLUE",
+      "KARUULM_HYDRA_ROOM_FLOOR_VIAL_LARGE_RED"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0 && s == 0 || h == 0 && s == 1",
+        "baseMaterial": "METALLIC_1_LIGHT_LOW_GLOSS",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "uvOrientation": 512
+      }
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Vent",
+    "objectIds": [
+      "KARUULM_HYDRA_ROOM_FLOOR_VENT_MIDDLE_GREEN",
+      "KARUULM_HYDRA_ROOM_FLOOR_VENT_MIDDLE_BLUE",
+      "KARUULM_HYDRA_ROOM_FLOOR_VENT_MIDDLE_RED",
+      "KARUULM_HYDRA_ROOM_FLOOR_VENT_SIDE",
+      "KARUULM_HYDRA_ROOM_FLOOR_VENT_CORNER"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 34 && l > 30 || h == 18 || s == 7",
+        "baseMaterial": "WATER_FOUNTAIN_FLAT",
+        "uvType": "BOX",
+        "shiftLightness": 20
+      },
+      {
+        "colors": "h == 0 && s == 0",
+        "baseMaterial": "METALLIC_1_LIGHT_GLOSS",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "uvOrientation": 512
+      }
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Vent",
+    "npcIds": [
+      "HYDRABOSS"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0 && a < 255",
+        "baseMaterial": "NONE",
+        "hide": true
+      }
     ]
   }
 ]
