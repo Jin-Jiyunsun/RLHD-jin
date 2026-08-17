@@ -5484,7 +5484,7 @@
     ]
   },
   {
-    "description": "Falador & Lumbrdige - Wooden - Metallic - Shield & Axe Shop sign",
+    "description": "Falador & Lumbridge - Wooden - Metallic - Shield & Axe Shop sign",
     "baseMaterial": "WOOD_GRAIN_3",
     "uvOrientationY": 512,
     "uvOrientationZ": 512,
@@ -16924,8 +16924,7 @@
       "LAGUNA_DUGUPSOIL03_SAND01",
       "CLIMBINGCAVEROCKS1",
       "GREAT_CONCH_CLIFF_SHORTCUT_SOUTHEAST_BOTTOM",
-      "GREAT_CONCH_CLIFF_SHORTCUT_SOUTHEAST_TOP",
-      "VOROS_ROCKSLIDE03"
+      "GREAT_CONCH_CLIFF_SHORTCUT_SOUTHEAST_TOP"
     ],
     "uvType": "BOX",
     "uvScale": 0.5
@@ -98406,6 +98405,7 @@
     "baseMaterial": "WOOD_GRAIN_3",
     "uvType": "BOX",
     "uvScale": 0.6,
+    "undoVanillaShading": false,
     "shiftLightness": 4,
     "colorOverrides": [
       {
@@ -98421,10 +98421,11 @@
         "description": "Legs",
         "colors": "s == 5",
         "baseMaterial": "BARK",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.4,
         "uvOrientation": 512,
-        "shiftLightness": 5
+        "shiftLightness": 7
       }
     ],
     "objectIds": [
@@ -98923,7 +98924,8 @@
     "uvType": "BOX",
     "uvScale": 0.5,
     "uvOrientation": 512,
-    "shiftLightness": 5,
+    "undoVanillaShading": false,
+    "shiftLightness": 9,
     "colorOverrides": [
       {
         "description": "Cloth",
@@ -98952,19 +98954,21 @@
     "description": "Castle Drakan - Vampyrium Display Case - Empty",
     "baseMaterial": "WOOD_GRAIN_3",
     "uvType": "BOX",
-    "uvScale": 0.5,
+    "uvScale": 0.7,
     "uvOrientation": 512,
-    "shiftLightness": 3,
+    "shiftLightness": 4,
+    "undoVanillaShading": false,
     "flatNormals": true,
     "colorOverrides": [
       {
         "description": "Frame",
         "colors": "s == 5",
         "baseMaterial": "BARK",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.3,
         "uvOrientation": 313,
-        "shiftLightness": 4
+        "shiftLightness": 8
       }
     ],
     "objectIds": [
@@ -99013,8 +99017,9 @@
   {
     "description": "Castle Drakan - Vampyrium Chest",
     "baseMaterial": "WOOD_GRAIN_3",
+    "undoVanillaShading": false,
     "uvType": "BOX",
-    "shiftLightness": 4,
+    "shiftLightness": 7,
     "uvScale": 0.7,
     "uvOrientation": 512,
     "colorOverrides": [
@@ -99071,7 +99076,7 @@
     "description": "Castle Drakan - Vampyrium Red shelf with clutter",
     "baseMaterial": "WOOD_GRAIN_3",
     "uvType": "BOX",
-    "uvScale": 0.6,
+    "uvScale": 0.8,
     "shiftLightness": 5,
     "colorOverrides": [
       {
@@ -99127,6 +99132,7 @@
   {
     "description": "Castle Drakan - Vampyrium tables",
     "baseMaterial": "WOOD_GRAIN_3",
+    "undoVanillaShading": false,
     "uvType": "BOX",
     "uvScale": 0.6,
     "uvOrientation": 512,
@@ -99145,9 +99151,10 @@
         "colors": "s >= 4",
         "baseMaterial": "BARK",
         "uvType": "BOX",
+        "undoVanillaShading": false,
         "uvScale": 0.4,
         "uvOrientation": 313,
-        "shiftLightness": 5
+        "shiftLightness": 8
       }
     ],
     "objectIds": [
@@ -99278,11 +99285,114 @@
     ]
   },
   {
-    "description": "Vampyrium Trees",
+    "description": "Vampyrium - Stymphike Hunting - Trees",
+    "baseMaterial": "GRUNGE_3",
+    "undoVanillaShading": false,
+    "terrainVertexSnap": true,
+    "objectIds": [
+      "HUNTING_STYMPHIKE_TREE_LETVEK",
+      "HUNTING_STYMPHIKE_TREE_NO_LETVEK"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0",
+        "baseMaterial": "BARK",
+        "uvType": "BOX",
+        "undoVanillaShading": false,
+        "uvScale": 0.85,
+        "shiftLightness": 10
+      },
+      {
+        "colors": "h == 0 && s < 6 && s > 0",
+        "baseMaterial": "WOOD_GRAIN_3",
+        "uvType": "BOX",
+        "uvScale": 0.7,
+        "undoVanillaShading": false
+      },
+      {
+        "colors": "h == 7",
+        "baseMaterial": "BONE",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "shiftLightness": -5,
+        "undoVanillaShading": false,
+        "depthBias": 50
+      }
+    ]
+  },
+  {
+    "description": "Vampyrium - Stymphike Hunting - Bones, match to nearby trees",
+    "areas": [ "VAMPYRIUM" ],
+    "baseMaterial": "BONE",
+    "uvType": "BOX",
+    "uvScale": 0.2,
+    "shiftLightness": -4,
+    "undoVanillaShading": false,
+    "objectIds": [
+      "GHORROCK_BONES03"
+    ]
+  },
+  {
+    "description": "Vampyrium - Stymphike Hunting - Grass",
+    "baseMaterial": "LEAF_VEINS",
+    "undoVanillaShading": false,
+    "objectIds": [
+      "HUNTING_STYMPHIKE_BUSH_EMPTY",
+      "HUNTING_STYMPHIKE_BUSH_SHRUB",
+      "HUNTING_STYMPHIKE_BUSH_HIDDEN",
+      "BUSH_SHORTCUT"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0 || h == 48",
+        "baseMaterial": "GRUNGE_3",
+        "undoVanillaShading": false,
+        "shiftLightness": -2
+      }
+    ]
+  },
+  {
+    "description": "Vampyrium Stymphike Hunter - Sticks",
+    "baseMaterial": "BARK",
+    "uvType": "BOX",
+    "uvScale": 0.5,
+    "maxLightness": 27,
+    "objectIds": [
+      "HUNTING_STYMPHIKE_SPEARS"
+    ]
+  },
+  {
+    "description": "Vampyrium Blood Wood Trees",
     "baseMaterial": "BARK",
     "uvType": "BOX",
     "undoVanillaShading": false,
     "uvScale": 0.7,
+    "shiftLightness": 10,
+    "objectIds": [
+      "AFK_BLOODWOOD_TREE",
+      "BLOODWOOD_TREE_DEFAULT01",
+      "BLOODWOOD_TREE_DEFAULT01_CUT01",
+      "BLOODWOOD_TREE_DEFAULT01_CUT02",
+      "BLOODWOOD_TREE_DEFAULT01_STUMP01"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Blood",
+        "colors": "s == 6",
+        "baseMaterial": "WATER_FOUNTAIN_FLAT",
+        "uvType": "BOX",
+        "uvScale": 0.5,
+        "uvOrientation": 900,
+        "undoVanillaShading": false
+      }
+    ]
+  },
+  {
+    "description": "Vampyrium Trees",
+    "baseMaterial": "BARK",
+    "uvType": "BOX",
+    "undoVanillaShading": false,
+    "uvScale": 0.8,
     "shiftLightness": 10,
     "objectIds": [
       "DARKWOOD_TREE_DEFAULT02",
@@ -99309,7 +99419,8 @@
       "DARKWOOD_TREE_SAPLING04",
       "DARKWOOD_TREE_STUMP_NOAXE01",
       "SOTFA_FOREST_ROPESWING_TREE_BODY",
-      "SOTFA_FOREST_ROPESWING_TREE_NOROPE"
+      "SOTFA_FOREST_ROPESWING_TREE_NOROPE",
+      "DARKWOOD_TREE_SAPLING03"
     ],
     "colorOverrides": [
       {
@@ -99358,7 +99469,8 @@
   {
     "description": "Vampyrium - Tall Vines",
     "baseMaterial": "PLANT_GRUNGE_1",
-    "shiftLightness": 2,
+    "undoVanillaShading": false,
+    "shiftLightness": 4,
     "windDisplacementMode": "OBJECT_NO_GROUND_DISPLACEMENT",
     "objectIds": [
       "PLANT_VAMPYRIUM_SWAMP01_INACTIVE",
@@ -99479,6 +99591,13 @@
         "shiftLightness": 3,
         "castShadows": false,
         "inheritTileColorType": "UNDERLAY"
+      },
+      {
+        "colors": "h == 7",
+        "baseMaterial": "BONE",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "shiftLightness": -3
       }
     ]
   },
@@ -99662,7 +99781,7 @@
     "baseMaterial": "ROCK_3",
     "uvType": "BOX",
     "uvScale": 0.7,
-    "shiftLightness": 6,
+    "shiftLightness": 5,
     "undoVanillaShading": false,
     "objectIds": [
       "ROCKS_VOROS02_LARGE01",
@@ -99675,11 +99794,46 @@
       "ROCKS_VOROS01_LARGE01_3X3",
       "VOROS_ROCKSLIDE01",
       "VOROS_ROCKSLIDE02",
+      "VOROS_ROCKSLIDE03",
       "VOROS_ROCKSLIDE04",
       "ROCKS_VOROS02_LARGE01_3X3",
       "ROCKS_VOROS01_DEFAULT01",
       "VAMPYRIUM_STEPPING_STONE_NOCLEARED",
-      "VAMPYRIUM_STEPPING_STONE_HASCLEARED"
+      "VAMPYRIUM_STEPPING_STONE_HASCLEARED",
+      "VOROS_ROCKSLIDE03",
+      "VOROS_ROCKSLIDE02_SHORTCUT_DOWN",
+      "VOROS_ROCKSLIDE02_SHORTCUT_UP_OP",
+      "VOROS_ROCKSLIDE02_SHORTCUT_UP_BIG",
+      "VOROS_CLIFF_SHORTCUT_MIDDLE",
+      "VOROS_ROCKSLIDE02_SHORTCUT_DOWN_BIG"
+    ]
+  },
+  {
+    "description": "Vampyrium Rock Shortcut Pillars",
+    "baseMaterial": "SMOOTH_STONE",
+    "uvType": "BOX",
+    "uvScale": 0.7,
+    "shiftLightness": 2,
+    "undoVanillaShading": false,
+    "objectIds": [
+      "VAMPYRIUM_STEPPING_STONE_SHORTCUT_PILLAR_OP",
+      "VAMPYRIUM_STEPPING_STONE_SHORTCUT_PILLAR_NOOP"
+    ]
+  },
+  {
+    "description": "Vampyrium Rock Shortcut Slide",
+    "areas": [ "VAMPYRIUM_AGILITY_SLIDE" ],
+    "baseMaterial": "ROCK_3",
+    "uvType": "BOX",
+    "uvScale": 0.7,
+    "shiftLightness": 4,
+    "undoVanillaShading": false,
+    "castShadows": false,
+    "objectIds": [
+      "VOROS_ROCKSLIDE03",
+      "VOROS_ROCKSLIDE04",
+      "VOROS_ROCKSLIDE02_SHORTCUT_DOWN",
+      "VOROS_ROCKSLIDE02_SHORTCUT_UP_OP"
     ]
   },
   {
@@ -99716,6 +99870,7 @@
     "baseMaterial": "STONE_NORMALED",
     "uvType": "BOX",
     "undoVanillaShading": false,
+    "doubleSidedFaces": true,
     "uvScale": 0.75,
     "uvOrientation": -256,
     "colorOverrides": [
@@ -99725,17 +99880,25 @@
         "baseMaterial": "WOOD_GRAIN_3",
         "uvType": "BOX",
         "uvScale": 0.8,
-        "shiftLightness": 6,
+        "shiftLightness": 7,
+        "undoVanillaShading": false,
         "uvOrientationX": 512
       },
       {
         "description": "Red accents",
         "colors": "h == 0 && s >= 4",
         "baseMaterial": "WOOD_GRAIN_3",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.4,
         "uvOrientation": 512,
-        "shiftLightness": 4
+        "shiftLightness": 6
+      },
+      {
+        "description": "Hide Black Filler",
+        "colors": "h == 0 && l == 2",
+        "baseMaterial": "NONE",
+        "hide": true
       }
     ],
     "objectIds": [
@@ -99752,8 +99915,7 @@
       "ROOFKIT_SANGVESTI01_BROKEN01",
       "ROOFKIT_SANGVESTI01_BROKEN02",
       "ROOFKIT_SANGVESTI01_BROKEN03",
-      "BRIDGEKIT_SANGVESTI01_ROOF02",
-      "BRIDGEKIT_SANGVESTI01_BOTTOM01"
+      "BRIDGEKIT_SANGVESTI01_ROOF02"
     ]
   },
   {
@@ -99763,24 +99925,27 @@
     "uvType": "BOX",
     "uvScale": 0.75,
     "uvOrientation": -256,
+    "doubleSidedFaces": true,
     "colorOverrides": [
       {
         "description": "Wood",
         "colors": "h == 0 && s == 2 && l < 14",
         "baseMaterial": "WOOD_GRAIN_3",
+        "doubleSidedFaces": true,
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.8,
-        "shiftLightness": 6,
+        "shiftLightness": 8,
         "uvOrientation": 512
       },
       {
         "description": "Window",
         "colors": "h == 0 && s >= 4",
-        "baseMaterial": "GRUNGE_3",
-        "uvType": "BOX",
-        "uvScale": 0.8,
-        "uvOrientation": 512,
-        "shiftLightness": 1
+        "baseMaterial": "NONE",
+        "doubleSidedFaces": true,
+        "shiftSaturation": -1,
+        "shiftAlpha": -100,
+        "shiftLightness": -3
       }
     ],
     "objectIds": [
@@ -99799,6 +99964,7 @@
       "WALLKIT_SANGVESTI01_DEFAULT01_BROKEN02_M",
       "WALLKIT_SANGVESTI01_DEFAULT01_BROKEN03",
       "WALLKIT_SANGVESTI01_RUBBLE01",
+      "WALLKIT_SANGVESTI01_RUBBLE02",
       "WALLKIT_SANGVESTI01_DEFAULT01",
       "WALLKIT_SANGVESTI01_DEFAULT01_BROKEN01_M",
       "WALLKIT_SANGVESTI01_DEFAULT01_BROKEN01",
@@ -99809,6 +99975,7 @@
       "WALLKIT_SANGVESTI01_INTERIOR02",
       "WALLKIT_SANGVESTI01_INTERIOR01_DOORWAY01",
       "WALLKIT_SANGVESTI01_FENCE01",
+      "WALLKIT_SANGVESTI01_FENCE01_MIRROR",
       "WALLKIT_SANGVESTI01_FENCE01_BROKEN01",
       "WALLKIT_SANGVESTI01_FENCE01_BROKEN01_M",
       "WALLKIT_SANGVESTI01_FENCE01_BROKEN02",
@@ -99826,17 +99993,19 @@
         "baseMaterial": "BARK",
         "uvType": "BOX",
         "uvScale": 0.4,
-        "shiftLightness": 6,
-        "uvOrientation": 512
+        "shiftLightness": 13,
+        "uvOrientation": 512,
+        "undoVanillaShading": false
       },
       {
         "description": "Spike",
         "colors": "h == 0 && s > 3",
         "baseMaterial": "WOOD_GRAIN_3",
-        "shiftSaturation": -1,
+        "shiftLightness": 13,
         "uvType": "BOX",
         "uvScale": 0.45,
-        "uvOrientation": 512
+        "uvOrientation": 512,
+        "undoVanillaShading": false
       }
     ]
   },
@@ -99859,16 +100028,8 @@
         "shiftLightness": 3
       },
       {
-        "description": "Stone",
-        "colors": "h == 0 && s == 2",
-        "baseMaterial": "SMOOTH_STONE",
-        "uvType": "BOX",
-        "shiftLightness": 4,
-        "uvOrientation": 512
-      },
-      {
         "description": "Grass",
-        "colors": "h == 0 && s == 5 || s == 7",
+        "colors": "h == 0 && s == 5",
         "baseMaterial": "GRASS_BLADE",
         "shiftSaturation": 2,
         "shiftLightness": 1,
@@ -99885,9 +100046,18 @@
         "uvType": "BOX",
         "uvScale": 0.45,
         "uvOrientation": 512
+      },
+      {
+        "description": "Support",
+        "colors": "h == 0 && s == 2",
+        "baseMaterial": "WOOD_GRAIN_3",
+        "uvType": "BOX",
+        "shiftLightness": 6,
+        "undoVanillaShading": false
       }
     ],
     "objectIds": [
+      "BRIDGEKIT_SANGVESTI01_BOTTOM01",
       "VAMPYRIUM_JOVKAI01_BRIDGE01",
       "VAMPYRIUM_JOVKAI01_BRIDGE02",
       "VAMPYRIUM_JOVKAI01_BRIDGE03",
@@ -99896,6 +100066,36 @@
       "VAMPYRIUM_JOVKAI01_BRIDGE06",
       "VAMPYRIUM_JOVKAI01_BRIDGE01_FENCE06_STAIRS01",
       "VAMPYRIUM_JOVKAI01_BRIDGE01_FENCE06_STAIRS01_MIRROR"
+    ]
+  },
+  {
+    "description": "Vampyrium - Bridge Boardwalk",
+    "baseMaterial": "WOOD_GRAIN_3",
+    "undoVanillaShading": false,
+    "uvType": "BOX",
+    "uvOrientationY": 512,
+    "uvScale": 0.7,
+    "shiftLightness": 2,
+    "objectIds": [
+      "BRIDGEKIT_VAMPYRIUM_PLANKS01",
+      "BRIDGEKIT_VAMPYRIUM_PLANKS02",
+      "BRIDGEKIT_VAMPYRIUM_PLANKS03_MIRROR",
+      "BRIDGEKIT_VAMPYRIUM_PLANKS02_MIRROR",
+      "BRIDGEKIT_VAMPYRIUM_PLANKS01_MIRROR",
+      "BRIDGEKIT_VAMPYRIUM_PLANKS03",
+      "BRIDGEKIT_VAMPYRIUM_PLANKS04",
+      "BRIDGEKIT_VAMPYRIUM_RAIL01",
+      "BRIDGEKIT_VAMPYRIUM_RAIL02"
+    ]
+  },
+  {
+    "description": "Vampyrium - Recolor fishing spots that are in blood to red",
+    "areas": [ "VAMPYRIUM_LEECH_FISHING_AREA" ],
+    "setSaturation": 10,
+    "shiftLightness": -20,
+    "setHue": 0,
+    "objectIds": [
+      "RIVER_FISHING_SPOT_ENTER"
     ]
   },
   {
@@ -99924,17 +100124,19 @@
         "baseMaterial": "BARK",
         "uvType": "BOX",
         "uvScale": 0.4,
-        "shiftLightness": 6,
-        "uvOrientation": 512
+        "shiftLightness": 13,
+        "uvOrientation": 512,
+        "undoVanillaShading": false
       },
       {
         "description": "Spike",
         "colors": "h == 0 && s > 2",
         "baseMaterial": "WOOD_GRAIN_3",
-        "shiftSaturation": -1,
+        "shiftLightness": 11,
         "uvType": "BOX",
         "uvScale": 0.45,
-        "uvOrientation": 512
+        "uvOrientation": 512,
+        "undoVanillaShading": false
       }
     ]
   },
@@ -99977,6 +100179,7 @@
     "shiftLightness": 1,
     "objectIds": [
       "BRIDGEKIT_SANGVESTI01_SIDE02",
+      "BRIDGEKIT_SANGVESTI01_CHAINS01",
       "BRIDGEKIT_SANGVESTI01_CHAINS02",
       "BRIDGEKIT_SANGVESTI01_STAKES01",
       "BRIDGEKIT_SANGVESTI01_STAKES02"
@@ -100003,10 +100206,11 @@
         "description": "Spike",
         "colors": "h == 0 && s > 2",
         "baseMaterial": "WOOD_GRAIN_3",
-        "shiftSaturation": -1,
+        "shiftLightness": 17,
         "uvType": "BOX",
         "uvScale": 0.45,
-        "uvOrientation": 512
+        "uvOrientation": 512,
+        "undoVanillaShading": false
       }
     ]
   },
@@ -100030,9 +100234,9 @@
     "baseMaterial": "WOOD_GRAIN_3",
     "uvType": "BOX",
     "uvScale": 0.75,
-    "shiftLightness": 6,
-    "uvOrientationZ": 512,
+    "shiftLightness": 8,
     "uvOrientationY": 512,
+    "undoVanillaShading": false,
     "objectIds": [
       "BRIDGEKIT_SANGVESTI01_ARCH01",
       "BRIDGEKIT_SANGVESTI01_ARCH02"
@@ -100044,6 +100248,7 @@
     "uvType": "BOX",
     "uvScale": 0.75,
     "shiftLightness": 1,
+    "undoVanillaShading": false,
     "objectIds": [
       "WALLKIT_SANGVESTI01_RUBBLE03",
       "WALLKIT_SANGVESTI01_RUBBLE04",
@@ -100071,7 +100276,7 @@
         "description": "Spike",
         "colors": "h == 0 && s > 2",
         "baseMaterial": "WOOD_GRAIN_3",
-        "shiftSaturation": -1,
+        "shiftLightness": 6,
         "uvType": "BOX",
         "uvScale": 0.45,
         "uvOrientation": 512
@@ -100089,14 +100294,27 @@
     ]
   },
   {
-    "description": "Vampyrium - Sangvesti Buildings - Door",
-    "baseMaterial": "BARK",
+    "description": "Vampyrium - Sangvesti - Trap",
+    "baseMaterial": "STONE_NORMALED",
     "uvType": "BOX",
-    "uvScale": 0.4,
-    "shiftLightness": 6,
-    "uvOrientation": 512,
+    "uvScale": 0.35,
     "objectIds": [
-      "SANGVESTI_GENERAL_STORE_DOOR"
+      "TRAP_SANGVESTI_FLOOR01_DEFAULT01"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0 && s > 2",
+        "baseMaterial": "BARK",
+        "shiftSaturation": -1,
+        "uvType": "BOX",
+        "uvScale": 0.15,
+        "depthBias": 51
+      },
+      {
+        "colors": "h == 0 && s < 2",
+        "baseMaterial": "NONE",
+        "depthBias": 50
+      }
     ]
   },
   {
@@ -100159,6 +100377,7 @@
     "uvType": "BOX",
     "uvScale": 0.3,
     "uvOrientation": 512,
+    "undoVanillaShading": false,
     "shiftLightness": 5,
     "colorOverrides": [
       {
@@ -100173,6 +100392,7 @@
         "colors": "s == 4 || s == 1 || s == 2",
         "baseMaterial": "WOOD_GRAIN_3",
         "uvType": "BOX",
+        "undoVanillaShading": false,
         "uvScale": 0.6,
         "uvOrientation": 512,
         "shiftLightness": 4
@@ -100562,24 +100782,32 @@
       }
     ],
     "objectIds": [
-      "MYQ6_SANGVESTI_DRAWBRIDGE_MECHANISM_BROKEN"
+      "MYQ6_SANGVESTI_DRAWBRIDGE_MECHANISM_BROKEN",
+      "MYQ6_SANGVESTI_DRAWBRIDGE_MECHANISM_FIXED"
     ]
   },
   {
     "description": "Vampyrium - Sangvesti House Door with symbols",
     "baseMaterial": "METALLIC_1_SEMIGLOSS",
-    "uvType": "BOX",
-    "uvScale": 0.25,
-    "uvOrientation": 187,
-    "shiftLightness": 6,
+    "shiftLightness": 12,
     "colorOverrides": [
       {
         "description": "Planks",
-        "colors": "h == 0 && s > 0 && s < 3",
-        "baseMaterial": "WOOD_GRAIN_3",
+        "colors": "h == 0 && s == 4",
+        "baseMaterial": "BARK",
+        "undoVanillaShading": false,
         "uvType": "BOX",
-        "uvScale": 0.66,
-        "shiftLightness": 4
+        "uvScale": 0.3,
+        "shiftLightness": 8
+      },
+      {
+        "description": "Planks",
+        "colors": "h == 0 && s > 0 && s < 7",
+        "baseMaterial": "WOOD_GRAIN_3",
+        "undoVanillaShading": false,
+        "uvType": "BOX",
+        "uvScale": 0.58,
+        "shiftLightness": 11
       }
     ],
     "objectIds": [
@@ -100609,7 +100837,12 @@
       "SANGVESTI_FANCY_HOUSE_2_BACK_DOOR",
       "SANGVESTI_FANCY_HOUSE_2_DOOR",
       "SANGVESTI_BANK_DOOR",
-      "SANGVESTI_BLACKSMITH_DOOR"
+      "SANGVESTI_BLACKSMITH_DOOR",
+      "SANGVESTI_PUB_DOOR",
+      "SANGVESTI_FOOD_SHOP_DOOR",
+      "SANGVESTI_FOOD_SHOP_BACK_DOOR",
+      "SANGVESTI_GENERAL_STORE_DOOR",
+      "SANGVESTI_BASIC_HOUSE_1_DOOR"
     ]
   },
   {
@@ -100638,10 +100871,11 @@
         "description": "Fence",
         "colors": "s == 6",
         "baseMaterial": "METALLIC_1_SEMIGLOSS",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.25,
         "uvOrientation": 187,
-        "shiftLightness": 6
+        "shiftLightness": 13
       }
     ],
     "objectIds": [
@@ -100688,7 +100922,7 @@
     "description": "Vampyrium - Sangvesti Drakan Statue",
     "baseMaterial": "SMOOTH_STONE",
     "undoVanillaShading": false,
-    "shiftLightness": 3,
+    "maxLightness": 27,
     "uvType": "BOX",
     "uvScale": 0.4,
     "objectIds": [
@@ -100697,15 +100931,35 @@
     "colorOverrides": [
       {
         "description": "Grass 1",
-        "colors": "s == 5 && l > 15",
-        "baseMaterial": "NONE",
-        "maxLightness": 6
-      },
+        "colors": "s == 5 && l > 15 || h == 2",
+        "baseMaterial": "GRASS_BLADE",
+        "uvType": "BOX",
+        "upwardsNormals": true,
+        "windDisplacementMode": "OBJECT",
+        "shiftSaturation": 1,
+        "shiftLightness": 5,
+        "castShadows": false,
+        "inheritTileColorType": "UNDERLAY"
+      }
+    ]
+  },
+  {
+    "description": "Vampyrium - Venator Heart Altar",
+    "baseMaterial": "SMOOTH_STONE",
+    "undoVanillaShading": false,
+    "shiftLightness": 3,
+    "uvType": "BOX",
+    "uvScale": 0.7,
+    "objectIds": [
+      "DILAPIDATED_VAMPYRIC_STATUE",
+      "CANDLES_DRAKAN01_DEFAULT01"
+    ],
+    "colorOverrides": [
       {
-        "description": "Grass 2",
-        "colors": "h == 2",
-        "baseMaterial": "NONE",
-        "maxLightness": 15
+        "colors": "s == 5",
+        "baseMaterial": "GRUNGE_3",
+        "undoVanillaShading": false,
+        "maxLightness": 20
       }
     ]
   },
@@ -100725,9 +100979,10 @@
         "description": "Wood",
         "colors": "s > 3",
         "baseMaterial": "WOOD_GRAIN_3",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.6,
-        "shiftLightness": 8
+        "shiftLightness": 9
       }
     ]
   },
@@ -100744,20 +100999,23 @@
     "baseMaterial": "CARPET",
     "uvType": "BOX",
     "uvScale": 0.6,
+    "shiftLightness": 3,
     "uvOrientation": 313,
     "colorOverrides": [
       {
         "description": "Wood grain",
         "colors": "s == 5",
         "baseMaterial": "BARK",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.5,
         "uvOrientation": 512,
-        "shiftLightness": 5
+        "shiftLightness": 10
       }
     ],
     "objectIds": [
-      "BANNER_SANGVESTI01_DRAKAN01"
+      "BANNER_SANGVESTI01_DRAKAN01",
+      "BANNER_SANGVESTI01_DRAKAN01_RESIZED01"
     ]
   },
   {
@@ -100785,6 +101043,7 @@
   {
     "description": "Vampyrium - Sangvesti Buildings",
     "baseMaterial": "WOOD_GRAIN_3",
+    "undoVanillaShading": false,
     "uvType": "BOX",
     "uvScale": 0.7,
     "shiftLightness": 5,
@@ -100797,7 +101056,8 @@
         "uvType": "BOX",
         "uvScale": 0.5,
         "uvOrientation": 313,
-        "shiftLightness": 5
+        "undoVanillaShading": false,
+        "shiftLightness": 8
       }
     ],
     "objectIds": [
@@ -100859,7 +101119,7 @@
     "colorOverrides": [
       {
         "description": "Wood grain",
-        "colors": [ "h == 0", "h == 62" ],
+        "colors": [ "h == 0", "h == 62 || h == 58" ],
         "baseMaterial": "WOOD_GRAIN_3",
         "uvType": "BOX",
         "uvScale": 0.5,
@@ -100893,7 +101153,8 @@
         "baseMaterial": "BARK",
         "uvType": "BOX",
         "uvScale": 0.5,
-        "shiftLightness": 4
+        "shiftLightness": 11,
+        "undoVanillaShading": false
       }
     ],
     "objectIds": [
@@ -100906,7 +101167,8 @@
     "uvType": "BOX",
     "uvScale": 0.5,
     "uvOrientation": 512,
-    "shiftLightness": 5,
+    "undoVanillaShading": false,
+    "shiftLightness": 10,
     "colorOverrides": [
       {
         "description": "Cloth",
@@ -101074,12 +101336,13 @@
     "uvType": "BOX",
     "uvScale": 0.45,
     "uvOrientation": 404,
-    "shiftLightness": 19,
+    "shiftLightness": 15,
     "colorOverrides": [
       {
         "description": "Leaf",
         "colors": "h == 0 && s == 0",
         "baseMaterial": "LEAF_VEINS",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.25,
         "shiftLightness": 5,
@@ -101087,7 +101350,8 @@
       }
     ],
     "objectIds": [
-      "PLANT_VAMPYRIUM_PLANT03"
+      "PLANT_VAMPYRIUM_PLANT03",
+      "PLANT_VAMPYRIUM_PLANT03_BLOCKWALK"
     ]
   },
   {
@@ -101128,7 +101392,7 @@
     "baseMaterial": "PLANT_GRUNGE_2",
     "undoVanillaShading": false,
     "uvType": "BOX",
-    "uvScale": 0.45,
+    "uvScale": 0.2,
     "uvOrientation": 404,
     "shiftLightness": -2,
     "colorOverrides": [
@@ -101358,20 +101622,42 @@
     "uvScale": 0.7,
     "uvOrientation": 222,
     "shiftLightness": 2,
+    "undoVanillaShading": false,
     "colorOverrides": [
       {
         "description": "Skewer",
-        "colors": "h >= 58 && s == 0",
+        "colors": "h >= 58 && s == 0 || h == 42 || h == 0 && s == 2 || h == 0 && s < 5",
         "baseMaterial": "BARK",
         "uvType": "BOX",
         "uvScale": 0.7,
         "shiftLightness": 10
+      },
+      {
+        "description": "Dirt",
+        "colors": "h == 2 && s == 4",
+        "baseMaterial": "DIRT_1",
+        "uvType": "BOX",
+        "uvScale": 0.4
+      },
+      {
+        "description": "Grass",
+        "colors": "h == 0 && s >= 5 && s <=7",
+        "baseMaterial": "GRASS_BLADE",
+        "uvType": "BOX",
+        "uvScale": 1.2,
+        "upwardsNormals": true,
+        "windDisplacementMode": "OBJECT",
+        "shiftSaturation": 2,
+        "shiftLightness": 3,
+        "castShadows": false,
+        "undoVanillaShading": false
       }
     ],
     "objectIds": [
       "CORPSE_DRAKAN01_SKEWER01",
       "CORPSE_DRAKAN01_SKEWER02",
-      "CORPSE_DRAKAN01_SKEWER03"
+      "CORPSE_DRAKAN01_SKEWER03",
+      "CORPSE_DRAKAN01_SKEWER04"
     ]
   },
   {
@@ -101380,6 +101666,7 @@
     "uvType": "BOX",
     "uvScale": 0.7,
     "shiftLightness": 10,
+    "undoVanillaShading": false,
     "colorOverrides": [
       {
         "description": "Skewer",
@@ -101412,7 +101699,8 @@
     ],
     "objectIds": [
       "PILLAR_DRAKAN01_RUINED01",
-      "PILLAR_DRAKAN01_RUINED02"
+      "PILLAR_DRAKAN01_RUINED02",
+      "PILLAR_DRAKAN01_RUINED03"
     ]
   },
   {
@@ -101421,12 +101709,49 @@
     "uvType": "BOX",
     "uvScale": 0.7,
     "shiftLightness": 10,
+    "undoVanillaShading": false,
     "objectIds": [
       "FENCE_DRAKAN01_RUINED01",
       "FENCE_DRAKAN01_RUINED02",
       "FENCE_DRAKAN01_RUINED03",
       "FENCE_DRAKAN01_RUINED04",
-      "FENCE_DRAKAN01_RUINED05"
+      "FENCE_DRAKAN01_RUINED05",
+      "FENCE_DRAKAN01_RUINED06",
+      "FENCE_DRAKAN01_RUINED07"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Grass",
+        "colors": "h == 0 && s >= 5 && s <=7",
+        "baseMaterial": "GRASS_BLADE",
+        "uvType": "BOX",
+        "uvScale": 1.2,
+        "upwardsNormals": true,
+        "windDisplacementMode": "OBJECT",
+        "shiftSaturation": 2,
+        "shiftLightness": 3,
+        "castShadows": false,
+        "undoVanillaShading": false
+      },
+      {
+        "description": "Red covering",
+        "colors": "h == 1 && s >= 6",
+        "baseMaterial": "DIRT_1",
+        "uvType": "BOX",
+        "uvScale": 0.5,
+        "shiftLightness": 5,
+        "undoVanillaShading": false
+      },
+      {
+        "description": "Leaf",
+        "colors": "h == 42 && s == 0",
+        "baseMaterial": "LEAF_VEINS",
+        "uvType": "BOX",
+        "undoVanillaShading": false,
+        "uvScale": 0.25,
+        "shiftLightness": 20,
+        "uvOrientationX": 512
+      }
     ]
   },
   {
@@ -101435,6 +101760,7 @@
     "uvType": "BOX",
     "uvScale": 0.7,
     "shiftLightness": 10,
+    "undoVanillaShading": false,
     "colorOverrides": [
       {
         "description": "Grass",
@@ -101462,7 +101788,8 @@
       "SHELTER_DRAKAN01_RUINED02",
       "SHELTER_DRAKAN01_RUINED03",
       "SHELTER_DRAKAN01_RUINED04",
-      "SHELTER_DRAKAN01_RUINED05"
+      "SHELTER_DRAKAN01_RUINED05",
+      "SHELTER_DRAKAN01_RUINED06"
     ]
   },
   {
@@ -101488,9 +101815,8 @@
       {
         "description": "Red covering",
         "colors": "h == 1 && s >= 6",
-        "baseMaterial": "GRUNGE_3",
-        "uvType": "BOX",
-        "shiftLightness": 3
+        "baseMaterial": "CARPET_LIGHT",
+        "uvType": "BOX"
       }
     ],
     "objectIds": [
@@ -101647,6 +101973,7 @@
         "description": "Grain",
         "colors": "h == 0 && s == 2",
         "baseMaterial": "WOOD_GRAIN_3",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.8
       }
@@ -102101,9 +102428,10 @@
       {
         "colors": "h == 0 && s == 3",
         "baseMaterial": "WOOD_GRAIN_3",
+        "undoVanillaShading": false,
         "uvType": "BOX",
         "uvScale": 0.5,
-        "shiftLightness": 4
+        "shiftLightness": 7
       }
     ],
     "objectIds": [
@@ -102137,7 +102465,7 @@
         "baseMaterial": "WOOD_GRAIN_3",
         "uvType": "BOX",
         "uvScale": 0.5,
-        "shiftLightness": 4
+        "shiftLightness": 5
       }
     ],
     "objectIds": [
