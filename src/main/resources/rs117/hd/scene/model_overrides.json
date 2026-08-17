@@ -99362,7 +99362,7 @@
     ]
   },
   {
-    "description": "Vampyrium Blood Wood Trees",
+    "description": "Vampyrium Bloodwood Trees",
     "baseMaterial": "BARK",
     "uvType": "BOX",
     "undoVanillaShading": false,
@@ -99378,11 +99378,40 @@
     "colorOverrides": [
       {
         "description": "Blood",
-        "colors": "s == 6",
+        "colors": "s > 5",
         "baseMaterial": "WATER_FOUNTAIN_FLAT",
         "uvType": "BOX",
         "uvScale": 0.5,
         "uvOrientation": 900,
+        "undoVanillaShading": false
+      }
+    ]
+  },
+  {
+    "description": "Vampyrium Bloodwood Bucket",
+    "baseMaterial": "WOOD_GRAIN_3_LIGHT",
+    "uvType": "BOX",
+    "uvScale": 0.5,
+    "minLightness": 14,
+    "maxLightness": 20,
+    "undoVanillaShading": false,
+    "objectIds": [
+      "BLOODWOOD_BUCKET_EMPTY",
+      "BLOODWOOD_BUCKET_FULL"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Blood",
+        "colors": " h == 0 && s > 5",
+        "baseMaterial": "WATER_FOUNTAIN_FLAT",
+        "uvType": "MODEL_XZ",
+        "uvScale": 0.3
+      },
+      {
+        "colors": "h == 0",
+        "baseMaterial": "METALLIC_1_LIGHT",
+        "minLightness": 28,
+        "maxLightness": 40,
         "undoVanillaShading": false
       }
     ]
