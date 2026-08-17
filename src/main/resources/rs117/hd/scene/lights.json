@@ -37880,8 +37880,8 @@
   {
     "description": "ALCHEMICAL_HYDRA_ELECTRIC_FORM",
     "offset": [ 0, 75, 100 ],
-    "radius": 300,
-    "strength": 30,
+    "radius": 250,
+    "strength": 25,
     "fadeInDuration": 200,
     "fadeOutDuration": 200,
     "color": [
