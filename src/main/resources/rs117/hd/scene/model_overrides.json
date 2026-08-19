@@ -90125,6 +90125,19 @@
     ]
   },
   {
+    "description": "DRAKE",
+    "npcIds": [
+      "DRAKE"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h > 1 && h < 7 && h != 4",
+        "shiftLightness": 40,
+        "baseMaterial": "GRAY_110"
+      }
+    ]
+  },
+  {
     "description": "Chasm of Fire - Rocks",
     "baseMaterial": "ROCK_3",
     "uvType": "BOX",

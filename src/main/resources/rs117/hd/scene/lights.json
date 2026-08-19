@@ -34318,23 +34318,9 @@
     "fadeInDuration": 750
   },
   {
-    "description": "Drake Maw Idle",
-    "height": 50,
-    "offset": [ -17, -3, 249 ],
-    "radius": 32,
-    "strength": 120,
-    "color": "#ff8c00",
-    "type": "FLICKER",
-    "duration": 10,
-    "range": 5,
-    "npcIds": [ "DRAKE" ],
-    "animationIds": [ -1 ],
-    "fadeInDuration": 300
-  },
-  {
     "description": "Drake Ranged Attack",
     "offset": [ 0, 0, 0 ],
-    "radius": 135,
+    "radius": 150,
     "strength": 12,
     "color": [
       255,
@@ -34345,21 +34331,19 @@
     "duration": 1,
     "range": 80,
     "projectileIds": [ "DRAKE_RANGE_PROJ" ],
-    "spawnDelay": 800,
     "fadeInDuration": 300,
-    "fadeOutDuration": 100
+    "fadeOutDuration": 250
   },
   {
     "description": "Drake Flame Attack",
     "offset": [ 0, 0, 0 ],
     "radius": 175,
-    "strength": 12,
+    "strength": 16,
     "color": "#ff8c00",
     "type": "FLICKER",
     "duration": 5,
     "range": 60,
     "projectileIds": [ "DRAKE_BURN_PROJ" ],
-    "spawnDelay": 255,
     "fadeInDuration": 150,
     "fadeOutDuration": 150
   },
