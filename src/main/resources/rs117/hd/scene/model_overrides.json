@@ -38084,6 +38084,12 @@
   {
     "description": "Fix incorrectly oriented tile model in Karuulm",
     "objectIds": [ "KARUULM_FLOOR_FALLOFF_OUSIDE_CORNER" ],
+    "baseMaterial": "ROCK_6_VERY_LIGHT",
+    "uvType": "BOX",
+    "depthBias": 255,
+    "shiftAlpha": -60,
+    "minAlpha": 30,
+    "shiftLightness": -2,
     "areas": [
       [ 1288, 10205, 0 ]
     ],
@@ -78036,12 +78042,13 @@
   {
     "description": "Mount Karuulm - Rock - Lava Trim",
     "baseMaterial": "ROCK_6_VERY_LIGHT",
+    "areas": [ "MOUNT_KARUULM" ],
     "uvType": "BOX",
     "depthBias": 255,
-    "hide": false,
     "objectIds": [
       "KARUULM_FLOOR_FALLOFF_STRAIGHT",
-      "KARUULM_FLOOR_FALLOFF_OUSIDE_CORNER"
+      "KARUULM_FLOOR_FALLOFF_OUSIDE_CORNER",
+      "KARUULM_FLOOR_FALLOFF_INSIDE_CORNER"
     ]
   },
   {
@@ -103254,6 +103261,7 @@
   },
   {
     "description": "Alchemical Hydra - Floor",
+    "areas": [ "KARUULM_SLAYER_DUNGEON_PLANE_0" ],
     "baseMaterial": "METALLIC_1_LIGHT_SEMIGLOSS",
     "uvType": "MODEL_XZ",
     "uvScale": 0.2,
@@ -103304,13 +103312,47 @@
     ],
     "colorOverrides": [
       {
-        "description": "LAVA",
         "colors": "h == 10",
-        "baseMaterial": "NONE"
+        "baseMaterial": "GRAY_85"
       },
       {
         "colors": "h == 0 && s < 3",
         "baseMaterial": "METALLIC_1",
+        "uvType": "BOX",
+        "uvScale": 0.2,
+        "uvOrientation": 512
+      }
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Wall with Rocks and Glass",
+    "upwardsNormals": true,
+    "shiftLightness": 6,
+    "objectIds": [
+      "KARUULM_HYDRA_ROOM_ENTRANCE_LEFT",
+      "KARUULM_HYDRA_ROOM_ENTRANCE_RIGHT",
+      "KARUULM_HYDRA_ROOM_ROCK_WALL_GLASS",
+      "KARUULM_HYDRA_ROOM_ROCK_WALL_INSIDE_CORNER_CONNECTOR",
+      "KARUULM_HYDRA_ROOM_DOOR",
+      "KARUULM_HYDRA_ROOM_DOOR_M",
+      "KARUULM_HYDRA_ROOM_DOOR_OPEN",
+      "KARUULM_HYDRA_ROOM_DOOR_M_OPEN"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 10",
+        "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+        "shiftLightness": 1,
+        "uvType": "BOX",
+        "uvScale": 0.75
+      },
+      {
+        "colors": "a < 255",
+        "baseMaterial": "GRAY_50"
+      },
+      {
+        "colors": "h == 0 && s < 3",
+        "baseMaterial": "METALLIC_1_LIGHT",
         "uvType": "BOX",
         "uvScale": 0.2,
         "uvOrientation": 512
@@ -103362,7 +103404,7 @@
     ]
   },
   {
-    "description": "Alchemical Hydra - Vent",
+    "description": "Alchemical Hydra - Remove Fake Shadows",
     "npcIds": [
       "HYDRABOSS"
     ],
@@ -103372,6 +103414,112 @@
         "baseMaterial": "NONE",
         "hide": true
       }
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Wall Filler - Remove Shadows",
+    "baseMaterial": "GRAY_85",
+    "castShadows": false,
+    "objectIds": [
+      "KARUULM_WALL_CAVETOP"
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Wall with Lava",
+    "baseMaterial": "NONE",
+    "castShadows": false,
+    "objectIds": [
+      "KARUULM_WALL_LAVA_OUTSIDE_CORNER_01",
+      "KARUULM_WALL_LAVA_STRAIGHT_02",
+      "KARUULM_WALL_LAVA_STRAIGHT_01",
+      "KARUULM_WALL_LAVA_INSIDE_CORNER_01",
+      "KARUULM_WALL_LAVA_WALL_TO_FLOOR_LEFT",
+      "KARUULM_WALL_LAVA_WALL_TO_FLOOR_RIGHT",
+      "KARUULM_WALL_LAVA_FLOOR_STRAIGHT_01",
+      "KARUULM_WALL_LAVA_FLOOR_INSIDE_CORNER_01",
+      "KARUULM_WALL_LAVA_FLOOR_OUTSIDE_CORNER_01",
+      "KARUULM_LAVA_JUMP",
+      "BRIMSTONE_DUNGEON_EXIT",
+      "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_LEFT",
+      "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_RIGHT"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h > 0 && h < 14 || h == 28",
+        "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+        "shiftLightness": 1,
+        "uvType": "BOX",
+        "uvScale": 0.8,
+        "uvOrientation": 100
+      }
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Wall with Lava",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+    "shiftLightness": 1,
+    "uvType": "BOX",
+    "uvScale": 0.8,
+    "uvOrientation": 100,
+    "objectIds": [
+      "TASSA_KAAL_01",
+      "TASSA_KAAL_02",
+      "TASSA_KAAL_03"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h > 21",
+        "baseMaterial": "NONE"
+      }
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Barrier and Rubble",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+    "shiftLightness": 2,
+    "uvType": "BOX",
+    "uvScale": 0.8,
+    "uvOrientation": 100,
+    "objectIds": [
+      "KARUULM_SAFE_STEPOVER",
+      "KARUULM_ROCKSLIDE_2X1",
+      "KARUULM_ROCKSLIDE_1X1_A"
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Plain Wall",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+    "shiftLightness": 1,
+    "uvType": "BOX",
+    "uvScale": 0.8,
+    "uvOrientation": 100,
+    "objectIds": [
+      "KARUULM_WALL_STAIRS",
+      "KARUULM_WALL_CLEAN_OUTSIDE_CORNER_01",
+      "KARUULM_WALL_CLEAN_INSIDE_CORNER_01",
+      "KARUULM_WALL_CLEAN_STRAIGHT_01",
+      "KARUULM_HOLE_FALLOFF_INSIDE_CORNER",
+      "KARUULM_WALL_STAIRS_TOP",
+      "KARUULM_HOLE_FALLOFF_STRAIGHT",
+      "KARUULM_HOLE_FALLOFF_OUTSIDE_CORNER",
+      "KARUULM_WALL_TUNNEL",
+      "KARUULM_HYDRA_ROOM_ENTRANCE_CLIMB"
+    ]
+  },
+  {
+    "description": "Mount Karuulm - Rock - Lava Trim",
+    "baseMaterial": "ROCK_6_VERY_LIGHT",
+    "areas": [ "KARUULM_SLAYER_DUNGEON" ],
+    "hide": false,
+    "uvType": "BOX",
+    "depthBias": 10,
+    "shiftAlpha": -60,
+    "minAlpha": 30,
+    "shiftLightness": -2,
+    "objectIds": [
+      "KARUULM_FLOOR_FALLOFF_STRAIGHT",
+      "KARUULM_FLOOR_FALLOFF_OUSIDE_CORNER",
+      "KARUULM_FLOOR_FALLOFF_INSIDE_CORNER"
     ]
   }
 ]
