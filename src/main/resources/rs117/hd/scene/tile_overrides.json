@@ -5697,6 +5697,7 @@
     "area": "KARUULM_SLAYER_DUNGEON_PLANE_0",
     "groundMaterial": "VARIED_DIRT",
     "uvOrientation": 256,
+    "minLightness": 4,
     "replacements": {
       "NONE": "!textures"
     }

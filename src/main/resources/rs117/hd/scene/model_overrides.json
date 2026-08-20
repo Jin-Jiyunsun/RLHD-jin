@@ -90447,7 +90447,13 @@
       "UNGAEL_LAB_CHEST_OPEN",
       "UNGAEL_LAB_CHEST_CLOSED",
       "UNGAEL_LAB_CHEST_OPEN_QUEST",
-      "KARUULM_CRATE_NOTES_7"
+      "KARUULM_CRATE_NOTES_7",
+      "KARUULM_CRATE_NOTES_3",
+      "KARUULM_CRATE_NOTES_4",
+      "KARUULM_CRATE_NOTES_5",
+      "KARUULM_CRATE_NOTES_1",
+      "KARUULM_CRATE_NOTES_6",
+      "KARUULM_CRATE_NOTES_2"
     ]
   },
   {
@@ -103417,6 +103423,36 @@
     ]
   },
   {
+    "description": "Alchemical Hydra - Broken Machine",
+    "uvType": "BOX",
+    "uvScale": 0.2,
+    "uvOrientation": 512,
+    "baseMaterial": "METALLIC_1_LIGHT",
+    "objectIds": [
+      "KARUULM_HYDRA_ROOM_BROKEN_MACHINE"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 0 && s == 3",
+        "baseMaterial": "CARPET_LIGHT",
+        "uvType": "BOX"
+      }
+    ]
+  },
+  {
+    "description": "Alchemical Hydra - Generator & Pipe",
+    "uvType": "BOX",
+    "uvScale": 0.1,
+    "uvOrientation": 512,
+    "baseMaterial": "METALLIC_1_LIGHT",
+    "objectIds": [
+      "DS2_LITHKREN_VAULT_GENERATOR_MAIN",
+      "DS2_LITHKREN_VAULT_GENERATOR_MAIN_WHEEL",
+      "KARUULM_DUNGEON_SHORTCUT_PIPE_ACTIVE",
+      "KARUULM_DUNGEON_SHORTCUT_PIPE_INACTIVE"
+    ]
+  },
+  {
     "description": "Karuulm Slayer Dungeon - Wall Filler - Remove Shadows",
     "baseMaterial": "GRAY_85",
     "castShadows": false,
@@ -103441,7 +103477,26 @@
       "KARUULM_LAVA_JUMP",
       "BRIMSTONE_DUNGEON_EXIT",
       "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_LEFT",
-      "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_RIGHT"
+      "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_RIGHT",
+      "KARUULM_WALL_TUNNEL"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h > 0 && h < 14 || h == 28",
+        "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+        "shiftLightness": 1,
+        "uvType": "BOX",
+        "uvScale": 0.8,
+        "uvOrientation": 100
+      }
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Wall with Tunnel - Make other side visible",
+    "baseMaterial": "TRANSPARENT",
+    "castShadows": false,
+    "objectIds": [
+      "KARUULM_WALL_TUNNEL"
     ],
     "colorOverrides": [
       {
@@ -103502,7 +103557,6 @@
       "KARUULM_WALL_STAIRS_TOP",
       "KARUULM_HOLE_FALLOFF_STRAIGHT",
       "KARUULM_HOLE_FALLOFF_OUTSIDE_CORNER",
-      "KARUULM_WALL_TUNNEL",
       "KARUULM_HYDRA_ROOM_ENTRANCE_CLIMB"
     ]
   },
@@ -103510,7 +103564,6 @@
     "description": "Mount Karuulm - Rock - Lava Trim",
     "baseMaterial": "ROCK_6_VERY_LIGHT",
     "areas": [ "KARUULM_SLAYER_DUNGEON" ],
-    "hide": false,
     "uvType": "BOX",
     "depthBias": 10,
     "shiftAlpha": -60,
@@ -103520,6 +103573,14 @@
       "KARUULM_FLOOR_FALLOFF_STRAIGHT",
       "KARUULM_FLOOR_FALLOFF_OUSIDE_CORNER",
       "KARUULM_FLOOR_FALLOFF_INSIDE_CORNER"
+    ]
+  },
+  {
+    "description": "Mount Karuulm - Lava Fire - Brighten with upwards normals",
+    "upwardsNormals": true,
+    "baseMaterial": "NONE",
+    "objectIds": [
+      "KARUULM_LAVAFIRE"
     ]
   }
 ]
