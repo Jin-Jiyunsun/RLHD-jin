@@ -103475,7 +103475,6 @@
       "KARUULM_WALL_LAVA_FLOOR_INSIDE_CORNER_01",
       "KARUULM_WALL_LAVA_FLOOR_OUTSIDE_CORNER_01",
       "KARUULM_LAVA_JUMP",
-      "BRIMSTONE_DUNGEON_EXIT",
       "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_LEFT",
       "KARUULM_HYDRA_ROOM_ENTRANCE_WALL_RIGHT",
       "KARUULM_WALL_TUNNEL"
@@ -103483,6 +103482,24 @@
     "colorOverrides": [
       {
         "colors": "h > 0 && h < 14 || h == 28",
+        "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+        "shiftLightness": 1,
+        "uvType": "BOX",
+        "uvScale": 0.8,
+        "uvOrientation": 100
+      }
+    ]
+  },
+  {
+    "description": "Karuulm Slayer Dungeon - Exit",
+    "baseMaterial": "GRAY_300",
+    "castShadows": false,
+    "objectIds": [
+      "BRIMSTONE_DUNGEON_EXIT"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "h == 10",
         "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
         "shiftLightness": 1,
         "uvType": "BOX",

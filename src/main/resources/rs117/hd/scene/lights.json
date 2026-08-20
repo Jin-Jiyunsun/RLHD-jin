@@ -36014,6 +36014,38 @@
     "range": 10
   },
   {
+    "description": "KARUULM_DUNGEON_EXIT_NEAR",
+    "offset": [ -10, 75, 0 ],
+    "alignment": "CENTER",
+    "radius": 300,
+    "strength": 60,
+    "color": [
+      112,
+      200,
+      255
+    ],
+    "type": "STATIC",
+    "objectIds": [
+      "BRIMSTONE_DUNGEON_EXIT"
+    ]
+  },
+  {
+    "description": "KARUULM_DUNGEON_EXIT_FAR",
+    "offset": [ -10, 100, 150 ],
+    "alignment": "CENTER",
+    "radius": 400,
+    "strength": 30,
+    "color": [
+      112,
+      200,
+      255
+    ],
+    "type": "STATIC",
+    "objectIds": [
+      "BRIMSTONE_DUNGEON_EXIT"
+    ]
+  },
+  {
     "description": "WINTERTODT_LIT_BRAZIER_MAIN",
     "height": 300,
     "alignment": "CENTER",
