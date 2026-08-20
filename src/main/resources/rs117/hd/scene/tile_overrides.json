@@ -11270,7 +11270,24 @@
       636
     ],
     "groundMaterial": "DIRT",
-    "minLightness": 6
+    "minLightness": 8,
+    "setHue": 1,
+    "replacements": {
+      "Vampyrium - Blood - Shore Fix - Color Blending": "blendingColors"
+    }
+  },
+  {
+    "name": "Vampyrium - Blood - Shore Fix - Color Blending",
+    "area": "VAMPYRIUM_SHORE_BLOOD_FIX",
+    "underlayIds": [
+      238
+    ],
+    "overlayIds": [
+      636
+    ],
+    "groundMaterial": "DIRT",
+    "setLightness": 13,
+    "setHue": 1
   },
   {
     "name": "Maggot King Arena - Dirt",
