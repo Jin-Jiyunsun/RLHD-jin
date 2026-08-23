@@ -19198,11 +19198,11 @@
     ]
   },
   {
-    "description": "PYREFIEND",
-    "height": 60,
+    "description": "PYREFIEND_WIDE",
+    "height": 40,
     "alignment": "CENTER",
-    "radius": 280,
-    "strength": 7.5,
+    "radius": 300,
+    "strength": 15,
     "color": [
       252,
       122,
@@ -19217,6 +19217,51 @@
       "SLAYER_PYREFIEND_3",
       "GODWARS_PYREFIEND_1",
       "SLAYER_PYREFIEND_4"
+    ]
+  },
+  {
+    "description": "PYREFIEND_NARROW",
+    "height": 40,
+    "alignment": "CENTER",
+    "radius": 120,
+    "strength": 15,
+    "color": [
+      252,
+      122,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "npcIds": [
+      "SLAYER_PYREFIEND_1",
+      "SLAYER_PYREFIEND_2",
+      "SLAYER_PYREFIEND_3",
+      "GODWARS_PYREFIEND_1",
+      "SLAYER_PYREFIEND_4",
+      "SLAYER_PYREBEAST_1",
+      "SLAYER_PYREBEAST_2",
+      "SUPERIOR_PYREFIEND"
+    ]
+  },
+  {
+    "description": "PYREFLORD",
+    "height": 40,
+    "alignment": "CENTER",
+    "radius": 250,
+    "strength": 50,
+    "color": [
+      252,
+      122,
+      3
+    ],
+    "type": "FLICKER",
+    "duration": 0,
+    "range": 20,
+    "npcIds": [
+      "SLAYER_PYREBEAST_1",
+      "SLAYER_PYREBEAST_2",
+      "SUPERIOR_PYREFIEND"
     ]
   },
   {
