@@ -666,6 +666,30 @@
     ]
   },
   {
+    "name": "VARROCK_ROOF_OFFSET_FIX_1",
+    "aabbs": [
+      [ 3204, 3438 ]
+    ]
+  },
+  {
+    "name": "VARROCK_ROOF_OFFSET_FIX_2",
+    "aabbs": [
+      [ 3205, 3438 ]
+    ]
+  },
+  {
+    "name": "VARROCK_ROOF_OFFSET_FIX_3",
+    "aabbs": [
+      [ 3235, 3451, 3235, 3453 ]
+    ]
+  },
+  {
+    "name": "VARROCK_ROOF_OFFSET_FIX_4",
+    "aabbs": [
+      [ 3236, 3455 ]
+    ]
+  },
+  {
     "name": "BARBARIAN_VILLAGE_EAST_PATH_FIX",
     "aabbs": [
       [ 3111, 3420, 3112, 3421 ]
@@ -1928,6 +1952,12 @@
     "aabbs": [
       [ 2905, 3195, 2995, 3265 ],
       [ 2945, 3186, 2989, 3195 ]
+    ]
+  },
+  {
+    "name": "RIMMINGTON_ROOF_OFFSET_FIX_1",
+    "aabbs": [
+      [ 2950, 3218, 2951, 3219 ]
     ]
   },
   {

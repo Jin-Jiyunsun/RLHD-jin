@@ -4581,6 +4581,42 @@
     ]
   },
   {
+    "description": "Varrok Roofs - Offset Fix 1",
+    "areas": [ "VARROCK_ROOF_OFFSET_FIX_1" ],
+    "doubleSidedFaces": true,
+    "heightOffset": 16,
+    "objectIds": [
+      "FAI_VARROCK_ROOFKIT_SLATE"
+    ]
+  },
+  {
+    "description": "Varrok Roofs - Offset Fix 2",
+    "areas": [ "VARROCK_ROOF_OFFSET_FIX_2" ],
+    "doubleSidedFaces": true,
+    "heightOffset": 32,
+    "objectIds": [
+      "FAI_VARROCK_ROOFKIT_SLATE"
+    ]
+  },
+  {
+    "description": "Varrok Roofs - Offset Fix 3",
+    "areas": [ "VARROCK_ROOF_OFFSET_FIX_3" ],
+    "doubleSidedFaces": true,
+    "heightOffset": 30,
+    "objectIds": [
+      "FAI_VARROCK_ROOFKIT_SLATE"
+    ]
+  },
+  {
+    "description": "Varrok Roofs - Offset Fix 4",
+    "areas": [ "VARROCK_ROOF_OFFSET_FIX_4" ],
+    "doubleSidedFaces": true,
+    "heightOffset": 14,
+    "objectIds": [
+      "FAI_VARROCK_ROOFKIT_SLATE"
+    ]
+  },
+  {
     "description": "VARROCK_FOUNTAIN_FLOOR",
     "baseMaterial": "STONE",
     "objectIds": [
@@ -5951,6 +5987,15 @@
         "uvOrientation": 512,
         "uvScale": 0.6
       }
+    ]
+  },
+  {
+    "description": "Seers Village - Roofs - Double Sided Faces",
+    "doubleSidedFaces": true,
+    "objectIds": [
+      "KR_SEERS_VILLAGE_ROOFKIT_SLATE",
+      "KR_SEERS_VILLAGE_ROOFKIT_SLATE_CUT",
+      "KR_SEERS_VILLAGE_ROOFKIT_SLATE_CUT_MIRROR"
     ]
   },
   {
@@ -49626,6 +49671,19 @@
       "RIMMINGTON_ROOFTOPEDGE",
       "RIMMINGTON_ROOFTOPEDGE_MIRROR",
       "RIMMINGTON_ROOFTOP2X2",
+      "RIMMINGTON_ROOFTOP2X2_MIRROR"
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.8,
+    "uvOrientationX": 512,
+    "flatNormals": true
+  },
+  {
+    "description": "Rimmington House Roof - Corner",
+    "areas": [ "RIMMINGTON_ROOF_OFFSET_FIX_1" ],
+    "heightOffset": -8,
+    "baseMaterial": "WOOD_GRAIN_3",
+    "objectIds": [
       "RIMMINGTON_ROOFTOP2X2_MIRROR"
     ],
     "uvType": "BOX",
