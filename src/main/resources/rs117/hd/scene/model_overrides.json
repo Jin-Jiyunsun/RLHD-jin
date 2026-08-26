@@ -103527,8 +103527,9 @@
     ]
   },
   {
-    "description": "Karuulm Slayer Dungeon - Wall with Lava",
+    "description": "Karuulm Slayer Dungeon - Kaal Thrones",
     "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
+    "disableDetailCulling": true,
     "shiftLightness": 1,
     "uvType": "BOX",
     "uvScale": 0.8,
