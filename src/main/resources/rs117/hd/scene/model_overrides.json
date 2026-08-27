@@ -1227,6 +1227,16 @@
     ]
   },
   {
+    "description": "Ardougne Smithing Furnace - Wooden Roof - Offset Fix",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_SMITHING_FURNACE_HUT" ],
+    "doubleSidedFaces": true,
+    "heightOffset": -2,
+    "objectIds": [
+      "ROOF_WOODEN",
+      "ROOFEDGE_WOODEN"
+    ]
+  },
+  {
     "description": "Ardougne Log Balance",
     "baseMaterial": "BARK",
     "objectIds": [
@@ -21981,21 +21991,10 @@
     "baseMaterial": "BARK",
     "objectIds": [
       "TK1",
-      "TK2",
-      "TK3",
-      "TK4",
-      "TK_R",
-      "TK_L",
-      "TK_END",
-      "TK_END2",
-      "TK_TOP",
-      "TK_TOP2",
-      "TK_NS",
       "DEADTREE2_WEB_R",
       "DEADTREE2_WEB_L",
       "DEADTREE_BURNT",
       "DEADTREE_BURNT_INACTIVE",
-      "GRANDTREE_CLIMBTREE",
       "GRANDTREE_DOWNTREE",
       "WILD3_TREE_A",
       "WILD3_TREE_B",
@@ -22010,20 +22009,76 @@
       "WILD6_TREE_B_SNOW",
       "WILD6_TREE_C",
       "WILD_BURNT_TREE",
-      "CLIMBING_BRANCH",
       "SLICE_HIDING_CRATES",
-      "CLIMBING_TREE2",
       "DRAGON_SLAYER_QIP_BURNT_TREE",
       "DRAGON_SLAYER_QIP_BURNT_FALLEN_TREE",
-      "MM2_GLOUGH_BRANCH_UP_HIDDEN",
       "AVIUM_DEADTREE_1",
-      "MM2_GLOUGH_BRANCH_DOWN",
       "DRAGON_SLAYER_QIP_WILD5_TREE_A",
-      "DRAGON_SLAYER_QIP_WILD5_TREE_B",
-      "MM2_DOWNTREE_SEARCHABLE",
+      "DRAGON_SLAYER_QIP_WILD5_TREE_B"
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "Gnome Stronghold Tree - Trunk - Middle - Shift Down Slightly",
+    "baseMaterial": "BARK",
+    "heightOffset": 2,
+    "objectIds": [
+      "TK2",
+      "GRANDTREE_CLIMBTREE",
+      "MM2_DOWNTREE_SEARCHABLE"
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "Gnome Stronghold Tree - Trunk - Upper - Shift Down Slightly More",
+    "baseMaterial": "BARK",
+    "heightOffset": 7,
+    "objectIds": [
+      "TK3",
+      "TK_NS",
+      "TK_R",
+      "TK_L",
+      "TK_END2",
+      "TK_END",
+      "CLIMBING_TREE2",
+      "CLIMBING_TREE",
+      "CLIMBING_BRANCH",
+      "MM2_GLOUGH_BRANCH_DOWN",
+      "MM2_GLOUGH_BRANCH_UP_HIDDEN",
       "MM2_GLOUGH_BRANCH_UP_ACTIVE"
     ],
     "uvType": "BOX"
+  },
+  {
+    "description": "Gnome Stronghold Tree - Trunk - Top - Shift Down A lot",
+    "areas": [ "TREE_GNOME_STRONGHOLD_BRANCH_OFFSET_FIX" ],
+    "baseMaterial": "BARK",
+    "heightOffset": 34,
+    "objectIds": [
+      "TK_TOP",
+      "TK_TOP2"
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "Gnome Stronghold Tree - Trunk - Top - Shift Down Slightly",
+    "baseMaterial": "BARK",
+    "heightOffset": 18,
+    "objectIds": [
+      "TK_TOP",
+      "TK_TOP2",
+      "TK4",
+      "TKBUSH_R"
+    ],
+    "uvType": "BOX"
+  },
+  {
+    "description": "Tree Gnome Village - Hide Floating Branches",
+    "areas": [ "TREE_GNOME_VILLAGE_HIDE_FLOATING_BRANCHES" ],
+    "hide": true,
+    "objectIds": [
+      "TK_TOP"
+    ]
   },
   {
     "description": "Gnome Stronghold - Objects - Tree - Fake Dead Tree",
@@ -22106,8 +22161,9 @@
     "uvType": "WORLD_XZ",
     "colorOverrides": [
       {
-        "colors": "h == 5",
+        "colors": "h == 5 || h == 6",
         "baseMaterial": "WOOD_GRAIN_3",
+        "setHue": 5,
         "uvType": "BOX",
         "uvScale": 0.5,
         "uvOrientationY": 512,
@@ -36147,6 +36203,49 @@
     ]
   },
   {
+    "description": "Objects - Hay - Roof - Offset Fix - Ardougne Pottery Hut",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_POTTERY_HUT" ],
+    "heightOffset": -18,
+    "flatNormals": true,
+    "shiftLightness": -32,
+    "setHue": 11,
+    "textureMaterial": "HD_HAY",
+    "baseMaterial": "WOOD_GRAIN_3",
+    "uvType": "BOX",
+    "retainVanillaUvs": false,
+    "colorOverrides": [
+      {
+        "colors": "h == 10 && s == 0",
+        "baseMaterial": "WATTLE_1_DARK",
+        "uvType": "BOX"
+      }
+    ],
+    "objectIds": [
+      "ROOFEDGE_THATCHED"
+    ]
+  },
+  {
+    "description": "Objects - Hay - Roof - Offset Fix - Ardougne Pub",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_PUB" ],
+    "heightOffset": -12,
+    "textureMaterial": "HD_HAY",
+    "upwardsNormals": true,
+    "baseMaterial": "WOOD_GRAIN_3",
+    "shiftLightness": -6,
+    "uvType": "BOX",
+    "retainVanillaUvs": false,
+    "colorOverrides": [
+      {
+        "colors": "h == 10 && s == 0",
+        "baseMaterial": "WATTLE_1_DARK",
+        "uvType": "BOX"
+      }
+    ],
+    "objectIds": [
+      "ROOFEDGE_THATCHED"
+    ]
+  },
+  {
     "description": "Objects - Hay - Haystack",
     "baseMaterial": "WOOD_GRAIN_2_SMOOTH_LIGHT",
     "textureMaterial": "HD_HAY",
@@ -49902,6 +50001,42 @@
   },
   {
     "description": "Flip UVs for HD wood grain",
+    "objectIds": [ "ROOFEDGE_WOODEN" ],
+    "uvType": "BOX",
+    "retainVanillaUvs": false,
+    "uvOrientation": 1024
+  },
+  {
+    "description": "Sheep Herder Furnace Hut - Offset Fix 1",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_1" ],
+    "heightOffset": -4,
+    "objectIds": [ "ROOFEDGE_WOODEN" ],
+    "uvType": "BOX",
+    "retainVanillaUvs": false,
+    "uvOrientation": 1024
+  },
+  {
+    "description": "Sheep Herder Furnace Hut - Offset Fix 2",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_2" ],
+    "heightOffset": -10,
+    "objectIds": [ "ROOFEDGE_WOODEN" ],
+    "uvType": "BOX",
+    "retainVanillaUvs": false,
+    "uvOrientation": 1024
+  },
+  {
+    "description": "Sheep Herder Furnace Hut - Offset Fix 3",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_3" ],
+    "heightOffset": -14,
+    "objectIds": [ "ROOFEDGE_WOODEN" ],
+    "uvType": "BOX",
+    "retainVanillaUvs": false,
+    "uvOrientation": 1024
+  },
+  {
+    "description": "Sheep Herder Furnace Hut - Offset Fix 4",
+    "areas": [ "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_4" ],
+    "heightOffset": -8,
     "objectIds": [ "ROOFEDGE_WOODEN" ],
     "uvType": "BOX",
     "retainVanillaUvs": false,

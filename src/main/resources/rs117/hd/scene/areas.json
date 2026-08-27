@@ -2483,6 +2483,48 @@
     ]
   },
   {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_1",
+    "aabbs": [
+      [ 2605, 3356 ]
+    ]
+  },
+  {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_2",
+    "aabbs": [
+      [ 2606, 3356 ]
+    ]
+  },
+  {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_3",
+    "aabbs": [
+      [ 2607, 3356 ]
+    ]
+  },
+  {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_SHEEP_HERDER_4",
+    "aabbs": [
+      [ 2608, 3356 ]
+    ]
+  },
+  {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_SMITHING_FURNACE_HUT",
+    "aabbs": [
+      [ 2599, 3314, 2600, 3314 ]
+    ]
+  },
+  {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_POTTERY_HUT",
+    "aabbs": [
+      [ 2596, 3326 ]
+    ]
+  },
+  {
+    "name": "EAST_ARDOUGNE_OFFSET_FIX_PUB",
+    "aabbs": [
+      [ 2564, 3325 ]
+    ]
+  },
+  {
     "name": "EAST_ARDOUGNE_COBBLE_OFFICE",
     "aabbs": [
       [ 2668, 3318, 2675, 3319 ],
@@ -4808,6 +4850,20 @@
       [ 2377, 3458, 2377, 3460 ],
       [ 2376, 3458, 2376, 3459 ],
       [ 2375, 3458, 2375, 3458 ]
+    ]
+  },
+  {
+    "name": "TREE_GNOME_STRONGHOLD_BRANCH_OFFSET_FIX",
+    "aabbs": [
+      [ 2459, 3485, 2462, 3490 ]
+    ]
+  },
+  {
+    "name": "TREE_GNOME_VILLAGE_HIDE_FLOATING_BRANCHES",
+    "aabbs": [
+      [ 2536, 3172, 2537, 3172 ],
+      [ 2535, 3170, 2535, 3171 ],
+      [ 2533, 3172, 2534, 3172 ]
     ]
   },
   {
