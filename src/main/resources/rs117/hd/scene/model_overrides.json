@@ -49329,8 +49329,25 @@
   },
   {
     "description": "Disable shadows for fishing spots at Molch",
-    "npcIds": [ "FISHING_SPOT_AERIAL" ],
+    "npcIds": [
+      "FISHING_SPOT_AERIAL",
+      "FISHING_SPOT_AERIAL_LARGE"],
+    "depthBias": 100,
+    "shiftAlpha": -25,
+    "minAlpha": 50,
     "castShadows": false
+  },
+  {
+    "description": "Disable shadows for fishing spots at Molch - Splash",
+    "graphicsObjectIds": [ "AERIAL_FISHING_SPLASH" ],
+    "colorOverrides": [
+      {
+        "description": "Part that shouldn't cast shadows",
+        "colors": [ "h == 42 && l == 3" ],
+        "baseMaterial": "NONE",
+        "castShadows": false
+      }
+    ]
   },
   {
     "description": "Disable shadows for Colosseum entrance walls",
@@ -81680,7 +81697,8 @@
       "SEASLUG_CRATE_IN_WATER2",
       "SEASLUG_CRATE_IN_WATER",
       "SEASLUG_MESSGAE_BOTTLE",
-      "LOTR_MINE_CRATE_IN_WATER"
+      "LOTR_MINE_CRATE_IN_WATER",
+      "OLAF_BOAT_DRIFTWOOD"
     ],
     "colorOverrides": [
       {
