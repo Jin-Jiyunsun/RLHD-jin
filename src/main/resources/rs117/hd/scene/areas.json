@@ -1125,6 +1125,11 @@
     "hideOtherAreas": true
   },
   {
+    "name": "KILLERWATT_PLANE",
+    "regions": [ 10577 ],
+    "hideOtherAreas": true
+  },
+  {
     "name": "DRAYNOR_NORTHERN_HOUSE_FLOOR",
     "aabbs": [
       [ 3097, 3277, 3102, 3281 ]
