@@ -416,11 +416,20 @@
     "hideOtherAreas": true
   },
   {
+    "name": "DORGESHKAAN_AGILITY_AREA",
+    "regions": [ 10833 ]
+  },
+  {
     "name": "DORGESHKAAN",
+    "regionBoxes": [
+      [ 10835, 10833 ]
+    ],
+    "hideOtherAreas": true
+  },
+  {
+    "name": "DORGESHKAAN_FLOOR",
     "aabbs": [
-      [ 2687, 5247, 2752, 5376 ],
-      [ 2751, 5311, 2816, 5440 ],
-      [ 2815, 5375, 2880, 5504 ]
+      [ 2687, 5247, 2752, 5376 ]
     ]
   },
   {

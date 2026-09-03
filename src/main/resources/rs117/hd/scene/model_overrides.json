@@ -8551,6 +8551,8 @@
       "DORGESH_ROCKS_DARK3",
       "DORGESH_ROCKS_DARK4",
       "DORGESH_ROCKS_DARK5",
+      "MOLANISK_CAVEWALL_STONES01",
+      "DORGESH_CAVES_WALL_STEP_ROCKS_TOP",
       "ATJUN_DUGUPSOIL_SQUISHED_3",
       "BRUT_ROCKS_LVL1A",
       "BRUT_ROCKS_LVL1B",
@@ -9414,17 +9416,30 @@
       "LOST_TRIBE_CELLAR_HOLE_BLOCKING",
       "DTTD_WALL_HAM_TOP5_OUTER2",
       "DTTD_WALL_HAM_TOP5_OUTER",
-      "DTTD_WALL_HAM_TOP_OUTER"
+      "DTTD_WALL_HAM_TOP_OUTER",
+      "LOTG_GOBLIN_CAVE_TERMINATOR_M",
+      "MOLANISK_CAVEWALL01",
+      "LOTG_GOBLIN_CAVE_WALL_FIX",
+      "MOLANISK_CAVEWALL01_MIRROR",
+      "DORGESH_CAVES_PIPE_AGILITY2",
+      "DORGESH_CAVES_PIPE_AGILITY_SIDE_2",
+      "DORGESH_CAVES_PIPE_AGILITY_INSIDECORNER2",
+      "DORGESH_CAVES_PIPE_AGILITY_INSIDECORNER",
+      "DORGESH_CAVE_JUTTINGWALL",
+      "DORGESH_CAVES_SQUEEZE_OPPOSITE",
+      "DORGESH_CAVEWALL_SQUEEZE1",
+      "DORGESH_CAVEWALL_SQUEEZE1R",
+      "DORGESH_CAVES_WALL_STEP_ROCKS"
     ],
     "uvType": "BOX",
-    "uvScale": 0.6,
+    "uvScale": 0.7,
     "uvOrientation": 100
   },
   {
     "description": "Dorgeh-Kaan Agility Area - Rock - Metal - Climbable Walls And walls with cables",
     "baseMaterial": "ROCK_2",
     "uvType": "BOX",
-    "uvScale": 0.6,
+    "uvScale": 0.7,
     "uvOrientation": 100,
     "colorOverrides": [
       {
@@ -9488,7 +9503,8 @@
       {
         "colors": "h == 7",
         "baseMaterial": "BONE",
-        "uvType": "BOX"
+        "uvType": "BOX",
+        "uvScale": 0.35
       },
       {
         "colors": "h == 17",
@@ -9496,6 +9512,29 @@
         "uvType": "BOX",
         "uvScale": 0.5,
         "uvOrientation": 512
+      }
+    ]
+  },
+  {
+    "description": "LUMBRIDGE_CAVE_WALLS_KALPHITE_SHORTCUT",
+    "baseMaterial": "ROCK_2",
+    "objectIds": [
+      "DORGESH_CAVES_KALPHITE_R",
+      "DORGESH_CAVES_KALPHITE_L"
+    ],
+    "uvType": "BOX",
+    "uvScale": 0.6,
+    "uvOrientation": 100,
+    "colorOverrides": [
+      {
+        "colors": "h == 5 || h == 6",
+        "baseMaterial": "METALLIC_1_LIGHT"
+      },
+      {
+        "colors": "h == 7 || h == 8",
+        "baseMaterial": "BONE",
+        "uvType": "BOX",
+        "uvScale": 0.35
       }
     ]
   },
@@ -9510,9 +9549,20 @@
   },
   {
     "description": "LUMBRIDGE_CAVE_SWAMP_WATERFALL",
+    "baseMaterial": "TRANSPARENT",
+    "castShadows": false,
     "textureMaterial": "SWAMP_WATER_FLAT_FLOW",
+    "shiftAlpha": -10,
+    "setHue": 29,
+    "setSaturation": 2,
     "objectIds": [
       "GOBLIN_CAVEWALL_FLOWINGGUNGYWATER"
+    ],
+    "colorOverrides": [
+      {
+        "colors": "a < 255",
+        "baseMaterial": "NONE"
+      }
     ]
   },
   {

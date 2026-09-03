@@ -2071,6 +2071,14 @@
     "groundMaterial": "ROCKY_CAVE_FLOOR"
   },
   {
+    "name": "LUMBRIDGE_CAVES_WATER",
+    "area": "LUMBRIDGE_SWAMP_CAVES",
+    "overlayIds": [
+      7
+    ],
+    "waterType": "CAVE_WATER_SWAMP"
+  },
+  {
     "name": "GOBLIN_MAZE_FLOOR",
     "area": "GOBLIN_MAZE",
     "overlayIds": [
@@ -2079,8 +2087,14 @@
     "groundMaterial": "ROCKY_CAVE_FLOOR"
   },
   {
+    "name": "DORGESHKAAN_AGILITY_AREA_WATER",
+    "area": "DORGESHKAAN_AGILITY_AREA",
+    "overlayIds": [ 156 ],
+    "waterType": "CAVE_WATER_SWAMP"
+  },
+  {
     "name": "DORGESHKAAN_FLOOR",
-    "area": "DORGESHKAAN",
+    "area": "DORGESHKAAN_FLOOR",
     "minLightness": 14,
     "maxLightness": 20,
     "underlayIds": [

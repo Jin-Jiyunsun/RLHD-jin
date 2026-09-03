@@ -233,6 +233,14 @@
     "fogDepth": 40
   },
   {
+    "area": "DORGESHKAAN_AGILITY_AREA",
+    "sunAngles": [
+      80,
+      190
+    ],
+    "fogDepth": 25
+  },
+  {
     "area": "DORGESHKAAN",
     "directionalColor": "#a29b71",
     "directionalStrength": 1.5,
