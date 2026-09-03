@@ -9520,7 +9520,9 @@
     "baseMaterial": "ROCK_2",
     "objectIds": [
       "DORGESH_CAVES_KALPHITE_R",
-      "DORGESH_CAVES_KALPHITE_L"
+      "DORGESH_CAVES_KALPHITE_L",
+      "DORGESH_CAVES_KALPHITE_L_OPEN",
+      "DORGESH_CAVES_KALPHITE_R_OPEN"
     ],
     "uvType": "BOX",
     "uvScale": 0.6,
