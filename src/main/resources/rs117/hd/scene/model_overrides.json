@@ -82811,6 +82811,68 @@
     ]
   },
   {
+    "description": "Sailing - Facility - Trawling Net",
+    "baseMaterial": "WOOD_GRAIN_3",
+    "uvType": "BOX",
+    "uvScale": 0.4,
+    "uvOrientationZ": 512,
+    "uvOrientationX": 512,
+    "objectIds": [
+      "SAILING_ROPE_TRAWLING_NET",
+      "SAILING_ROPE_TRAWLING_NET_3X8_STARBOARD",
+      "SAILING_ROPE_TRAWLING_NET_3X8_PORT",
+      "SAILING_HEMP_TRAWLING_NET",
+      "SAILING_HEMP_TRAWLING_NET_3X8_STARBOARD",
+      "SAILING_HEMP_TRAWLING_NET_3X8_PORT",
+      "SAILING_LINEN_TRAWLING_NET",
+      "SAILING_LINEN_TRAWLING_NET_3X8_STARBOARD",
+      "SAILING_LINEN_TRAWLING_NET_3X8_PORT",
+      "SAILING_COTTON_TRAWLING_NET",
+      "SAILING_COTTON_TRAWLING_NET_3X8_STARBOARD",
+      "SAILING_COTTON_TRAWLING_NET_3X8_PORT"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Rope",
+        "colors": "h == 8",
+        "baseMaterial": "CARPET_VERY_LIGHT_SMOOTH",
+        "undoVanillaShading": false
+      },
+      {
+        "description": "Metal",
+        "baseMaterial": "METALLIC_1_LIGHT_SMOOTH",
+        "colors": "h == 0 || h > 10 || h == 4"
+      }
+    ]
+  },
+  {
+    "description": "Sailing - Facility - Chum Spreader",
+    "baseMaterial": "WOOD_GRAIN_3",
+    "uvType": "BOX",
+    "uvScale": 0.5,
+    "uvOrientationY": 512,
+    "objectIds": [
+      "CHUM_SPREADER_2X5A",
+      "CHUM_SPREADER_2X5B",
+      "CHUM_SPREADER_3X8A",
+      "CHUM_SPREADER_3X8B"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Metal",
+        "baseMaterial": "METALLIC_1_LIGHT_SMOOTH",
+        "uvType": "BOX",
+        "uvScale": 0.05,
+        "colors": "h == 0"
+      },
+      {
+        "description": "Fish Guts",
+        "baseMaterial": "GRUNGE_1",
+        "colors": "h == 3"
+      }
+    ]
+  },
+  {
     "description": "Sailing - Facility - Cargo Hold & Cannon - Bronze",
     "baseMaterial": "WOOD_GRAIN_3_SEMILIGHT",
     "uvType": "BOX",
