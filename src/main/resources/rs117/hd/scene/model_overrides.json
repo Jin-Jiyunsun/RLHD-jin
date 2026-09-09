@@ -81380,7 +81380,48 @@
       "SAILING_CHARTING_MERMAID_GUIDE_2",
       "SAILING_CHARTING_MERMAID_GUIDE_4",
       "SAILING_CHARTING_MERMAID_GUIDE_5",
-      "SAILING_CHARTING_WEATHER_TROLL"
+      "SAILING_CHARTING_WEATHER_TROLL",
+      "SAILING_SHOAL_RIPPLES"
+    ]
+  },
+  {
+    "description": "Lower Sailing Kelp 1",
+    "heightOffset": 450,
+    "baseMaterial": "GRAY_45",
+    "objectIds": [
+      "OCEAN_PLANT_KELP01"
+    ]
+  },
+  {
+    "description": "Lower Sailing Kelp 2",
+    "heightOffset": 450,
+    "baseMaterial": "GRAY_45",
+    "objectIds": [
+      "OCEAN_PLANT_KELP02"
+    ]
+  },
+  {
+    "description": "Lower Sailing Kelp 3",
+    "heightOffset": 200,
+    "baseMaterial": "GRAY_45",
+    "objectIds": [
+      "OCEAN_PLANT_KELP03"
+    ]
+  },
+  {
+    "description": "Lower Sailing Kelp 4",
+    "heightOffset": 300,
+    "baseMaterial": "GRAY_45",
+    "objectIds": [
+      "OCEAN_PLANT_KELP04"
+    ]
+  },
+  {
+    "description": "Lower Sailing Kelp 5",
+    "heightOffset": 600,
+    "baseMaterial": "GRAY_45",
+    "objectIds": [
+      "OCEAN_PLANT_KELP05"
     ]
   },
   {
