@@ -18,8 +18,6 @@ vec3 celestialViewDirection(vec3 viewDir, vec3 center) {
         vec3 right = cameraAxes[0] - center * dot(cameraAxes[0], center);
         right = normalize(right);
         vec3 up = normalize(cross(center, right));
-        if (dot(up, cameraAxes[1]) < 0.0)
-            up = -up;
 
         mat4 projectionRows = transpose(projectionMatrix);
         vec2 scale = vec2(length(projectionRows[0].xyz), length(projectionRows[1].xyz));
@@ -28,6 +26,13 @@ vec3 celestialViewDirection(vec3 viewDir, vec3 center) {
         vec4 upClip = projectionMatrix * vec4(up, 0.0);
         vec2 dx = (rightClip.xy - centerNdc * rightClip.w) / (centerClip.w * scale);
         vec2 dy = (upClip.xy - centerNdc * upClip.w) / (centerClip.w * scale);
+        // Orient the tangent axes by where they point on screen. The projection flips Y,
+        // so matching the camera's up axis mirrored the mapping vertically. A round disk
+        // hid that, but blending toward viewDir then drew a streak beside an off-screen disk.
+        if (dx.x < 0.0)
+            right = -right;
+        if (dy.y < 0.0)
+            up = -up;
         // The square root of the projection's area scale gives an isotropic
         // magnification: retain enlargement without its directional stretch.
         float magnification = sqrt(max(abs(dx.x * dy.y - dx.y * dy.x), 1e-8));
