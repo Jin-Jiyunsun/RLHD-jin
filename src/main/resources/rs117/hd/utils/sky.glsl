@@ -65,16 +65,12 @@ SkyGradient computeSkyGradient(vec3 viewDir) {
         float outerGlow = s2 * sunDot * sqrt(sunDot) * 0.08;
         // Measure the tight lobes like the disk, so perspective near the screen edges
         // cannot stretch them off-center from it. That projection is linearized around the
-        // sun and degenerates once the sun is far off-screen, mapping most of the view onto
-        // it, so fall back to the plain angle there.
+        // sun, so fall back to the plain angle away from it: at wide FOVs it still reports
+        // a small angle where sunDot reaches zero, which would leave a visible edge.
         float tightDot = sunDot;
-        vec4 glowClip = projectionMatrix * vec4(glowDir, 0.0);
-        if (glowClip.w > 0.001) {
-            vec2 glowNdc = abs(glowClip.xy / glowClip.w);
-            float correction = 1.0 - smoothstep(1.2, 2.0, max(glowNdc.x, glowNdc.y));
-            if (correction > 0.0)
-                tightDot = mix(sunDot, max(dot(celestialViewDirection(viewDir, glowDir), glowDir), 0.0), correction);
-        }
+        float correction = smoothstep(0.5, 0.8, sunDot);
+        if (correction > 0.0)
+            tightDot = mix(sunDot, max(dot(celestialViewDirection(viewDir, glowDir), glowDir), 0.0), correction);
         float t2 = tightDot * tightDot;
         float t4 = t2 * t2;
         float t8 = t4 * t4;
