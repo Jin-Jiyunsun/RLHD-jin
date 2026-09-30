@@ -53,24 +53,41 @@ SkyGradient computeSkyGradient(vec3 viewDir) {
     g.color = mix(g.color, customColor, uboSky.customGradient);
 
     // Use multiply/sqrt equivalents of pow for the glow falloffs.
-    // Below sunset, keep scattered sunlight at the perceived horizon. Its color and
-    // disappearance are authored in sunGlow, independently of the sun disk's position.
-    vec3 glowDir = normalize(vec3(uboSky.sunDir.x, -max(0.0, uboSky.sunDir.y) + HORIZON_OFFSET, uboSky.sunDir.z));
+    // Follow the sun while its disk is still drawn, then keep scattered sunlight near the
+    // perceived horizon. Its color and disappearance are authored in sunGlow.
+    vec3 glowDir = normalize(vec3(uboSky.sunDir.x, -max(sin(radians(-4.0)), uboSky.sunDir.y) + HORIZON_OFFSET, uboSky.sunDir.z));
     float sunDot = dot(viewDir, glowDir);
     if (sunDot > 0.0) {
         float s2 = sunDot * sunDot;
         float s4 = s2 * s2;
         float s8 = s4 * s4;
-        float s16 = s8 * s8;
-        float s32 = s16 * s16;
-        float s128 = s32 * s32; s128 = s128 * s128;
-        float coreGlow = s128 * 0.4;
-        float innerGlow = s32 * 0.25;
         float midGlow = s8 * 0.15;
         float outerGlow = s2 * sunDot * sqrt(sunDot) * 0.08;
-        float diskDot = dot(celestialViewDirection(viewDir, g.sunDir), g.sunDir);
-        float disk = smoothstep(0.99933, 0.99955, diskDot);
-        g.color += uboSky.sunColor * (coreGlow + innerGlow + midGlow + outerGlow);
+        // Measure the tight lobes like the disk, so perspective near the screen edges
+        // cannot stretch them off-center from it. That projection is linearized around the
+        // sun and degenerates once the sun is far off-screen, mapping most of the view onto
+        // it, so fall back to the plain angle there.
+        float tightDot = sunDot;
+        vec4 glowClip = projectionMatrix * vec4(glowDir, 0.0);
+        if (glowClip.w > 0.001) {
+            vec2 glowNdc = abs(glowClip.xy / glowClip.w);
+            float correction = 1.0 - smoothstep(1.2, 2.0, max(glowNdc.x, glowNdc.y));
+            if (correction > 0.0)
+                tightDot = mix(sunDot, max(dot(celestialViewDirection(viewDir, glowDir), glowDir), 0.0), correction);
+        }
+        float t2 = tightDot * tightDot;
+        float t4 = t2 * t2;
+        float t8 = t4 * t4;
+        float t16 = t8 * t8;
+        float t32 = t16 * t16;
+        float t128 = t32 * t32; t128 = t128 * t128;
+        float coreGlow = t128 * 0.4;
+        float innerGlow = t32 * 0.25;
+        // The sunGlow keyframes dim toward the horizon to redden the disk and sky. Restore
+        // the tight glow's presence at dawn and dusk without changing the disk's brightness
+        // or widening the broad lobes across the horizon.
+        float lowSunGlowBoost = 1.0 + 2.5 * (1.0 - smoothstep(0.0, sin(radians(40.0)), uboSky.sunDir.y));
+        g.color += uboSky.sunColor * ((coreGlow + innerGlow) * lowSunGlowBoost + midGlow + outerGlow);
     }
 
     return g;
