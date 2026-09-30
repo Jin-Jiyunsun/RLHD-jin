@@ -81367,6 +81367,39 @@
     ]
   },
   {
+    "description": "Sailing - Facility - Trawling Net - Dragon Cotton Net Reskin",
+    "areas": [ "ALL" ],
+    "baseMaterial": "WOOD_GRAIN_3",
+    "uvType": "BOX",
+    "uvScale": 0.4,
+    "uvOrientationZ": 512,
+    "uvOrientationX": 512,
+    "setHue": 1,
+    "setSaturation": 3,
+    "objectIds": [
+      "SAILING_COTTON_TRAWLING_NET",
+      "SAILING_COTTON_TRAWLING_NET_3X8_STARBOARD",
+      "SAILING_COTTON_TRAWLING_NET_3X8_PORT"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Rope",
+        "colors": "h == 8",
+        "baseMaterial": "CARPET_VERY_LIGHT_SMOOTH",
+        "undoVanillaShading": false
+      },
+      {
+        "description": "Metal",
+        "baseMaterial": "METALLIC_1_LIGHT_SMOOTH",
+        "colors": "h == 0 || h > 10 || h == 4",
+        "setHue": 0,
+        "setSaturation": 7,
+        "shiftLightness": -10,
+        "maxLightness": 15
+      }
+    ]
+  },
+  {
     "description": "Hide sailing charting npcs and objects",
     "areas": [ "ALL" ],
     "hide": true,
