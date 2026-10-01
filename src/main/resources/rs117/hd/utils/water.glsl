@@ -92,6 +92,20 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         float moonVisibility = smoothstep(0.0, 0.04, uboSky.moonDir.y) *
             uboSky.moonVisibility * uboSky.moonIllumination;
         moonVisibility *= uboSky.moonReflectionVisibility;
+        // A very wide view looking steeply down also sees water behind the camera, where the
+        // glint of a moon behind the camera can appear. That is optically right but looks
+        // wrong when facing away from the moon, so only show the glint while the moon is in
+        // front of the camera's horizontal facing.
+        {
+            // The projection's w row gives the camera's forward axis, and its y row the world
+            // direction toward the top of the screen. Looking down, forward loses its
+            // horizontal part while the top of the screen points the way the camera faces, so
+            // their sum gives a stable horizontal facing at any pitch.
+            mat4 projectionRows = transpose(projectionMatrix);
+            vec2 cameraFacing = normalize(projectionRows[3].xyz).xz + normalize(projectionRows[1].xyz).xz;
+            if (dot(cameraFacing, moonDir.xz) < 0.0)
+                moonVisibility = 0.0;
+        }
         // The single shadow map can only occlude its active source.
         sunVisibility *= moonOwnsShadowMap ? 1.0 : inverseShadow;
         moonVisibility *= moonOwnsShadowMap ? inverseShadow : 1.0;
@@ -153,8 +167,8 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             // A tighter highlight than the sun's for the moon's smaller glint, with a faint
             // wider halo so it fades gradually into the water instead of ending abruptly.
             moonReflectionColor * moonVisibility * (
-                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 5.8, vSpecularStrength) * 3.5 +
-                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 0.53, vSpecularStrength) * 0.05);
+                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 4.2, vSpecularStrength) * 3.5 +
+                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 0.28, vSpecularStrength) * 0.05);
         lightSpecularOut = linearToSrgb(lightSpecularOut);
     } else {
         lightSpecularOut = lightColor * specular(IN.texBlend, viewDir, reflect(-lightDir, normals), vSpecularGloss, vSpecularStrength);
