@@ -100,6 +100,52 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         vec3 sunReflectionColor = 14 * uboSky.sunColor;
         vec3 moonReflectionColor = 0.8 * uboSky.moonDiskColor;
         vec3 moonGlintDir = reflect(-moonDir, normals);
+
+        // At very wide fields of view, vertical lines lean strongly toward the bottom of the
+        // screen, so the moon's true reflection lands far to the side of the drawn moon. Shift
+        // the glint horizontally on screen toward the drawn moon, keeping its distance below
+        // the horizon: evaluate it along the view ray of the shifted pixel.
+        vec3 moonGlintViewDir = viewDir;
+        {
+            vec4 fragClip = projectionMatrix * vec4(IN.position, 1.0);
+            vec2 fragNdc = fragClip.xy / fragClip.w;
+            // The moon's vertical line, from its horizon point toward the zenith. In clip space
+            // it is the line horizonClip + t * zenithClip, which stays well defined when the
+            // moon itself is far off-screen.
+            vec3 horizonDir = vec3(moonDir.x, 0.0, moonDir.z) / max(length(moonDir.xz), 1e-4);
+            vec4 horizonClip = projectionMatrix * vec4(horizonDir, 0.0);
+            vec4 zenithClip = projectionMatrix * vec4(0.0, -1.0, 0.0, 0.0);
+            // Aim at the drawn moon while it is on screen, and at the point where its vertical
+            // line crosses the screen edge once it leaves the top or bottom, so the glint holds
+            // still instead of swinging as the moon's screen position diverges.
+            vec3 drawnMoonDir = normalize(vec3(uboSky.moonDir.x, -uboSky.moonDir.y + HORIZON_OFFSET, uboSky.moonDir.z));
+            vec4 moonClip = projectionMatrix * vec4(drawnMoonDir, 0.0);
+            float edgeY = moonClip.w > 0.001 ? clamp(moonClip.y / moonClip.w, -1.0, 1.0) : sign(moonClip.y);
+            float denominator = zenithClip.y - edgeY * zenithClip.w;
+            denominator = abs(denominator) > 1e-5 ? denominator : 1e-5;
+            float t = (edgeY * horizonClip.w - horizonClip.y) / denominator;
+            vec2 targetClip = horizonClip.xw + t * zenithClip.xw;
+            vec4 moonMirrorClip = projectionMatrix * vec4(moonDir * vec3(1.0, -1.0, 1.0), 0.0);
+            // Screen x diverges as a direction nears the camera's side plane (w -> 0). Use
+            // x / sqrt(w^2 + x^2 / L^2) instead, which matches the screen position on screen,
+            // levels off at L beyond it, and stays continuous even behind the camera, so the
+            // glint keeps travelling with the moon as it leaves the side of the screen.
+            const float L = 3.0; // NDC
+            float targetX = targetClip.x /
+                sqrt(max(targetClip.y * targetClip.y + targetClip.x * targetClip.x / (L * L), 1e-8));
+            float mirrorX = moonMirrorClip.x /
+                sqrt(max(moonMirrorClip.w * moonMirrorClip.w + moonMirrorClip.x * moonMirrorClip.x / (L * L), 1e-8));
+            // Only partly compensate, keeping some of the perspective lean.
+            const float moonGlintShiftStrength = 0.5;
+            float shift = (targetX - mirrorX) * moonGlintShiftStrength;
+            if (shift != 0.0) {
+                vec2 sampleNdc = fragNdc - vec2(shift, 0.0);
+                vec4 nearWorld = invProjectionMatrix * vec4(sampleNdc, -1.0, 1.0);
+                vec4 farWorld = invProjectionMatrix * vec4(sampleNdc, 1.0, 1.0);
+                moonGlintViewDir = -normalize(farWorld.xyz / farWorld.w - nearWorld.xyz / nearWorld.w);
+            }
+        }
+
         vSpecularGloss *= 4;
         lightSpecularOut =
             sunReflectionColor * sunVisibility *
@@ -107,8 +153,8 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             // A tighter highlight than the sun's for the moon's smaller glint, with a faint
             // wider halo so it fades gradually into the water instead of ending abruptly.
             moonReflectionColor * moonVisibility * (
-                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 5.8, vSpecularStrength) * 3.5 +
-                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 0.53, vSpecularStrength) * 0.05);
+                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 5.8, vSpecularStrength) * 3.5 +
+                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 0.53, vSpecularStrength) * 0.05);
         lightSpecularOut = linearToSrgb(lightSpecularOut);
     } else {
         lightSpecularOut = lightColor * specular(IN.texBlend, viewDir, reflect(-lightDir, normals), vSpecularGloss, vSpecularStrength);
