@@ -123,7 +123,7 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             // wider halo so it fades gradually into the water instead of ending abruptly.
             moonReflectionColor * moonVisibility * (
                 specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 4.2, vSpecularStrength) * 3.5 +
-                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 0.28, vSpecularStrength) * 0.05);
+                specular(IN.texBlend, moonGlintViewDir, moonGlintDir, vSpecularGloss * 0.34, vSpecularStrength) * 0.05);
         lightSpecularOut = linearToSrgb(lightSpecularOut);
     } else {
         lightSpecularOut = lightColor * specular(IN.texBlend, viewDir, reflect(-lightDir, normals), vSpecularGloss, vSpecularStrength);
