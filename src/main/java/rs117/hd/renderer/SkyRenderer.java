@@ -39,6 +39,8 @@ import static rs117.hd.utils.MathUtils.*;
 @Singleton
 public class SkyRenderer {
 	private static final float[] BLACK = { 0, 0, 0 };
+	// Matches HORIZON_OFFSET in utils/sky.glsl, which lowers the drawn sun and moon
+	private static final float SKY_HORIZON_OFFSET = .087f;
 
 	@Inject
 	private HdPlugin plugin;
@@ -409,7 +411,84 @@ public class SkyRenderer {
 		ubo.starVisibility.set(configuration.starVisibility);
 		ubo.nebulaVisibility.set(configuration.nebulaVisibility);
 		ubo.auroraVisibility.set(state.auroraStrength * configuration.auroraVisibility);
+		updateMoonGlint(state);
 		ubo.upload();
+	}
+
+	/**
+	 * Place the moon's specular glint on water for the current camera; see water.glsl. These only
+	 * depend on the camera and the moon, so they are resolved once per frame instead of per fragment.
+	 */
+	private void updateMoonGlint(SkyState state) {
+		var ubo = plugin.uboSky;
+		if (plugin.orthographicProjection) {
+			ubo.moonGlintShift.set(0f);
+			ubo.moonGlintFacing.set(1f);
+			return;
+		}
+
+		// The scene shaders' column-major view-projection, applied to directions (w = 0)
+		float[] m = plugin.viewProjMatrix;
+		// Sky directions in the scene's Y-down world
+		float moonX = state.moonDirection[0];
+		float moonY = -state.moonDirection[1];
+		float moonZ = state.moonDirection[2];
+
+		// A very wide view looking steeply down also sees water behind the camera, where the glint
+		// of a moon behind the camera can appear. That is optically right but looks wrong when facing
+		// away from the moon, so only show the glint while the moon is in front of the camera's
+		// horizontal facing. The w row gives the camera's forward axis, and the y row the direction
+		// toward the top of the screen. Looking down, forward loses its horizontal part while the top
+		// of the screen points the way the camera faces, so their sum is a stable facing at any pitch.
+		float forwardLength = (float) Math.sqrt(m[3] * m[3] + m[7] * m[7] + m[11] * m[11]);
+		float topLength = (float) Math.sqrt(m[1] * m[1] + m[5] * m[5] + m[9] * m[9]);
+		float facingX = m[3] / forwardLength + m[1] / topLength;
+		float facingZ = m[11] / forwardLength + m[9] / topLength;
+		ubo.moonGlintFacing.set(facingX * moonX + facingZ * moonZ < 0 ? 0f : 1f);
+
+		// At very wide fields of view, vertical lines lean strongly toward the bottom of the screen,
+		// so the moon's true reflection lands far to the side of the drawn moon. Shift the glint
+		// horizontally on screen toward the drawn moon, keeping its distance below the horizon.
+		// The target lies on the moon's vertical line, horizonClip + t * zenithClip in clip space,
+		// at the drawn moon's screen height clamped to the screen edge. The glint then holds still
+		// as the moon leaves the top or bottom of the screen, where its screen position diverges.
+		float horizontalLength = max((float) Math.sqrt(moonX * moonX + moonZ * moonZ), 1e-4f);
+		float horizonX = clipDirection(m, 0, moonX / horizontalLength, 0, moonZ / horizontalLength);
+		float horizonY = clipDirection(m, 1, moonX / horizontalLength, 0, moonZ / horizontalLength);
+		float horizonW = clipDirection(m, 3, moonX / horizontalLength, 0, moonZ / horizontalLength);
+		float zenithX = clipDirection(m, 0, 0, -1, 0);
+		float zenithY = clipDirection(m, 1, 0, -1, 0);
+		float zenithW = clipDirection(m, 3, 0, -1, 0);
+
+		float drawnY = moonY + SKY_HORIZON_OFFSET;
+		float drawnLength = (float) Math.sqrt(moonX * moonX + drawnY * drawnY + moonZ * moonZ);
+		float moonClipY = clipDirection(m, 1, moonX / drawnLength, drawnY / drawnLength, moonZ / drawnLength);
+		float moonClipW = clipDirection(m, 3, moonX / drawnLength, drawnY / drawnLength, moonZ / drawnLength);
+		float edgeY = moonClipW > .001f ? clamp(moonClipY / moonClipW, -1, 1) : Math.signum(moonClipY);
+
+		float denominator = zenithY - edgeY * zenithW;
+		if (abs(denominator) <= 1e-5f)
+			denominator = 1e-5f;
+		float t = (edgeY * horizonW - horizonY) / denominator;
+		float targetX = boundedScreenX(horizonX + t * zenithX, horizonW + t * zenithW);
+		// The true reflection is the moon's direction mirrored in the water plane
+		float mirrorX = boundedScreenX(clipDirection(m, 0, moonX, -moonY, moonZ), clipDirection(m, 3, moonX, -moonY, moonZ));
+		// Only partly compensate, keeping some of the perspective lean
+		ubo.moonGlintShift.set((targetX - mirrorX) * .5f);
+	}
+
+	private static float clipDirection(float[] columnMajor, int row, float x, float y, float z) {
+		return columnMajor[row] * x + columnMajor[4 + row] * y + columnMajor[8 + row] * z;
+	}
+
+	/**
+	 * Screen x diverges as a direction nears the camera's side plane (w -> 0). x / sqrt(w^2 + x^2 / L^2)
+	 * matches the screen position on screen, levels off at L = 3 beyond it, and stays continuous
+	 * even behind the camera, so the glint keeps travelling with the moon off the side of the screen.
+	 */
+	private static float boundedScreenX(float x, float w) {
+		final float L = 3;
+		return x / (float) Math.sqrt(max(w * w + x * x / (L * L), 1e-8f));
 	}
 
 	private float getNightExposure(float luminance, float target) {

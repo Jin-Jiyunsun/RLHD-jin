@@ -33,5 +33,9 @@ layout(std140) uniform UBOSky {
 
     float starHorizonHeight;
 
+    // Moon glint placement on water, resolved per frame by SkyRenderer.
+    float moonGlintShift; // horizontal screen shift, in NDC
+    float moonGlintFacing; // 1 while the moon is in front of the camera's facing, else 0
+
     vec4 nebulaClusters[NEBULA_CLUSTER_COUNT];
 } uboSky;
