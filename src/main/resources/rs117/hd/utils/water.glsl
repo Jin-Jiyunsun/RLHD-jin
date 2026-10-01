@@ -98,13 +98,17 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         // Compress disk intensity before shaping the highlight; visibility and
         // shadows remain outside the tone map so they can still fade it fully.
         vec3 sunReflectionColor = 14 * uboSky.sunColor;
-        vec3 moonReflectionColor = 7.15 * uboSky.moonDiskColor;
+        vec3 moonReflectionColor = 0.8 * uboSky.moonDiskColor;
+        vec3 moonGlintDir = reflect(-moonDir, normals);
         vSpecularGloss *= 4;
         lightSpecularOut =
             sunReflectionColor * sunVisibility *
                 specular(IN.texBlend, viewDir, reflect(-sunDir, normals), vSpecularGloss, vSpecularStrength) +
-            moonReflectionColor * moonVisibility *
-                specular(IN.texBlend, viewDir, reflect(-moonDir, normals), vSpecularGloss, vSpecularStrength);
+            // A tighter highlight than the sun's for the moon's smaller glint, with a faint
+            // wider halo so it fades gradually into the water instead of ending abruptly.
+            moonReflectionColor * moonVisibility * (
+                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 5.0, vSpecularStrength) * 3.5 +
+                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 0.53, vSpecularStrength) * 0.06);
         lightSpecularOut = linearToSrgb(lightSpecularOut);
     } else {
         lightSpecularOut = lightColor * specular(IN.texBlend, viewDir, reflect(-lightDir, normals), vSpecularGloss, vSpecularStrength);
