@@ -107,8 +107,8 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             // A tighter highlight than the sun's for the moon's smaller glint, with a faint
             // wider halo so it fades gradually into the water instead of ending abruptly.
             moonReflectionColor * moonVisibility * (
-                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 5.0, vSpecularStrength) * 3.5 +
-                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 0.53, vSpecularStrength) * 0.06);
+                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 5.8, vSpecularStrength) * 3.5 +
+                specular(IN.texBlend, viewDir, moonGlintDir, vSpecularGloss * 0.53, vSpecularStrength) * 0.05);
         lightSpecularOut = linearToSrgb(lightSpecularOut);
     } else {
         lightSpecularOut = lightColor * specular(IN.texBlend, viewDir, reflect(-lightDir, normals), vSpecularGloss, vSpecularStrength);
