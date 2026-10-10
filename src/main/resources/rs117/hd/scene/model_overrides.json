@@ -83440,7 +83440,7 @@
       {
         "description": "Flame",
         "colors": "a < 255",
-        "baseMaterial": "GRAY_80",
+        "baseMaterial": "NONE",
         "upwardsNormals": true,
         "receiveShadows": false
       },
