@@ -2,6 +2,9 @@ package rs117.hd.utils;
 
 import java.awt.Color;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
 import lombok.Getter;
@@ -24,6 +27,7 @@ import rs117.hd.overlays.ShadowMapOverlay;
 import rs117.hd.overlays.TileInfoOverlay;
 import rs117.hd.overlays.TiledLightingOverlay;
 import rs117.hd.scene.GamevalManager;
+import rs117.hd.scene.LightManager;
 
 import static java.awt.event.InputEvent.CTRL_DOWN_MASK;
 import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
@@ -46,6 +50,17 @@ public class DeveloperTools implements KeyListener {
 	private static final Keybind KEY_TOGGLE_HIDE_UI = new Keybind(KeyEvent.VK_H, CTRL_DOWN_MASK);
 	private static final Keybind KEY_RELOAD_SCENE = new Keybind(KeyEvent.VK_R, CTRL_DOWN_MASK);
 	private static final Keybind KEY_COLOR_PICKER = new Keybind(KeyEvent.VK_P, CTRL_DOWN_MASK | SHIFT_DOWN_MASK);
+
+	private static final Keybind KEY_SPOTANIM_PAUSE = new Keybind(KeyEvent.VK_SPACE, CTRL_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_STEP_BACK = new Keybind(KeyEvent.VK_LEFT, CTRL_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_STEP_FORWARD = new Keybind(KeyEvent.VK_RIGHT, CTRL_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_BIG_STEP_BACK = new Keybind(KeyEvent.VK_LEFT, CTRL_DOWN_MASK | SHIFT_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_BIG_STEP_FORWARD = new Keybind(KeyEvent.VK_RIGHT, CTRL_DOWN_MASK | SHIFT_DOWN_MASK);
+	private static final int SPOTANIM_BIG_STEP_TICKS = 10;
+
+	private static final int TEST_SPOTANIM_SLOT = 0;
+	// Pause between loops in client cycles (20 ms each), long enough for the previous lights to be marked for removal
+	private static final int TEST_SPOTANIM_LOOP_DELAY = 50;
 
 	@Inject
 	@Named("developerMode")
@@ -74,6 +89,9 @@ public class DeveloperTools implements KeyListener {
 
 	@Inject
 	private GamevalManager gamevalManager;
+
+	@Inject
+	private LightManager lightManager;
 
 	@Inject
 	private TileInfoOverlay tileInfoOverlay;
@@ -105,6 +123,18 @@ public class DeveloperTools implements KeyListener {
 
 	private RuneliteColorPicker colorPicker;
 
+	private int testSpotanimId = -1;
+	private int testSpotanimHeight;
+	private boolean testSpotanimLoop;
+	private int testSpotanimRestartCycle = -1;
+	private List<int[]> testSpotanimFrameTimes;
+	private int testSpotanimLastFrame;
+	// Frame start times recorded during the first play, used to map playback time to frames while controlling playback
+	private List<int[]> testSpotanimTimeline;
+	private boolean testSpotanimPaused;
+	private float testSpotanimSpeed = 1;
+	private float testSpotanimTimeMs;
+
 	public void activate() {
 		// Listen for commands
 		eventBus.register(this);
@@ -135,6 +165,7 @@ public class DeveloperTools implements KeyListener {
 		lightGizmoOverlay.setActive(false);
 		tiledLightingOverlay.setActive(false);
 		hideUiEnabled = false;
+		clientThread.invoke(this::stopTestSpotanim);
 	}
 
 	public void updateConfig() {
@@ -204,6 +235,328 @@ public class DeveloperTools implements KeyListener {
 			case "varp":
 				handleVarCommand(action, args);
 				break;
+			case "spotanim":
+				handleSpotanimCommand(args);
+				break;
+		}
+	}
+
+	@Subscribe
+	public void onClientTick(ClientTick clientTick) {
+		if (testSpotanimId == -1)
+			return;
+
+		Player player = client.getLocalPlayer();
+		if (player == null)
+			return;
+
+		ActorSpotAnim spotanim = findTestSpotanim(player);
+
+		if (isTestSpotanimControlled()) {
+			updateControlledSpotanim(player, spotanim);
+			return;
+		}
+
+		if (spotanim != null) {
+			testSpotanimRestartCycle = -1;
+			// Record when each frame starts during the first play, relative to the spotanim's start cycle
+			int elapsedCycles = client.getGameCycle() - spotanim.getStartCycle();
+			if (testSpotanimFrameTimes != null && elapsedCycles >= 0 && spotanim.getFrame() != testSpotanimLastFrame) {
+				testSpotanimLastFrame = spotanim.getFrame();
+				testSpotanimFrameTimes.add(new int[] { testSpotanimLastFrame, elapsedCycles * Constants.CLIENT_TICK_LENGTH });
+			}
+			return;
+		}
+
+		if (testSpotanimFrameTimes != null) {
+			postSpotanimTimeline(testSpotanimFrameTimes);
+			testSpotanimTimeline = testSpotanimFrameTimes;
+			testSpotanimFrameTimes = null;
+		}
+
+		if (!testSpotanimLoop) {
+			testSpotanimId = -1;
+			return;
+		}
+
+		int cycle = client.getGameCycle();
+		if (testSpotanimRestartCycle == -1) {
+			testSpotanimRestartCycle = cycle + TEST_SPOTANIM_LOOP_DELAY;
+		} else if (cycle >= testSpotanimRestartCycle) {
+			testSpotanimRestartCycle = -1;
+			playTestSpotanim();
+		}
+	}
+
+	@Nullable
+	private ActorSpotAnim findTestSpotanim(Player player) {
+		for (var s : player.getSpotAnims())
+			if (s.getId() == testSpotanimId)
+				return s;
+		return null;
+	}
+
+	private boolean isTestSpotanimControlled() {
+		return testSpotanimPaused || testSpotanimSpeed != 1;
+	}
+
+	private int getTestSpotanimEndMs() {
+		if (testSpotanimTimeline == null || testSpotanimTimeline.isEmpty())
+			return Integer.MAX_VALUE;
+		return testSpotanimTimeline.get(testSpotanimTimeline.size() - 1)[1];
+	}
+
+	private int getTestSpotanimFrameAt(float timeMs) {
+		// Before the first play has been recorded, assume one frame per client tick, like Maya animations
+		if (testSpotanimTimeline == null || testSpotanimTimeline.isEmpty())
+			return (int) (timeMs / Constants.CLIENT_TICK_LENGTH);
+		int frame = testSpotanimTimeline.get(0)[0];
+		for (int[] entry : testSpotanimTimeline) {
+			if (entry[1] > timeMs)
+				break;
+			frame = entry[0];
+		}
+		return frame;
+	}
+
+	/**
+	 * Take over playback of the test spotanim from the client, starting from wherever it currently is.
+	 */
+	private void beginControllingTestSpotanim() {
+		if (isTestSpotanimControlled())
+			return;
+
+		Player player = client.getLocalPlayer();
+		ActorSpotAnim spotanim = player == null ? null : findTestSpotanim(player);
+		testSpotanimTimeMs = spotanim == null ? 0 : max(0, client.getGameCycle() - spotanim.getStartCycle()) * Constants.CLIENT_TICK_LENGTH;
+
+		// Measurements of the first play would be meaningless once playback is altered
+		testSpotanimFrameTimes = null;
+	}
+
+	private void updateControlledSpotanim(Player player, @Nullable ActorSpotAnim spotanim) {
+		int endMs = getTestSpotanimEndMs();
+		if (!testSpotanimPaused) {
+			testSpotanimTimeMs += testSpotanimSpeed * Constants.CLIENT_TICK_LENGTH;
+			if (testSpotanimTimeMs >= endMs) {
+				if (testSpotanimLoop) {
+					testSpotanimTimeMs = 0;
+				} else {
+					testSpotanimTimeMs = endMs;
+					testSpotanimPaused = true;
+				}
+			}
+		}
+
+		if (spotanim == null) {
+			// The client finished or replaced it, so bring it back and keep controlling it from the next tick
+			playTestSpotanim();
+			return;
+		}
+
+		// Hold the spotanim on the frame for the current playback time, so the client never advances or finishes it
+		spotanim.setFrame(getTestSpotanimFrameAt(testSpotanimTimeMs));
+		spotanim.setCycle(0);
+
+		lightManager.spotanimTimeOverrideActor = player;
+		lightManager.spotanimTimeOverrideId = testSpotanimId;
+		lightManager.spotanimTimeOverride = testSpotanimTimeMs / 1000;
+	}
+
+	private void releaseTestSpotanimControl() {
+		lightManager.spotanimTimeOverrideActor = null;
+		lightManager.spotanimTimeOverrideId = -1;
+		lightManager.spotanimTimeOverride = -1;
+	}
+
+	private void postTestSpotanimPosition() {
+		postMessage(String.format(
+			"Spotanim %s at frame %d, %d ms (speed %sx)",
+			testSpotanimPaused ? "paused" : "playing",
+			getTestSpotanimFrameAt(testSpotanimTimeMs),
+			Math.round(testSpotanimTimeMs),
+			testSpotanimSpeed
+		));
+	}
+
+	private void toggleTestSpotanimPause() {
+		if (testSpotanimId == -1)
+			return;
+		beginControllingTestSpotanim();
+		testSpotanimPaused = !testSpotanimPaused;
+		if (!isTestSpotanimControlled())
+			releaseTestSpotanimControl();
+		postTestSpotanimPosition();
+	}
+
+	private void stepTestSpotanim(int ticks) {
+		if (testSpotanimId == -1)
+			return;
+		beginControllingTestSpotanim();
+		testSpotanimPaused = true;
+		testSpotanimTimeMs = clamp(testSpotanimTimeMs + ticks * Constants.CLIENT_TICK_LENGTH, 0, getTestSpotanimEndMs());
+		postTestSpotanimPosition();
+	}
+
+	private void handleSpotanimCommand(String[] args) {
+		assert client.isClientThread();
+		String usage = "Usage: ::117hd spotanim <name|id> [height] [loop] / pause / speed <multiplier> / time <ms> / stop";
+		if (args.length < 2 || args.length > 4) {
+			postMessage(usage);
+			return;
+		}
+
+		switch (args[1].toLowerCase()) {
+			case "stop":
+			case "clear":
+				stopTestSpotanim();
+				postMessage("Stopped test spotanim");
+				return;
+			case "pause":
+			case "resume":
+				if (testSpotanimId == -1) {
+					postMessage("No test spotanim is playing");
+				} else {
+					toggleTestSpotanimPause();
+				}
+				return;
+			case "speed":
+			case "time":
+				if (testSpotanimId == -1) {
+					postMessage("No test spotanim is playing");
+					return;
+				}
+				float value;
+				try {
+					value = args.length == 3 ? Float.parseFloat(args[2]) : -1;
+				} catch (NumberFormatException e) {
+					value = -1;
+				}
+				if (value < 0 || args[1].equalsIgnoreCase("speed") && value == 0) {
+					postMessage(usage);
+					return;
+				}
+				beginControllingTestSpotanim();
+				if (args[1].equalsIgnoreCase("speed")) {
+					testSpotanimSpeed = value;
+				} else {
+					testSpotanimTimeMs = min(value, getTestSpotanimEndMs());
+					testSpotanimPaused = true;
+				}
+				if (!isTestSpotanimControlled())
+					releaseTestSpotanimControl();
+				postTestSpotanimPosition();
+				return;
+		}
+
+		String nameOrId = args[1].toUpperCase();
+		Integer id;
+		try {
+			id = Integer.parseInt(nameOrId);
+		} catch (NumberFormatException ignored) {
+			try (var gamevals = gamevalManager.obtainHandle()) {
+				id = gamevals.getSpotanims().get(nameOrId);
+			}
+		}
+		if (id == null) {
+			postMessage("Unknown spotanim: " + nameOrId);
+			return;
+		}
+
+		int height = 0;
+		boolean loop = false;
+		for (int i = 2; i < args.length; i++) {
+			if (args[i].equalsIgnoreCase("loop")) {
+				loop = true;
+				continue;
+			}
+			try {
+				height = Integer.parseInt(args[i]);
+			} catch (NumberFormatException e) {
+				postMessage(usage);
+				return;
+			}
+		}
+
+		if (client.getLocalPlayer() == null) {
+			postMessage("No local player to play the spotanim on");
+			return;
+		}
+
+		stopTestSpotanim();
+		testSpotanimId = id;
+		testSpotanimHeight = height;
+		testSpotanimLoop = loop;
+		testSpotanimFrameTimes = new ArrayList<>();
+		testSpotanimLastFrame = -1;
+		playTestSpotanim();
+
+		String name;
+		try (var gamevals = gamevalManager.obtainHandle()) {
+			name = gamevals.getSpotanimName(id);
+		}
+		postMessage("Playing spotanim " + (name == null ? id : name + " (" + id + ")") + " at height " + height + (loop ? ", looping" : ""));
+	}
+
+	private void playTestSpotanim() {
+		Player player = client.getLocalPlayer();
+		if (player == null)
+			return;
+
+		player.createSpotAnim(TEST_SPOTANIM_SLOT, testSpotanimId, testSpotanimHeight, 0);
+
+		// Client-side spotanims don't notify plugins, so let the LightManager know to attach lights
+		GraphicChanged changed = new GraphicChanged();
+		changed.setActor(player);
+		eventBus.post(changed);
+	}
+
+	private void stopTestSpotanim() {
+		if (testSpotanimId == -1)
+			return;
+
+		Player player = client.getLocalPlayer();
+		if (player != null && player.hasSpotAnim(testSpotanimId))
+			player.removeSpotAnim(TEST_SPOTANIM_SLOT);
+
+		testSpotanimId = -1;
+		testSpotanimLoop = false;
+		testSpotanimRestartCycle = -1;
+		testSpotanimFrameTimes = null;
+		testSpotanimTimeline = null;
+		testSpotanimPaused = false;
+		testSpotanimSpeed = 1;
+		releaseTestSpotanimControl();
+	}
+
+	private void postSpotanimTimeline(List<int[]> frameTimes) {
+		if (frameTimes.isEmpty())
+			return;
+
+		int[] last = frameTimes.get(frameTimes.size() - 1);
+
+		// Maya animations advance one frame per client tick, so a full timeline would just be frame * tick length
+		boolean onePerTick = frameTimes.stream().allMatch(e -> e[1] == e[0] * Constants.CLIENT_TICK_LENGTH);
+		if (onePerTick) {
+			postMessage(String.format(
+				"Spotanim runs one frame per client tick: frame N starts at N * %d ms. Frames 0-%d, ending around %d ms",
+				Constants.CLIENT_TICK_LENGTH, last[0], last[1] + Constants.CLIENT_TICK_LENGTH
+			));
+			return;
+		}
+
+		postMessage("Spotanim frame timeline (frame @ ms since start), " + frameTimes.size() + " frames over " + last[1] + "+ ms:");
+		var sb = new StringBuilder();
+		for (int i = 0; i < frameTimes.size(); i++) {
+			int[] entry = frameTimes.get(i);
+			if (sb.length() > 0)
+				sb.append(", ");
+			sb.append(entry[0]).append(" @ ").append(entry[1]);
+			if (i % 10 == 9 || i == frameTimes.size() - 1) {
+				postMessage(sb.toString());
+				log.debug("Spotanim timeline: {}", sb);
+				sb.setLength(0);
+			}
 		}
 	}
 
@@ -369,6 +722,16 @@ public class DeveloperTools implements KeyListener {
 			plugin.renderer.reloadScene();
 		} else if (KEY_COLOR_PICKER.matches(e)) {
 			toggleColorPicker();
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_PAUSE.matches(e)) {
+			clientThread.invoke(this::toggleTestSpotanimPause);
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_STEP_BACK.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(-1));
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_STEP_FORWARD.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(1));
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_BIG_STEP_BACK.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(-SPOTANIM_BIG_STEP_TICKS));
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_BIG_STEP_FORWARD.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(SPOTANIM_BIG_STEP_TICKS));
 		} else {
 			return;
 		}

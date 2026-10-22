@@ -116,6 +116,11 @@ public class LightManager {
 	@Getter
 	private int numVisibleLights;
 
+	// Developer tools: when not negative, pins the elapsed time in seconds of lights attached to this actor's spotanim
+	public Actor spotanimTimeOverrideActor;
+	public int spotanimTimeOverrideId = -1;
+	public float spotanimTimeOverride = -1;
+
 	private final ArrayList<Light> WORLD_LIGHTS = new ArrayList<>();
 	private final ListMultimap<Integer, LightDefinition> NPC_LIGHTS = ArrayListMultimap.create();
 	private final ListMultimap<Integer, LightDefinition> OBJECT_LIGHTS = ArrayListMultimap.create();
@@ -496,6 +501,8 @@ public class LightManager {
 				light.toggleTemporaryVisibility(changedPlanes);
 
 			light.elapsedTime += plugin.deltaClientTime;
+			if (spotanimTimeOverride >= 0 && light.actor == spotanimTimeOverrideActor && light.spotanimId == spotanimTimeOverrideId)
+				light.elapsedTime = spotanimTimeOverride;
 
 			light.visible = light.spawnDelay <= light.elapsedTime && (light.lifetime == -1 || light.elapsedTime < light.lifetime);
 
@@ -818,7 +825,9 @@ public class LightManager {
 						continue;
 				}
 
+				// Lights still fading out from a previous cast of the same spotanim shouldn't block new ones
 				boolean isDuplicate = lights.stream().anyMatch(light ->
+					!light.markedForRemoval &&
 					light.spotanimId == spotAnimId &&
 					light.actor == actor &&
 					light.def == def);
