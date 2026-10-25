@@ -1008,11 +1008,16 @@ public class LightManager {
 			int objectId = entry.getValue();
 			if (!object.isActive() || lit.contains(object))
 				continue;
+			// Most objects in a recreated scene capture have no lights
+			var defs = OBJECT_LIGHTS.get(objectId);
+			if (defs.isEmpty())
+				continue;
 
 			var lp = object.getLocation();
 			int plane = object.getLevel();
-			int tileHeight = Perspective.getTileHeight(client, lp, plane);
-			for (LightDefinition def : OBJECT_LIGHTS.get(objectId)) {
+			// The object's own height, since objects recreated from a scene capture keep theirs instead of following the ground
+			int tileHeight = object.getZ();
+			for (LightDefinition def : defs) {
 				Light light = new Light(def);
 				light.runeLiteObject = object;
 				light.tileObjectId = objectId;

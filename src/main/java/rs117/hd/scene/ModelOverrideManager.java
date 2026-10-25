@@ -55,8 +55,10 @@ public class ModelOverrideManager {
 	private final Int2ObjectHashMap<ModelOverride> modelOverrides = new Int2ObjectHashMap<>();
 	private final IntHashSet detailCullingBlacklist = new IntHashSet();
 
-	// Developer tools: client-side objects which should be treated as the mapped object ID
+	// Developer tools: client-side objects which should be treated as the mapped object ID. Only change through the methods
+	// below, which also index them by position, since a recreated scene capture can add thousands.
 	public final Map<RuneLiteObject, Integer> testObjects = new ConcurrentHashMap<>();
+	private final Map<Long, Integer> testObjectPositions = new ConcurrentHashMap<>();
 	// Developer tools: counts how many times overrides have been loaded, so tools can tell when to refresh
 	@Getter
 	private int configVersion;
@@ -280,12 +282,34 @@ public class ModelOverrideManager {
 	public int getTestObjectId(Renderable renderable, int localX, int localZ) {
 		if (testObjects.isEmpty() || renderable instanceof Actor || renderable instanceof Projectile || renderable instanceof DynamicObject)
 			return -1;
-		for (var entry : testObjects.entrySet()) {
-			var object = entry.getKey();
-			if (object == (Object) renderable || object.getX() == localX && object.getY() == localZ)
-				return entry.getValue();
-		}
-		return -1;
+		Integer id = renderable instanceof RuneLiteObject ? testObjects.get(renderable) : null;
+		if (id == null)
+			id = testObjectPositions.get(packTestObjectPosition(localX, localZ));
+		return id == null ? -1 : id;
+	}
+
+	public boolean isTestObjectAt(int localX, int localZ) {
+		return testObjectPositions.containsKey(packTestObjectPosition(localX, localZ));
+	}
+
+	// Test objects must be in place before they're added, and never move afterwards
+	public void addTestObject(RuneLiteObject object, int objectId) {
+		testObjects.put(object, objectId);
+		testObjectPositions.put(packTestObjectPosition(object.getX(), object.getY()), objectId);
+	}
+
+	public void removeTestObject(RuneLiteObject object) {
+		if (testObjects.remove(object) != null)
+			testObjectPositions.remove(packTestObjectPosition(object.getX(), object.getY()));
+	}
+
+	public void clearTestObjects() {
+		testObjects.clear();
+		testObjectPositions.clear();
+	}
+
+	private static long packTestObjectPosition(int localX, int localZ) {
+		return (long) localX << 32 | localZ & 0xFFFFFFFFL;
 	}
 
 	/**

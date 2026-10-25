@@ -116,6 +116,9 @@ public class ObjectDefinitionParser {
 					case 72:
 						offsetY = in.getShort();
 						break;
+					case 62:
+						def.mirrored = true;
+						break;
 
 					// Everything below doesn't affect how the object looks, so it's only read past
 					case 17:
@@ -124,7 +127,6 @@ public class ObjectDefinitionParser {
 					case 22:
 					case 23:
 					case 27:
-					case 62:
 					case 64:
 					case 73:
 					case 74:
@@ -254,6 +256,8 @@ public class ObjectDefinitionParser {
 
 		// Objects with model types have one model per placement type, so prefer the regular centrepiece model
 		def.models = models;
+		def.allModels = models;
+		def.modelTypes = types;
 		if (types != null) {
 			def.models = new int[] { models[0] };
 			for (int i = 0; i < types.length; i++) {

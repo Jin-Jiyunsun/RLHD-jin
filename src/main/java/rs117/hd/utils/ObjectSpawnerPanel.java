@@ -31,8 +31,10 @@ import javax.annotation.Nullable;
 import javax.swing.AbstractButton;
 import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -83,7 +85,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private enum Mode {
 		OBJECTS("Objects", "spawn", "Clear spawned objects"),
 		SPOTANIMS("Spotanims", "play", "Stop spotanim"),
-		PROJECTILES("Projectiles", "fire", "Stop projectile");
+		PROJECTILES("Projectiles", "fire", "Stop projectile"),
+		SCENES("Scenes", "recreate", "Remove recreated objects");
 
 		final String label;
 		final String action;
@@ -114,7 +117,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private final JPanel startHeightRow = new JPanel(new BorderLayout(6, 0));
 	private final JTextField startFromField = new JTextField();
 	private final JButton clearButton = new JButton();
-	private final JPanel modeRow = new JPanel(new GridLayout(1, Mode.values().length, 4, 0));
+	// Two rows of tabs, since four don't fit across the narrow sidebar
+	private final JPanel modeRow = new JPanel(new GridLayout(0, 2, 4, 4));
 	private final JPanel filterRow = new JPanel(new GridLayout(1, 2, 4, 0));
 	private final JPanel controls = new JPanel(new GridLayout(0, 1, 0, 4));
 	private final JTextArea statusText = createWrappingText();
@@ -122,6 +126,12 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private final JPanel spawnedSection = new JPanel(new BorderLayout(0, 4));
 	private final JPanel spawnedRows = new SpawnedRowsPanel();
 	private final JLabel listHeader = createHeader("");
+	private final JPanel listSection = new JPanel(new BorderLayout(0, 4));
+	private final JPanel scenesSection = new JPanel(new BorderLayout(0, 6));
+	private final JPanel savedCapturesColumn = new JPanel(new GridLayout(0, 1, 0, 4));
+	private final JTextField sceneNameField = new JTextField();
+	private final JComboBox<String> sceneCaptureList = new JComboBox<>();
+	private final JButton recreateButton = createButton("Recreate around me");
 	private final ResultsModel results = new ResultsModel();
 	private final JList<Entry> resultList = new JList<>(results) {
 		// Always fit the sidebar's width, otherwise one long name widens every row and pushes the flags out of view
@@ -167,7 +177,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		modeRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		for (Mode m : Mode.values()) {
 			JButton button = createButton(m.label);
-			// Fit three labels across the narrow sidebar
+			// Fit the labels across the narrow sidebar
 			button.setMargin(new Insets(2, 0, 2, 0));
 			button.addActionListener(e -> setMode(m));
 			modeButtons[m.ordinal()] = button;
@@ -250,6 +260,9 @@ public class ObjectSpawnerPanel extends PluginPanel {
 					break;
 				case PROJECTILES:
 					developerTools.stopProjectileAndNotify();
+					break;
+				case SCENES:
+					developerTools.removeRecreatedSceneAndNotify();
 					break;
 			}
 		});
@@ -340,7 +353,6 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		scrollPane.setBorder(BorderFactory.createEmptyBorder());
 		scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-		JPanel listSection = new JPanel(new BorderLayout(0, 4));
 		listSection.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		// Search sits right above the list it filters
 		JPanel listTop = new JPanel(new BorderLayout(0, 4));
@@ -386,6 +398,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		listSection.add(scrollPane, BorderLayout.CENTER);
 		add(listSection, BorderLayout.CENTER);
 
+		createScenesSection();
+
 		setSpawnedObjects(List.of());
 		setFilter(Filter.ALL);
 		setMode(Mode.OBJECTS);
@@ -397,6 +411,100 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		developerTools.loadTestObjectDefinitions(this::setDefinitions);
 		if (!spotanimsLoaded)
 			developerTools.loadSpotanimNames(this::setSpotanims);
+		if (mode == Mode.SCENES)
+			refreshSceneCaptures(null);
+	}
+
+	/**
+	 * Build the tab for capturing the scene to a file, and recreating saved captures around the player
+	 */
+	private void createScenesSection() {
+		JLabel nameLabel = new JLabel("Name");
+		nameLabel.setFont(FontManager.getRunescapeSmallFont());
+		nameLabel.setForeground(Color.WHITE);
+		sceneNameField.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		sceneNameField.putClientProperty("JTextField.placeholderText", "Defaults to the date & time");
+		JPanel nameRow = new JPanel(new BorderLayout(6, 0));
+		nameRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		nameRow.add(nameLabel, BorderLayout.WEST);
+		nameRow.add(sceneNameField, BorderLayout.CENTER);
+
+		JComboBox<SceneCapture.Area> areaList = new JComboBox<>(SceneCapture.Area.values());
+		JButton captureButton = createButton("Capture scene");
+		captureButton.addActionListener(e -> developerTools.captureScene(
+			sceneNameField.getText().trim(),
+			(SceneCapture.Area) areaList.getSelectedItem()
+		));
+
+		JPanel captureColumn = new JPanel(new GridLayout(0, 1, 0, 4));
+		captureColumn.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		captureColumn.add(createHeader("Capture scene"));
+		captureColumn.add(nameRow);
+		captureColumn.add(areaList);
+		captureColumn.add(captureButton);
+
+		JTextArea captureInfo = createWrappingText();
+		captureInfo.setText("Saves every object on your plane and below within the chosen distance, relative to where you " +
+							"stand, to .runelite/117hd/scene_captures. Recreated objects are redrawn every frame, so big " +
+							"captures are slow.");
+
+		// Don't let a long file name widen the sidebar
+		sceneCaptureList.setPrototypeDisplayValue("A capture name");
+		recreateButton.addActionListener(e -> {
+			Object selected = sceneCaptureList.getSelectedItem();
+			if (selected != null)
+				developerTools.recreateSceneCapture(selected + ".json");
+		});
+
+		savedCapturesColumn.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		savedCapturesColumn.add(createHeader("Saved captures"));
+		savedCapturesColumn.add(sceneCaptureList);
+		savedCapturesColumn.add(recreateButton);
+
+		JTextArea recreateInfo = createWrappingText();
+		recreateInfo.setText("Recreated objects keep their height relative to you, and stay until removed or the scene reloads");
+
+		JPanel capturePart = new JPanel(new BorderLayout(0, 4));
+		capturePart.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		capturePart.add(captureColumn, BorderLayout.NORTH);
+		capturePart.add(captureInfo, BorderLayout.CENTER);
+		JPanel savedPart = new JPanel(new BorderLayout(0, 4));
+		savedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		savedPart.add(savedCapturesColumn, BorderLayout.NORTH);
+		savedPart.add(recreateInfo, BorderLayout.CENTER);
+
+		JPanel parts = new JPanel(new BorderLayout(0, 12));
+		parts.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		parts.add(capturePart, BorderLayout.NORTH);
+		parts.add(savedPart, BorderLayout.CENTER);
+		scenesSection.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		scenesSection.add(parts, BorderLayout.NORTH);
+		updateSceneCaptures(List.of(), null);
+	}
+
+	/**
+	 * Select a capture once the list has been refreshed, such as one which was just saved. Must be called on the Swing thread.
+	 */
+	public void setSelectedSceneCapture(String fileName) {
+		refreshSceneCaptures(fileName);
+	}
+
+	private void refreshSceneCaptures(@Nullable String selectFileName) {
+		developerTools.listSceneCaptures(fileNames -> updateSceneCaptures(fileNames, selectFileName));
+	}
+
+	private void updateSceneCaptures(List<String> fileNames, @Nullable String selectFileName) {
+		Object previous = selectFileName != null ? stripJsonExtension(selectFileName) : sceneCaptureList.getSelectedItem();
+		String[] names = fileNames.stream().map(ObjectSpawnerPanel::stripJsonExtension).toArray(String[]::new);
+		sceneCaptureList.setModel(new DefaultComboBoxModel<>(names));
+		if (previous != null)
+			sceneCaptureList.setSelectedItem(previous);
+		sceneCaptureList.setEnabled(names.length > 0);
+		recreateButton.setEnabled(names.length > 0);
+	}
+
+	private static String stripJsonExtension(String fileName) {
+		return fileName.endsWith(".json") ? fileName.substring(0, fileName.length() - 5) : fileName;
 	}
 
 	@Override
@@ -515,12 +623,16 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		// Only show the settings which apply to the current list
 		controls.removeAll();
 		controls.add(modeRow);
-		controls.add(filterRow);
-		if (mode != Mode.OBJECTS)
+		if (mode != Mode.SCENES)
+			controls.add(filterRow);
+		if (mode == Mode.SPOTANIMS || mode == Mode.PROJECTILES)
 			controls.add(loopButton);
-		// Clearing objects belongs under the spawned objects, while the other lists have no such box
+		// Clearing objects belongs under the spawned objects or saved captures, while the other lists have no such box
 		if (mode == Mode.OBJECTS) {
 			spawnedSection.add(clearButton, BorderLayout.SOUTH);
+		} else if (mode == Mode.SCENES) {
+			// Right below the recreate button
+			savedCapturesColumn.add(clearButton);
 		} else {
 			controls.add(clearButton);
 		}
@@ -533,6 +645,17 @@ public class ObjectSpawnerPanel extends PluginPanel {
 
 		projectileDisclaimer.setVisible(mode == Mode.PROJECTILES);
 		updateSpawnedSection();
+
+		// The scenes tab has no list to search, so it takes the list's place
+		JPanel center = mode == Mode.SCENES ? scenesSection : listSection;
+		if (center.getParent() != this) {
+			remove(mode == Mode.SCENES ? listSection : scenesSection);
+			add(center, BorderLayout.CENTER);
+			revalidate();
+			repaint();
+		}
+		if (mode == Mode.SCENES)
+			refreshSceneCaptures(null);
 		updateResults();
 	}
 
@@ -716,6 +839,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private void updateResults() {
 		// The list is about to change underneath the cursor
 		setHoveredEntry(null);
+		if (mode == Mode.SCENES)
+			return;
 
 		List<Entry> entries = mode == Mode.OBJECTS ? objectEntries : mode == Mode.SPOTANIMS ? spotanimEntries : projectileEntries;
 		StartFrom start = StartFrom.parse(startFromField.getText(), entries);

@@ -5,6 +5,7 @@ Developer tools for tuning 117 HD's lights and textures:
 - **Spawner sidebar**: search objects, spotanims and projectiles, preview them by hovering, and spawn them next to you
 - **`::117hd object`**: spawn an object, with its `model_overrides.json` textures and `lights.json` lights
 - **`::117hd spotanim`**: play a spotanim on your player, then pause, step or slow it down to time its lights
+- **Scene captures**: save every object in the loaded scene to a file, then recreate it around you somewhere else
 
 Everything is purely visual and client-side. Spawned objects, spotanims and projectiles have no clickboxes or menu
 entries, nothing is sent to the game server, and the tools only exist when RuneLite runs in developer mode.
@@ -36,7 +37,8 @@ and spawned content for normal users.
 Open it from the orange cube icon in RuneLite's sidebar, just below the configuration spanner. The object list loads
 once you've logged in.
 
-- **Objects / Spotanims / Projectiles** switch between the three lists, which are always in ID order.
+- **Objects / Spotanims / Projectiles** switch between the three lists, which are always in ID order. **Scenes**
+  opens the scene captures.
 - **Cube & lightbulb buttons** only show entries with a model override or with lights. Only one can be on at a time.
 - In each row, a green cube means the entry is in `model_overrides.json`, and a yellow lightbulb means it's in
   `lights.json`. These update whenever you save either file.
@@ -67,6 +69,24 @@ once you've logged in.
   the ground they start. They land on the ground of the target tile.
 - The projectile list is an approximation, since the game doesn't mark which spotanims are projectiles. It contains
   the projectiles 117 HD already configures, plus spotanims whose names look like projectiles.
+
+### Scenes
+
+- **Capture scene** saves every object, wall, wall decoration and ground object in the chosen area to
+  `.runelite/117hd/scene_captures`, positioned relative to where you stand. NPCs and players aren't included, and
+  objects which change with varbits are saved as they currently look. Leave the name empty to name it by the date.
+- Only your plane and the planes below it are captured. The game hides the planes above you like roofs, and instances
+  often fill them with copies of the map, which would otherwise stack up when recreated.
+- The area is the 64x64 tile region you're in, everything within 16 tiles of you in each direction, or the whole loaded
+  scene. Unlike the real objects they stand in for, recreated objects are redrawn every frame, so a whole scene's worth
+  can drop the frame rate a lot.
+- **Saved captures** lists the files in that folder. **Recreate around me** spawns the selected capture's objects as
+  test objects around you, keeping their height relative to you and their planes relative to yours, with their
+  `model_overrides.json` textures and `lights.json` lights. Objects which land outside the loaded scene are skipped.
+- Big captures spawn over a few seconds. Recreating another capture replaces the previous one, and **Remove recreated
+  objects** removes it. Recreated objects aren't listed under spawned objects, but are also removed when a new scene
+  loads.
+- To rename or delete captures, open `.runelite/117hd/scene_captures` yourself.
 
 ## Chat commands
 

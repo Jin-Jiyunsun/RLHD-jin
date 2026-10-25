@@ -1,10 +1,12 @@
 package rs117.hd.utils;
 
+import com.google.gson.Gson;
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -87,6 +89,8 @@ public class DeveloperTools implements KeyListener {
 	private static final int OBJECT_CONFIG_GROUP = 6;
 	// Spread decoding every object's definition over a few ticks, to avoid a hitch
 	private static final long TEST_OBJECT_DEFINITION_NANOS_PER_TICK = 2_000_000;
+	// Spread recreating a scene capture's objects over ticks too, since a whole scene can hold thousands
+	private static final long SCENE_RECREATION_NANOS_PER_TICK = 4_000_000;
 
 	private static final int TEST_SPOTANIM_SLOT = 0;
 	// Pause between loops in client cycles (20 ms each), long enough for the previous lights to be marked for removal
@@ -104,6 +108,9 @@ public class DeveloperTools implements KeyListener {
 
 	@Inject
 	private ScheduledExecutorService executor;
+
+	@Inject
+	private Gson gson;
 
 	@Inject
 	private ClientToolbar clientToolbar;
@@ -204,6 +211,10 @@ public class DeveloperTools implements KeyListener {
 	private TestObjectDefinitionLoad testObjectDefinitionLoad;
 	private boolean loadingTestObjectNames;
 	private final List<Consumer<Map<Integer, TestObjectDefinition>>> testObjectDefinitionCallbacks = new ArrayList<>();
+	// Objects recreated from a scene capture, kept out of the spawned objects list since there can be thousands
+	private final List<RuneLiteObject> recreatedSceneObjects = new ArrayList<>();
+	@Nullable
+	private SceneRecreation sceneRecreation;
 
 	/**
 	 * Object models & animations decoded from the client's cache by {@link ObjectDefinitionParser}, used to spawn test objects
@@ -214,6 +225,11 @@ public class DeveloperTools implements KeyListener {
 		@Nullable
 		public String displayName;
 		public int[] models;
+		// Every model with its placement type, or null types if the object only has centrepiece models, for scene captures
+		public int[] allModels;
+		@Nullable
+		public int[] modelTypes;
+		public boolean mirrored;
 		public int animation = -1;
 		public int ambient;
 		public int contrast;
@@ -370,6 +386,7 @@ public class DeveloperTools implements KeyListener {
 		if (gameStateChanged.getGameState() != GameState.LOADING)
 			return;
 		stopTestProjectile();
+		sceneRecreation = null;
 		if (!modelOverrideManager.testObjects.isEmpty()) {
 			clearTestObjects();
 			postMessage("Removed test objects due to scene load");
@@ -382,6 +399,7 @@ public class DeveloperTools implements KeyListener {
 		updateTestProjectile();
 		updateSpawnerHdConfigIds();
 		updateTestObjectDefinitionLoad();
+		updateSceneRecreation();
 
 		if (testSpotanimId == -1)
 			return;
@@ -821,7 +839,7 @@ public class DeveloperTools implements KeyListener {
 			if (spawned == null)
 				return;
 			spawned.object.setActive(false);
-			modelOverrideManager.testObjects.remove(spawned.object);
+			modelOverrideManager.removeTestObject(spawned.object);
 			notifySpawnedTestObjectsChanged();
 		});
 	}
@@ -1054,7 +1072,7 @@ public class DeveloperTools implements KeyListener {
 		if (testObjectPreview == null)
 			return;
 		testObjectPreview.setActive(false);
-		modelOverrideManager.testObjects.remove(testObjectPreview);
+		modelOverrideManager.removeTestObject(testObjectPreview);
 		testObjectPreview = null;
 		testObjectPreviewId = -1;
 	}
@@ -1167,6 +1185,191 @@ public class DeveloperTools implements KeyListener {
 		});
 	}
 
+	/**
+	 * Capture every object in an area around the player, relative to the player, and save it to a file.
+	 * Can be called from any thread.
+	 */
+	public void captureScene(String name, SceneCapture.Area area) {
+		clientThread.invoke(() -> {
+			if (!developerMode)
+				return;
+			var capture = SceneCapture.capture(client, name, area);
+			if (capture == null) {
+				postMessage("No local player to capture the scene around");
+				return;
+			}
+			executor.execute(() -> {
+				try {
+					String fileName = SceneCapture.save(gson, capture);
+					postMessage("Captured " + capture.objects.size() + " objects to " + SceneCapture.CAPTURES_PATH.resolve(fileName));
+					var panel = objectSpawnerPanel;
+					if (panel != null)
+						SwingUtilities.invokeLater(() -> panel.setSelectedSceneCapture(fileName));
+				} catch (IOException ex) {
+					log.error("Failed to save scene capture", ex);
+					postMessage("Failed to save the scene capture: " + ex.getMessage());
+				}
+			});
+		});
+	}
+
+	/**
+	 * Pass the file names of the saved scene captures to the callback on the Swing thread
+	 */
+	public void listSceneCaptures(Consumer<List<String>> callback) {
+		if (!developerMode)
+			return;
+		executor.execute(() -> {
+			List<String> fileNames;
+			try {
+				fileNames = SceneCapture.list();
+			} catch (IOException ex) {
+				log.error("Failed to list scene captures", ex);
+				fileNames = List.of();
+			}
+			var result = fileNames;
+			SwingUtilities.invokeLater(() -> callback.accept(result));
+		});
+	}
+
+	/**
+	 * Spawn a saved scene capture's objects around the player, replacing any previously recreated capture
+	 */
+	public void recreateSceneCapture(String fileName) {
+		if (!developerMode)
+			return;
+		executor.execute(() -> {
+			SceneCapture.Capture capture;
+			try {
+				capture = SceneCapture.load(gson, fileName);
+			} catch (IOException | RuntimeException ex) {
+				log.error("Failed to load scene capture {}", fileName, ex);
+				postMessage("Failed to load the scene capture: " + ex.getMessage());
+				return;
+			}
+			clientThread.invoke(() -> startSceneRecreation(capture));
+		});
+	}
+
+	private void startSceneRecreation(SceneCapture.Capture capture) {
+		assert client.isClientThread();
+		if (!developerMode)
+			return;
+		Player player = client.getLocalPlayer();
+		var worldView = client.getTopLevelWorldView();
+		if (player == null || worldView == null) {
+			postMessage("No local player to recreate the scene around");
+			return;
+		}
+		removeRecreatedScene();
+
+		// Work out where everything goes now, so moving while it spawns doesn't move the rest
+		LocalPoint origin = player.getLocalLocation();
+		int originPlane = worldView.getPlane();
+		int groundHeight = Perspective.getTileHeight(client, origin, originPlane);
+		var recreation = new SceneRecreation(capture.name == null ? "the scene capture" : capture.name);
+		for (var object : capture.objects) {
+			int plane = originPlane + object.plane;
+			if (object.kind == null || plane < 0 || plane >= Constants.MAX_Z) {
+				recreation.skipped++;
+				continue;
+			}
+			for (var part : SceneCapture.getParts(object)) {
+				int x = origin.getX() + object.x + (part.offset ? object.xOffset : 0);
+				int y = origin.getY() + object.y + (part.offset ? object.yOffset : 0);
+				var location = new LocalPoint(x, y, worldView);
+				if (!location.isInScene()) {
+					recreation.skipped++;
+					continue;
+				}
+				int orientation = mod((part.rotation & 3) * 512 + object.modelOrientation, 2048);
+				recreation.pending.add(new PendingScenePart(object.id, part, location, plane, orientation, groundHeight + object.height));
+			}
+		}
+		// Big captures take a while, so start with what's around the player rather than the scene's edge
+		recreation.pending.sort(Comparator.comparingLong(pending -> {
+			long dx = pending.location.getX() - origin.getX();
+			long dy = pending.location.getY() - origin.getY();
+			return dx * dx + dy * dy;
+		}));
+		sceneRecreation = recreation;
+		postMessage("Recreating " + recreation.pending.size() + " objects from " + recreation.name + "...");
+	}
+
+	private void updateSceneRecreation() {
+		var recreation = sceneRecreation;
+		if (recreation == null)
+			return;
+
+		long deadline = System.nanoTime() + SCENE_RECREATION_NANOS_PER_TICK;
+		while (recreation.next < recreation.pending.size() && System.nanoTime() < deadline) {
+			var pending = recreation.pending.get(recreation.next++);
+			var def = readTestObjectDefinition(pending.objectId);
+			int[] modelIds = def == null ? null : SceneCapture.getModelIds(def, pending.part);
+			Model model = modelIds == null ? null : buildTestObjectModel(
+				def,
+				modelIds,
+				def.mirrored != pending.part.isMirrored(),
+				pending.part.isDiagonal(),
+				(pending.part.rotation & 1) == 1,
+				false
+			);
+			if (model == null) {
+				recreation.skipped++;
+				continue;
+			}
+
+			// Parts of the same wall share a position, which the renderer needs to be unique
+			var location = pending.location;
+			while (isTestObjectAt(location))
+				location = location.dx(1);
+			var object = placeTestObject(pending.objectId, def, model, location, pending.plane, pending.orientation, pending.height);
+			if (object != null)
+				recreatedSceneObjects.add(object);
+		}
+
+		if (recreation.next == recreation.pending.size()) {
+			sceneRecreation = null;
+			postMessage("Recreated " + recreatedSceneObjects.size() + " objects from " + recreation.name +
+						(recreation.skipped == 0 ? "" : ", skipping " + recreation.skipped + " which couldn't be rebuilt"));
+		}
+	}
+
+	public void removeRecreatedSceneAndNotify() {
+		clientThread.invoke(() -> {
+			int count = recreatedSceneObjects.size();
+			removeRecreatedScene();
+			postMessage("Removed " + count + " recreated object" + (count == 1 ? "" : "s"));
+		});
+	}
+
+	private void removeRecreatedScene() {
+		sceneRecreation = null;
+		for (var object : recreatedSceneObjects) {
+			object.setActive(false);
+			modelOverrideManager.removeTestObject(object);
+		}
+		recreatedSceneObjects.clear();
+	}
+
+	@RequiredArgsConstructor
+	private static class SceneRecreation {
+		final String name;
+		final List<PendingScenePart> pending = new ArrayList<>();
+		int next;
+		int skipped;
+	}
+
+	@RequiredArgsConstructor
+	private static class PendingScenePart {
+		final int objectId;
+		final SceneCapture.Part part;
+		final LocalPoint location;
+		final int plane;
+		final int orientation;
+		final int height;
+	}
+
 	@Nullable
 	private RuneLiteObject createTestObject(int objectId, TestObjectDefinition def, boolean reportErrors) {
 		assert client.isClientThread();
@@ -1179,35 +1382,9 @@ public class DeveloperTools implements KeyListener {
 			return null;
 		}
 
-		ModelData[] models = new ModelData[def.models.length];
-		for (int i = 0; i < models.length; i++) {
-			models[i] = client.loadModelData(def.models[i]);
-			if (models[i] == null) {
-				if (reportErrors)
-					postMessage("Unable to load model " + def.models[i]);
-				return null;
-			}
-		}
-
-		// Apply the object definition's model changes the same way the client does
-		ModelData modelData = models.length == 1 ? models[0] : client.mergeModels(models);
-		if (def.recolorFrom != null && def.recolorTo != null) {
-			modelData = modelData.cloneColors();
-			for (int i = 0; i < min(def.recolorFrom.length, def.recolorTo.length); i++)
-				modelData.recolor(def.recolorFrom[i], def.recolorTo[i]);
-		}
-		if (def.retextureFrom != null && def.retextureTo != null) {
-			modelData = modelData.cloneTextures();
-			for (int i = 0; i < min(def.retextureFrom.length, def.retextureTo.length); i++)
-				modelData.retexture(def.retextureFrom[i], def.retextureTo[i]);
-		}
-		if (def.scale != null || def.offset != null) {
-			modelData = modelData.cloneVertices();
-			if (def.scale != null)
-				modelData.scale(def.scale[0], def.scale[1], def.scale[2]);
-			if (def.offset != null)
-				modelData.translate(def.offset[0], def.offset[1], def.offset[2]);
-		}
+		Model model = buildTestObjectModel(def, def.models, false, false, false, reportErrors);
+		if (model == null)
+			return null;
 
 		var worldView = client.getTopLevelWorldView();
 		LocalPoint location = LocalPoint.fromWorld(worldView, player.getWorldLocation());
@@ -1222,30 +1399,106 @@ public class DeveloperTools implements KeyListener {
 			location = location.dx(1);
 		} while (isTestObjectAt(location));
 
-		// Purely visual: a RuneLiteObject has no clickbox or menu entries, and nothing is sent to the server
-		RuneLiteObject object = client.createRuneLiteObject();
-		object.setModel(modelData.light(
+		return placeTestObject(objectId, def, model, location, worldView.getPlane(), 0, null);
+	}
+
+	/**
+	 * Build an object's model from some of its model IDs, applying the definition's model changes like the client does.
+	 * Mirroring, the 45 degree turn of diagonal wall decorations and swapping the scale for odd rotations are for objects
+	 * recreated from a scene capture, which the client builds from more than the centrepiece model.
+	 */
+	@Nullable
+	private Model buildTestObjectModel(
+		TestObjectDefinition def,
+		int[] modelIds,
+		boolean mirror,
+		boolean diagonal,
+		boolean swapScale,
+		boolean reportErrors
+	) {
+		ModelData[] models = new ModelData[modelIds.length];
+		for (int i = 0; i < models.length; i++) {
+			models[i] = client.loadModelData(modelIds[i]);
+			if (models[i] == null) {
+				if (reportErrors)
+					postMessage("Unable to load model " + modelIds[i]);
+				return null;
+			}
+		}
+
+		// Apply the object definition's model changes the same way the client does
+		ModelData modelData = models.length == 1 && !mirror && !diagonal ? models[0] : client.mergeModels(models);
+		if (mirror)
+			SceneCapture.mirror(modelData);
+		if (diagonal)
+			SceneCapture.rotateDiagonal(modelData);
+		if (def.recolorFrom != null && def.recolorTo != null) {
+			modelData = modelData.cloneColors();
+			for (int i = 0; i < min(def.recolorFrom.length, def.recolorTo.length); i++)
+				modelData.recolor(def.recolorFrom[i], def.recolorTo[i]);
+		}
+		if (def.retextureFrom != null && def.retextureTo != null) {
+			modelData = modelData.cloneTextures();
+			for (int i = 0; i < min(def.retextureFrom.length, def.retextureTo.length); i++)
+				modelData.retexture(def.retextureFrom[i], def.retextureTo[i]);
+		}
+		if (def.scale != null || def.offset != null) {
+			modelData = modelData.cloneVertices();
+			if (def.scale != null) {
+				// The client scales after rotating, while test objects rotate afterwards when drawn
+				if (swapScale) {
+					modelData.scale(def.scale[2], def.scale[1], def.scale[0]);
+				} else {
+					modelData.scale(def.scale[0], def.scale[1], def.scale[2]);
+				}
+			}
+			if (def.offset != null)
+				modelData.translate(def.offset[0], def.offset[1], def.offset[2]);
+		}
+
+		return modelData.light(
 			ModelData.DEFAULT_AMBIENT + def.ambient,
 			ModelData.DEFAULT_CONTRAST + def.contrast,
 			ModelData.DEFAULT_X,
 			ModelData.DEFAULT_Y,
 			ModelData.DEFAULT_Z
-		));
+		);
+	}
+
+	/**
+	 * Spawn a test object with a built model. Every spawned, previewed or recreated test object goes through here.
+	 * Its location must be free of other test objects, and a null height keeps it on the ground.
+	 */
+	@Nullable
+	private RuneLiteObject placeTestObject(
+		int objectId,
+		TestObjectDefinition def,
+		Model model,
+		LocalPoint location,
+		int plane,
+		int orientation,
+		@Nullable Integer height
+	) {
+		if (!developerMode)
+			return null;
+		// Purely visual: a RuneLiteObject has no clickbox or menu entries, and nothing is sent to the server
+		RuneLiteObject object = client.createRuneLiteObject();
+		object.setModel(model);
 		if (def.animation != -1)
 			object.setAnimationController(new AnimationController(client, def.animation));
 		object.setShouldLoop(true);
 		object.setDrawFrontTilesFirst(false);
-		object.setLocation(location, worldView.getPlane());
+		object.setLocation(location, plane);
+		object.setOrientation(orientation);
+		if (height != null)
+			object.setZ(height);
 		object.setActive(true);
-		modelOverrideManager.testObjects.put(object, objectId);
+		modelOverrideManager.addTestObject(object, objectId);
 		return object;
 	}
 
 	private boolean isTestObjectAt(LocalPoint location) {
-		for (var object : modelOverrideManager.testObjects.keySet())
-			if (object.getX() == location.getX() && object.getY() == location.getY())
-				return true;
-		return false;
+		return modelOverrideManager.isTestObjectAt(location.getX(), location.getY());
 	}
 
 	@Nullable
@@ -1260,10 +1513,12 @@ public class DeveloperTools implements KeyListener {
 	private void clearTestObjects() {
 		for (var object : modelOverrideManager.testObjects.keySet())
 			object.setActive(false);
-		modelOverrideManager.testObjects.clear();
+		modelOverrideManager.clearTestObjects();
 		testObjectPreview = null;
 		testObjectPreviewId = -1;
 		spawnedTestObjects.clear();
+		recreatedSceneObjects.clear();
+		sceneRecreation = null;
 		notifySpawnedTestObjectsChanged();
 	}
 
