@@ -115,6 +115,15 @@ public class EnvironmentManager {
 	private Environment[] environments = {};
 	private FileWatcher.UnregisterCallback fileWatcher;
 
+	// Developer tools: the name of an environment to use wherever the camera is, such as for a recreated scene capture
+	@Nullable
+	public String overrideEnvironmentName;
+	@Nullable
+	private Environment overrideEnvironment;
+	private Environment[] overrideEnvironmentSource;
+	@Nullable
+	private String overrideEnvironmentSourceName;
+
 	public void startUp() {
 		fileWatcher = ENVIRONMENTS_PATH.watch((path, first) -> {
 			try {
@@ -278,7 +287,10 @@ public class EnvironmentManager {
 		previousPosition = focalPoint;
 
 		boolean skipTransition = tileChange >= SKIP_TRANSITION_DISTANCE;
-		for (int i = 0; i < sceneContext.environments.size(); i++) {
+		Environment override = getOverrideEnvironment();
+		if (override != null)
+			changeEnvironment(override, skipTransition);
+		for (int i = 0; override == null && i < sceneContext.environments.size(); i++) {
 			Environment environment = sceneContext.environments.get(i);
 			if (!environment.area.containsPoint(focalPoint))
 				continue;
@@ -466,6 +478,29 @@ public class EnvironmentManager {
 			// cool-down period before a new lightning cluster
 			nextLightningTime += mix(MIN_LIGHTNING_INTERVAL, MAX_LIGHTNING_INTERVAL, RAND.nextFloat());
 		}
+	}
+
+	/**
+	 * Developer tools: the overriding environment by name, looked up again whenever environments.json is reloaded,
+	 * or null if there's no override or no such environment
+	 */
+	@Nullable
+	private Environment getOverrideEnvironment() {
+		String name = overrideEnvironmentName;
+		if (name == null)
+			return null;
+		if (overrideEnvironmentSource != environments || !name.equals(overrideEnvironmentSourceName)) {
+			overrideEnvironmentSource = environments;
+			overrideEnvironmentSourceName = name;
+			overrideEnvironment = name.equals(Environment.DEFAULT.toString()) ? Environment.DEFAULT : null;
+			for (var env : environments) {
+				if (name.equals(env.toString())) {
+					overrideEnvironment = env;
+					break;
+				}
+			}
+		}
+		return overrideEnvironment;
 	}
 
 	private Environment getResolvedTargetEnvironment() {

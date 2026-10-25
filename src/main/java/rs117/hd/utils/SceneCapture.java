@@ -68,6 +68,9 @@ public class SceneCapture {
 		public String name;
 		// Where the player stood, only for reference
 		public WorldPoint capturedAt;
+		// The environments.json environment in use, by key or area name, which recreating the capture switches to
+		@Nullable
+		public String environment;
 		// Whether objects are positioned relative to the south-west corner of the player's region, so they line up with
 		// the region grid wherever they're recreated, rather than relative to the player like older captures
 		public boolean regionAligned;
@@ -197,7 +200,7 @@ public class SceneCapture {
 		int originRegion = getRegionId(scene, origin.getSceneX(), origin.getSceneY());
 		byte[][][] settings = scene.getExtendedTileSettings();
 		int[][][] roofs = scene.getRoofs();
-		int extendedOffset = (settings[0].length - Constants.SCENE_SIZE) / 2;
+		int extendedOffset = HDUtils.EXTENDED_SCENE_OFFSET;
 		var capturer = new Capturer(client, capture, visibility, cornerX, cornerY, originPlane, groundHeight);
 		for (int z = 0; z < tiles.length; z++) {
 			for (Tile[] column : tiles[z]) {
@@ -327,10 +330,9 @@ public class SceneCapture {
 		}
 
 		int[][][] tileHeights = scene.getTileHeights();
-		int extendedOffset = (tileHeights[0].length - Constants.SCENE_SIZE) / 2;
 		// Region-relative tiles to extended scene tiles, which have one more corner than tiles along each side
-		int toExtendedX = (cornerX >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
-		int toExtendedY = (cornerY >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
+		int toExtendedX = (cornerX >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET;
+		int toExtendedY = (cornerY >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET;
 		var terrain = new Terrain();
 		terrain.x = Math.max(minX - TERRAIN_MARGIN, -toExtendedX);
 		terrain.y = Math.max(minY - TERRAIN_MARGIN, -toExtendedY);

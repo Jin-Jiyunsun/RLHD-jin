@@ -86,18 +86,22 @@ once you've logged in.
   several regions, and their own coordinates don't line up with rooms.
 - The area is the whole loaded scene by default, or the 64x64 tile region you're in, or everything within 16 tiles of
   you in each direction.
-- **Saved captures** lists the files in that folder. **Recreate in my region** spawns the selected capture's objects as
-  test objects in the region you're in, lined up with the region grid the same way they were where they were captured,
+- **Saved captures** lists the files in that folder. **Recreate in my region**, or double-clicking a capture, spawns its
+  objects as test objects in the region you're in, lined up with the region grid the same way they were where they were
+  captured,
   wherever in the region you stand. Captures from before this was added are recreated around you instead. Objects keep
   their height relative to you, with their `model_overrides.json` textures and
   `lights.json` lights. They all go on your plane, so the game never hides them like a roof, while their heights keep
   objects from other planes where they were. Objects which land outside the loaded scene are skipped, and the chat says
   how many were skipped and why.
-- **Hide everything else** stops drawing the ground, objects, NPCs and players, leaving only spawned and recreated
-  objects, like the Blindfold plugin does. Lights of hidden objects go out too. It only changes what's drawn, so
+- **Hide everything else** stops drawing the ground, objects, NPCs and other players, leaving only spawned and recreated
+  objects and your own character, like the Blindfold plugin does. Lights of hidden objects go out too. It only changes what's drawn, so
   clickboxes and menus are left alone. Turning it on or off reloads 117 HD's copy of the scene, which keeps test objects.
 - Captures also save the ground's height around the objects, so objects which the game bends to follow the ground, like
   many cave walls, are bent the same way when recreated. Captures from before this was added recreate those flat.
+- Captures also remember which `environments.json` environment was in use, by its key or area name. While a capture is
+  recreated, 117 HD uses that environment's lighting, fog and so on wherever you are, until it's removed or a new scene
+  loads. It's looked up by name, so edits to that environment in `environments.json` show up straight away.
 - **Height offset** raises every recreated object by the same amount, in 1/128ths of a tile, or lowers them with
   negative values. It moves recreated objects and their lights straight away, and applies to later recreations too.
 - Recreated objects are uploaded with the scene like real scenery, so even a whole scene's worth runs about as fast as

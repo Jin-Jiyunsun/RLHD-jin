@@ -31,7 +31,6 @@ import javax.annotation.Nullable;
 import javax.swing.AbstractButton;
 import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -49,6 +48,7 @@ import javax.swing.Scrollable;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
+import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import net.runelite.client.ui.ColorScheme;
@@ -71,6 +71,9 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private static final int DEFAULT_PROJECTILE_START_HEIGHT = 150;
 	private static final int SPAWNED_ROW_HEIGHT = 32;
 	private static final int SPAWNED_VISIBLE_ROWS = 5;
+	private static final int SAVED_CAPTURES_VISIBLE_ROWS = 6;
+	// Room above and below the line dividing sections, the same in every tab
+	private static final int SECTION_GAP = 10;
 	private static final Color SIDEBAR_ICON_COLOR = new Color(0xDC8A00);
 	private static final int FLAG_ICON_SIZE = 10;
 	private static final Color OVERRIDE_FLAG_COLOR = new Color(0x4CC94C);
@@ -124,13 +127,21 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private final JTextArea statusText = createWrappingText();
 	private final JTextArea projectileDisclaimer = createWrappingText();
 	private final JPanel spawnedSection = new JPanel(new BorderLayout(0, 4));
+	// Keeps the status & spawned objects outside the grid, so they can grow beyond a single grid row
+	private final JPanel topSection = new JPanel(new BorderLayout(0, 6));
 	private final JPanel spawnedRows = new SpawnedRowsPanel();
 	private final JLabel listHeader = createHeader("");
 	private final JPanel listSection = new JPanel(new BorderLayout(0, 4));
 	private final JPanel scenesSection = new JPanel(new BorderLayout(0, 6));
-	private final JPanel savedCapturesColumn = new JPanel(new GridLayout(0, 1, 0, 4));
+	private final JPanel recreatedSceneColumn = new JPanel(new GridLayout(0, 1, 0, 4));
 	private final JTextField sceneNameField = new JTextField();
-	private final JComboBox<String> sceneCaptureList = new JComboBox<>();
+	private final JList<String> sceneCaptureList = new JList<>() {
+		// Fit the sidebar's width, cutting long names off rather than widening it
+		@Override
+		public boolean getScrollableTracksViewportWidth() {
+			return true;
+		}
+	};
 	private final JButton recreateButton = createButton("Recreate in my region");
 	private final ResultsModel results = new ResultsModel();
 	private final JList<Entry> resultList = new JList<>(results) {
@@ -274,10 +285,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 
 		// Outline the spawned objects, and divide them from the full list below with a line and some space
 		spawnedSection.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		spawnedSection.setBorder(BorderFactory.createCompoundBorder(
-			BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.MEDIUM_GRAY_COLOR),
-			BorderFactory.createEmptyBorder(4, 0, 10, 0)
-		));
+		spawnedSection.setBorder(createSectionDivider());
 		spawnedRows.setBackground(ColorScheme.DARK_GRAY_COLOR);
 
 		// Always reserve room for a few spawned objects, and scroll once there are more
@@ -295,13 +303,11 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		spawnedSection.add(spawnedHeader, BorderLayout.NORTH);
 		spawnedSection.add(spawnedScroll, BorderLayout.CENTER);
 
-		// Keep the status & spawned objects outside the grid, so they can grow beyond a single grid row
-		JPanel top = new JPanel(new BorderLayout(0, 6));
-		top.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		top.add(controls, BorderLayout.NORTH);
-		top.add(projectileDisclaimer, BorderLayout.CENTER);
-		top.add(spawnedSection, BorderLayout.SOUTH);
-		add(top, BorderLayout.NORTH);
+		topSection.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		topSection.add(controls, BorderLayout.NORTH);
+		topSection.add(projectileDisclaimer, BorderLayout.CENTER);
+		topSection.add(spawnedSection, BorderLayout.SOUTH);
+		add(topSection, BorderLayout.NORTH);
 
 		resultList.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		resultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -448,8 +454,6 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		captureInfo.setText("Saves every object the game is drawing in the chosen area, lined up with the region grid, to " +
 							".runelite/117hd/scene_captures.");
 
-		// Don't let a long file name widen the sidebar
-		sceneCaptureList.setPrototypeDisplayValue("A capture name");
 
 		JLabel heightOffsetLabel = new JLabel("Height offset");
 		heightOffsetLabel.setFont(FontManager.getRunescapeSmallFont());
@@ -460,7 +464,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		heightOffsetSpinner.addChangeListener(e -> developerTools.setSceneHeightOffset((Integer) heightOffsetSpinner.getValue()));
 		JToggleButton onlyTestObjectsButton = new JToggleButton("Hide everything else");
 		styleButton(onlyTestObjectsButton);
-		onlyTestObjectsButton.setToolTipText("Only draw spawned & recreated objects, hiding the ground, objects, NPCs and players");
+		onlyTestObjectsButton.setToolTipText("Only draw spawned & recreated objects and your character, hiding the ground, objects, NPCs and other players");
 		onlyTestObjectsButton.addActionListener(e -> {
 			boolean only = onlyTestObjectsButton.isSelected();
 			onlyTestObjectsButton.setForeground(only ? ColorScheme.BRAND_ORANGE : Color.WHITE);
@@ -472,35 +476,64 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		heightOffsetRow.add(heightOffsetLabel, BorderLayout.CENTER);
 		heightOffsetRow.add(heightOffsetSpinner, BorderLayout.EAST);
 		recreateButton.addActionListener(e -> {
-			Object selected = sceneCaptureList.getSelectedItem();
+			String selected = sceneCaptureList.getSelectedValue();
 			if (selected != null)
 				developerTools.recreateSceneCapture(selected + ".json");
 		});
 
-		savedCapturesColumn.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		savedCapturesColumn.add(createHeader("Saved captures"));
-		savedCapturesColumn.add(sceneCaptureList);
-		savedCapturesColumn.add(heightOffsetRow);
-		savedCapturesColumn.add(recreateButton);
-		savedCapturesColumn.add(onlyTestObjectsButton);
+		// A few rows of saved captures, scrolling once there are more, where double-clicking one recreates it
+		sceneCaptureList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		sceneCaptureList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		sceneCaptureList.setFont(FontManager.getRunescapeSmallFont());
+		sceneCaptureList.setVisibleRowCount(SAVED_CAPTURES_VISIBLE_ROWS);
+		sceneCaptureList.addListSelectionListener(e -> recreateButton.setEnabled(sceneCaptureList.getSelectedValue() != null));
+		sceneCaptureList.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e) && sceneCaptureList.getSelectedValue() != null)
+					developerTools.recreateSceneCapture(sceneCaptureList.getSelectedValue() + ".json");
+			}
+		});
+		JScrollPane sceneCaptureScroll = new JScrollPane(
+			sceneCaptureList,
+			JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+			JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+		);
+		sceneCaptureScroll.setBorder(BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR));
+		// Three sections in the order they're used: capturing, picking a capture to recreate, then adjusting what's recreated
+		JPanel capturePart = new JPanel(new BorderLayout(0, 4));
+		capturePart.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		capturePart.setBorder(createSectionDivider());
+		capturePart.add(captureColumn, BorderLayout.NORTH);
+		capturePart.add(captureInfo, BorderLayout.CENTER);
 
+		JPanel savedPart = new JPanel(new BorderLayout(0, 4));
+		savedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		savedPart.setBorder(createSectionDivider());
+		savedPart.add(createHeader("Saved captures"), BorderLayout.NORTH);
+		savedPart.add(sceneCaptureScroll, BorderLayout.CENTER);
+		savedPart.add(recreateButton, BorderLayout.SOUTH);
+
+		recreatedSceneColumn.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		recreatedSceneColumn.add(createHeader("Recreated scene"));
+		recreatedSceneColumn.add(heightOffsetRow);
+		recreatedSceneColumn.add(onlyTestObjectsButton);
 		JTextArea recreateInfo = createWrappingText();
 		recreateInfo.setText("Recreated objects line up with your region's grid, keep their height relative to you, and stay " +
 							 "until removed or the scene reloads");
+		JPanel recreatedPart = new JPanel(new BorderLayout(0, 4));
+		recreatedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		recreatedPart.add(recreatedSceneColumn, BorderLayout.NORTH);
+		recreatedPart.add(recreateInfo, BorderLayout.CENTER);
 
-		JPanel capturePart = new JPanel(new BorderLayout(0, 4));
-		capturePart.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		capturePart.add(captureColumn, BorderLayout.NORTH);
-		capturePart.add(captureInfo, BorderLayout.CENTER);
-		JPanel savedPart = new JPanel(new BorderLayout(0, 4));
-		savedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		savedPart.add(savedCapturesColumn, BorderLayout.NORTH);
-		savedPart.add(recreateInfo, BorderLayout.CENTER);
-
-		JPanel parts = new JPanel(new BorderLayout(0, 12));
+		JPanel lowerParts = new JPanel(new BorderLayout(0, 6));
+		lowerParts.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		lowerParts.add(savedPart, BorderLayout.NORTH);
+		lowerParts.add(recreatedPart, BorderLayout.CENTER);
+		JPanel parts = new JPanel(new BorderLayout(0, 6));
 		parts.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		parts.add(capturePart, BorderLayout.NORTH);
-		parts.add(savedPart, BorderLayout.CENTER);
+		parts.add(lowerParts, BorderLayout.CENTER);
 		scenesSection.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		scenesSection.add(parts, BorderLayout.NORTH);
 		updateSceneCaptures(List.of(), null);
@@ -518,13 +551,15 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	}
 
 	private void updateSceneCaptures(List<String> fileNames, @Nullable String selectFileName) {
-		Object previous = selectFileName != null ? stripJsonExtension(selectFileName) : sceneCaptureList.getSelectedItem();
+		String previous = selectFileName != null ? stripJsonExtension(selectFileName) : sceneCaptureList.getSelectedValue();
 		String[] names = fileNames.stream().map(ObjectSpawnerPanel::stripJsonExtension).toArray(String[]::new);
-		sceneCaptureList.setModel(new DefaultComboBoxModel<>(names));
-		if (previous != null)
-			sceneCaptureList.setSelectedItem(previous);
-		sceneCaptureList.setEnabled(names.length > 0);
-		recreateButton.setEnabled(names.length > 0);
+		sceneCaptureList.setListData(names);
+		if (previous != null) {
+			sceneCaptureList.setSelectedValue(previous, true);
+		} else if (names.length > 0) {
+			sceneCaptureList.setSelectedIndex(0);
+		}
+		recreateButton.setEnabled(sceneCaptureList.getSelectedValue() != null);
 	}
 
 	private static String stripJsonExtension(String fileName) {
@@ -655,8 +690,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		if (mode == Mode.OBJECTS) {
 			spawnedSection.add(clearButton, BorderLayout.SOUTH);
 		} else if (mode == Mode.SCENES) {
-			// Right below the recreate button
-			savedCapturesColumn.add(clearButton);
+			// At the end of the recreated scene section
+			recreatedSceneColumn.add(clearButton);
 		} else {
 			controls.add(clearButton);
 		}
@@ -669,6 +704,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 
 		projectileDisclaimer.setVisible(mode == Mode.PROJECTILES);
 		updateSpawnedSection();
+		// Divide the settings from the list like the spawned objects are, where there's no spawned objects box to do it
+		topSection.setBorder(mode == Mode.SPOTANIMS || mode == Mode.PROJECTILES ? createSectionDivider() : null);
 
 		// The scenes tab has no list to search, so it takes the list's place
 		JPanel center = mode == Mode.SCENES ? scenesSection : listSection;
@@ -957,6 +994,19 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private void copyToClipboard(String toCopy) {
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(toCopy), null);
 		developerTools.postMessage("Copied to clipboard: " + toCopy);
+	}
+
+	/**
+	 * A line under a section, dividing it from the next one with the same room on either side in every tab
+	 */
+	private static Border createSectionDivider() {
+		return BorderFactory.createCompoundBorder(
+			BorderFactory.createEmptyBorder(0, 0, SECTION_GAP, 0),
+			BorderFactory.createCompoundBorder(
+				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.MEDIUM_GRAY_COLOR),
+				BorderFactory.createEmptyBorder(0, 0, SECTION_GAP, 0)
+			)
+		);
 	}
 
 	private static JLabel createHeader(String text) {

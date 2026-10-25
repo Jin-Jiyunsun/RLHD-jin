@@ -46,9 +46,11 @@ import rs117.hd.overlays.ShadowMapOverlay;
 import rs117.hd.overlays.TileInfoOverlay;
 import rs117.hd.overlays.TiledLightingOverlay;
 import rs117.hd.renderer.zone.SceneManager;
+import rs117.hd.scene.EnvironmentManager;
 import rs117.hd.scene.GamevalManager;
 import rs117.hd.scene.LightManager;
 import rs117.hd.scene.ModelOverrideManager;
+import rs117.hd.scene.environments.Environment;
 
 import static java.awt.event.InputEvent.CTRL_DOWN_MASK;
 import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
@@ -147,6 +149,9 @@ public class DeveloperTools implements KeyListener {
 	private SceneManager sceneManager;
 
 	@Inject
+	private EnvironmentManager environmentManager;
+
+	@Inject
 	private RenderCallbackManager renderCallbackManager;
 
 	@Inject
@@ -240,9 +245,44 @@ public class DeveloperTools implements KeyListener {
 
 		@Override
 		public boolean drawObject(Scene scene, TileObject object) {
+			if (!(object instanceof GameObject))
+				return false;
+			// Keep the local player, but nobody else, like the Blindfold plugin does
+			var renderable = ((GameObject) object).getRenderable();
+			if (renderable != null && renderable == client.getLocalPlayer())
+				return true;
 			// Test objects are drawn wrapped in a temporary game object, which the renderer matches by its position
-			return object instanceof GameObject &&
-				   modelOverrideManager.getTestObjectId(((GameObject) object).getRenderable(), object.getX(), object.getY()) != -1;
+			return modelOverrideManager.getTestObjectId(renderable, object.getX(), object.getY()) != -1;
+		}
+	};
+	// Leaves what the game and 117 HD aren't drawing out of scene captures, checked the same way 117 HD's SceneUploader does
+	private final SceneCapture.Visibility sceneVisibility = new SceneCapture.Visibility() {
+		private final int[] worldPos = new int[3];
+
+		@Nullable
+		@Override
+		public Boolean isLevelDrawn(int level, int roofId) {
+			return sceneManager.isLevelDrawn(level, roofId);
+		}
+
+		@Override
+		public boolean isHiddenByArea(Tile tile) {
+			var ctx = plugin.getSceneContext();
+			if (ctx == null || ctx.currentArea == null)
+				return false;
+			var sceneLocation = tile.getSceneLocation();
+			ctx.sceneToWorld(sceneLocation.getX(), sceneLocation.getY(), tile.getPlane(), worldPos);
+			return !ctx.currentArea.containsPoint(worldPos);
+		}
+
+		@Override
+		public boolean isHiddenByOverride(TileObject object, int type) {
+			var ctx = plugin.getSceneContext();
+			if (ctx == null)
+				return false;
+			var location = object.getLocalLocation();
+			ctx.localToWorld(location.getX(), location.getY(), object.getPlane(), worldPos);
+			return modelOverrideManager.getOverride(ModelHash.packUuid(type, object.getId()), worldPos).hide;
 		}
 	};
 
@@ -1237,6 +1277,9 @@ public class DeveloperTools implements KeyListener {
 				postMessage("No local player to capture the scene around");
 				return;
 			}
+			var environment = environmentManager.getTargetEnvironment();
+			if (environment != Environment.NONE)
+				capture.environment = environment.toString();
 			executor.execute(() -> {
 				try {
 					String fileName = SceneCapture.save(gson, capture);
@@ -1251,39 +1294,6 @@ public class DeveloperTools implements KeyListener {
 			});
 		});
 	}
-
-	/**
-	 * Leaves what the game and 117 HD aren't drawing out of scene captures, checked the same way 117 HD's SceneUploader does
-	 */
-	private final SceneCapture.Visibility sceneVisibility = new SceneCapture.Visibility() {
-		private final int[] worldPos = new int[3];
-
-		@Nullable
-		@Override
-		public Boolean isLevelDrawn(int level, int roofId) {
-			return sceneManager.isLevelDrawn(level, roofId);
-		}
-
-		@Override
-		public boolean isHiddenByArea(Tile tile) {
-			var ctx = plugin.getSceneContext();
-			if (ctx == null || ctx.currentArea == null)
-				return false;
-			var sceneLocation = tile.getSceneLocation();
-			ctx.sceneToWorld(sceneLocation.getX(), sceneLocation.getY(), tile.getPlane(), worldPos);
-			return !ctx.currentArea.containsPoint(worldPos);
-		}
-
-		@Override
-		public boolean isHiddenByOverride(TileObject object, int type) {
-			var ctx = plugin.getSceneContext();
-			if (ctx == null)
-				return false;
-			var sceneLocation = object.getLocalLocation();
-			ctx.localToWorld(sceneLocation.getX(), sceneLocation.getY(), object.getPlane(), worldPos);
-			return modelOverrideManager.getOverride(ModelHash.packUuid(type, object.getId()), worldPos).hide;
-		}
-	};
 
 	/**
 	 * The name of the 117 HD environment the player is in, like the tile info overlay shows, or null if there's none
@@ -1351,6 +1361,8 @@ public class DeveloperTools implements KeyListener {
 			return;
 		}
 		removeRecreatedScene();
+		// Light the recreated scene like where it was captured, until it's removed
+		environmentManager.overrideEnvironmentName = capture.environment;
 
 		// Work out where everything goes now, so moving while it spawns doesn't move the rest
 		LocalPoint origin = player.getLocalLocation();
@@ -1371,8 +1383,9 @@ public class DeveloperTools implements KeyListener {
 			for (var part : SceneCapture.getParts(object)) {
 				int x = baseX + object.x + (part.offset ? object.xOffset : 0);
 				int y = baseY + object.y + (part.offset ? object.yOffset : 0);
+				// Static objects can go in the extended area 117 HD loads around the scene, unlike RuneLiteObjects
 				var location = new LocalPoint(x, y, worldView);
-				if (!location.isInScene()) {
+				if (getSceneTile(location, originPlane) == null && !location.isInScene()) {
 					recreation.skippedOutsideScene++;
 					continue;
 				}
@@ -1457,6 +1470,11 @@ public class DeveloperTools implements KeyListener {
 				continue;
 			}
 
+			if (!pending.location.isInScene()) {
+				recreation.skippedOutsideScene++;
+				continue;
+			}
+
 			// The renderer recognises test objects by their exact position, so move each off the spot where the real object
 			// it stands in for would be, and off other test objects, such as parts of the same wall
 			var location = pending.location;
@@ -1527,9 +1545,8 @@ public class DeveloperTools implements KeyListener {
 	@Nullable
 	private Tile getSceneTile(LocalPoint location, int plane) {
 		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
-		int extendedOffset = (tiles[0].length - Constants.SCENE_SIZE) / 2;
-		int tileExX = (location.getX() >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
-		int tileExY = (location.getY() >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
+		int tileExX = (location.getX() >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET;
+		int tileExY = (location.getY() >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET;
 		if (plane < 0 || plane >= tiles.length || tileExX < 0 || tileExY < 0 ||
 			tileExX >= tiles[plane].length || tileExY >= tiles[plane][tileExX].length)
 			return null;
@@ -1540,13 +1557,11 @@ public class DeveloperTools implements KeyListener {
 	 * Store a static recreated object to be uploaded with its tile, replacing the tile's list for zones uploading meanwhile
 	 */
 	private void addStaticSceneObject(Tile tile, TestObjectRendering.StaticObject object) {
-		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
-		int extendedOffset = (tiles[0].length - Constants.SCENE_SIZE) / 2;
 		var sceneLocation = tile.getSceneLocation();
 		int key = ModelOverrideManager.packStaticTestObjectTile(
 			tile.getRenderLevel(),
-			sceneLocation.getX() + extendedOffset,
-			sceneLocation.getY() + extendedOffset
+			sceneLocation.getX() + HDUtils.EXTENDED_SCENE_OFFSET,
+			sceneLocation.getY() + HDUtils.EXTENDED_SCENE_OFFSET
 		);
 		modelOverrideManager.staticTestObjects.compute(key, (k, objects) -> {
 			var copy = objects == null ? new ArrayList<TestObjectRendering.StaticObject>() : new ArrayList<>(objects);
@@ -1567,7 +1582,7 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
-	 * Hide the tiles, objects, NPCs and players around the player, leaving only spawned & recreated test objects drawn
+	 * Hide the tiles, objects, NPCs and other players, leaving only spawned & recreated test objects and the local player drawn
 	 */
 	public void setOnlyDrawTestObjects(boolean only) {
 		clientThread.invoke(() -> {
@@ -1602,6 +1617,7 @@ public class DeveloperTools implements KeyListener {
 		}
 		recreatedSceneObjects.clear();
 		removeStaticSceneObjects();
+		environmentManager.overrideEnvironmentName = null;
 	}
 
 	@RequiredArgsConstructor
@@ -1772,9 +1788,7 @@ public class DeveloperTools implements KeyListener {
 		testObjectPreview = null;
 		testObjectPreviewId = -1;
 		spawnedTestObjects.clear();
-		recreatedSceneObjects.clear();
-		removeStaticSceneObjects();
-		sceneRecreation = null;
+		removeRecreatedScene();
 		notifySpawnedTestObjectsChanged();
 	}
 
