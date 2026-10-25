@@ -31,7 +31,12 @@ import com.google.gson.Gson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -66,6 +71,7 @@ import rs117.hd.utils.Mat4;
 import rs117.hd.utils.ModelHash;
 import rs117.hd.utils.Props;
 import rs117.hd.utils.ResourcePath;
+import rs117.hd.utils.TestObjectRendering;
 
 import static net.runelite.api.Constants.*;
 import static net.runelite.api.Perspective.*;
@@ -115,6 +121,14 @@ public class LightManager {
 	private final ArrayList<Light> lights = new ArrayList<>();
 	@Getter
 	private int numVisibleLights;
+
+	// Developer tools: when not negative, pins the elapsed time in seconds of lights attached to this actor's spotanim
+	public Actor spotanimTimeOverrideActor;
+	public int spotanimTimeOverrideId = -1;
+	public float spotanimTimeOverride = -1;
+	// Developer tools: counts how many times lights have been loaded, so tools can tell when to refresh
+	@Getter
+	private int configVersion;
 
 	private final ArrayList<Light> WORLD_LIGHTS = new ArrayList<>();
 	private final ListMultimap<Integer, LightDefinition> NPC_LIGHTS = ArrayListMultimap.create();
@@ -172,6 +186,7 @@ public class LightManager {
 			}
 
 			log.debug("Loaded {} lights", lights.length);
+			configVersion++;
 
 			// Reload after startup or hot-swapping so existing NPCs receive lights
 			reloadLights = true;
@@ -281,6 +296,8 @@ public class LightManager {
 					}
 					parentExists = light.def.animationIds.contains(animationId);
 				}
+			} else if (light.runeLiteObject != null) {
+				parentExists = TestObjectRendering.updateLight(light, light.runeLiteObject);
 			} else if (light.projectile != null) {
 				light.origin[0] = (int) light.projectile.getX();
 				light.origin[1] = (int) light.projectile.getZ() - light.def.height;
@@ -398,7 +415,7 @@ public class LightManager {
 
 			if (!plugin.configSpotanimLights && (light.spotanimId != -1 || light.graphicsObject != null))
 				hiddenTemporarily = true;
-			if (!plugin.configObjectLights && (light.tileObject != null || light.worldLight))
+			if (!plugin.configObjectLights && (light.tileObject != null || light.runeLiteObject != null || light.worldLight))
 				hiddenTemporarily = true;
 
 			copyTo(light.sceneLocalPos, light.origin);
@@ -496,6 +513,8 @@ public class LightManager {
 				light.toggleTemporaryVisibility(changedPlanes);
 
 			light.elapsedTime += plugin.deltaClientTime;
+			if (spotanimTimeOverride >= 0 && light.actor == spotanimTimeOverrideActor && light.spotanimId == spotanimTimeOverrideId)
+				light.elapsedTime = spotanimTimeOverride;
 
 			light.visible = light.spawnDelay <= light.elapsedTime && (light.lifetime == -1 || light.elapsedTime < light.lifetime);
 
@@ -788,6 +807,14 @@ public class LightManager {
 		numVisibleLights = 0;
 	}
 
+	/**
+	 * Developer tools: remove an actor's spotanim lights without fading them out, so a restarted spotanim gets fresh lights.
+	 */
+	public void removeSpotanimLightsImmediately(Actor actor, int spotanimId) {
+		assert client.isClientThread();
+		lights.removeIf(light -> light.actor == actor && light.spotanimId == spotanimId);
+	}
+
 	private void removeLightIf(Predicate<Light> predicate) {
 		for (var light : lights)
 			if (predicate.test(light))
@@ -962,6 +989,57 @@ public class LightManager {
 		}
 
 		spawnLights(sceneContext, destination, tileObject, tileObjectId);
+	}
+
+	/**
+	 * Developer tools: give each client-side object the lights of the object ID it stands in for, unless it already has them.
+	 * Called every tick, so the lights come back after lights.json is reloaded or the scene's lights are swapped.
+	 */
+	public void addTestObjectLights(Map<RuneLiteObject, Integer> testObjects) {
+		if (testObjects.isEmpty() || plugin.getSceneContext() == null)
+			return;
+		Set<RuneLiteObject> lit = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (var light : lights)
+			if (light.runeLiteObject != null && !light.markedForRemoval)
+				lit.add(light.runeLiteObject);
+
+		for (var entry : testObjects.entrySet()) {
+			var object = entry.getKey();
+			int objectId = entry.getValue();
+			if (!object.isActive() || lit.contains(object))
+				continue;
+
+			var lp = object.getLocation();
+			int plane = object.getLevel();
+			int tileHeight = Perspective.getTileHeight(client, lp, plane);
+			for (LightDefinition def : OBJECT_LIGHTS.get(objectId)) {
+				Light light = new Light(def);
+				light.runeLiteObject = object;
+				light.tileObjectId = objectId;
+				light.plane = plane;
+				light.orientation = TestObjectRendering.getLightOrientation(object);
+				light.origin[0] = lp.getX();
+				light.origin[1] = tileHeight - light.def.height - 1;
+				light.origin[2] = lp.getY();
+				lights.add(light);
+			}
+		}
+	}
+
+	// Developer tools: IDs which have lights. Must be called on the client thread, where lights are loaded
+	public Set<Integer> getObjectLightIds() {
+		assert client.isClientThread();
+		return new HashSet<>(OBJECT_LIGHTS.keySet());
+	}
+
+	public Set<Integer> getGraphicsObjectLightIds() {
+		assert client.isClientThread();
+		return new HashSet<>(GRAPHICS_OBJECT_LIGHTS.keySet());
+	}
+
+	public Set<Integer> getProjectileLightIds() {
+		assert client.isClientThread();
+		return new HashSet<>(PROJECTILE_LIGHTS.keySet());
 	}
 
 	private void handleObjectDespawn(TileObject tileObject) {

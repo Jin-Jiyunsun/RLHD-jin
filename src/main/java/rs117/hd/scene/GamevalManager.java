@@ -86,6 +86,29 @@ public class GamevalManager {
 		}
 	}
 
+	/**
+	 * Read a separate copy of the spotanim gamevals, without touching the shared mappings.
+	 * Safe to call from any thread, so it can be used to avoid disk IO on the client thread.
+	 */
+	public Map<String, Integer> readSpotanims() throws IOException {
+		return readCategory(SPOTANIM_KEY);
+	}
+
+	/**
+	 * Read a separate copy of the object gamevals, like {@link #readSpotanims()}.
+	 */
+	public Map<String, Integer> readObjects() throws IOException {
+		return readCategory(OBJECT_KEY);
+	}
+
+	private Map<String, Integer> readCategory(String key) throws IOException {
+		try (var reader = GAMEVAL_PATH.toReader()) {
+			Map<String, Map<String, Integer>> gamevals = plugin.getGson()
+				.fromJson(reader, new TypeToken<Map<String, Map<String, Integer>>>() {}.getType());
+			return gamevals.getOrDefault(key, Collections.emptyMap());
+		}
+	}
+
 	public Handle obtainHandle() {
 		if (!loaded)
 			loadGamevals();

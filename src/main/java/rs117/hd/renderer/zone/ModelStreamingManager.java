@@ -24,6 +24,7 @@ import rs117.hd.scene.model_overrides.ModelOverride;
 import rs117.hd.utils.HDUtils;
 import rs117.hd.utils.Mat4;
 import rs117.hd.utils.ModelHash;
+import rs117.hd.utils.TestObjectRendering;
 import rs117.hd.utils.collections.ConcurrentPool;
 import rs117.hd.utils.collections.PooledArrayType;
 import rs117.hd.utils.collections.PrimitiveCharArray;
@@ -207,7 +208,10 @@ public class ModelStreamingManager {
 			if (squaredDistance > detailDrawDistanceTiles * detailDrawDistanceTiles && modelOverrideManager.allowDetailCulling(uuid))
 				return;
 		} else {
-			uuid = ModelHash.generateUuid(client, tileObject.getHash(), r);
+			int testObjectId = modelOverrideManager.getTestObjectId(r, x, z);
+			uuid = testObjectId != -1 ?
+				ModelHash.packUuid(ModelHash.TYPE_OBJECT, testObjectId) :
+				ModelHash.generateUuid(client, tileObject.getHash(), r);
 		}
 
 		// Hide everything outside the current area if area hiding is enabled
@@ -363,6 +367,10 @@ public class ModelStreamingManager {
 			SceneUploader sceneUploader = SceneUploader.POOL.acquire();
 			FacePrioritySorter facePrioritySorter = shouldSort ? FacePrioritySorter.POOL.acquire() : null
 		) {
+			// Developer tools: spawned test objects stand in for static objects, so inherit tile colors like they do
+			if (tileObject != null && modelOverrideManager.getTestObjectId(renderable, (int) x, (int) z) != -1)
+				sceneUploader.testObjectTileColors = TestObjectRendering.findTileColors(ctx.sceneContext, tileObject.getPlane(), x, z);
+
 			final int[] faceDistances = shouldSort ? PooledArrayType.INT.borrow(m.getFaceCount()) : null;
 			shouldSort &= sceneUploader.preprocessTempModel(
 				projection,

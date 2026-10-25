@@ -63,6 +63,7 @@ public class Light
 	public Projectile projectile;
 	public TileObject tileObject;
 	public GraphicsObject graphicsObject;
+	public RuneLiteObject runeLiteObject;
 	public int tileObjectId;
 	public int spotanimId = -1;
 	public int[] projectileRefCounter;

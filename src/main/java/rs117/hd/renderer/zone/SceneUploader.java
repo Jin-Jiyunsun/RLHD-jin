@@ -44,6 +44,7 @@ import rs117.hd.scene.model_overrides.UvType;
 import rs117.hd.scene.tile_overrides.TileOverride;
 import rs117.hd.scene.water_types.WaterType;
 import rs117.hd.utils.HDUtils;
+import rs117.hd.utils.TestObjectRendering;
 import rs117.hd.utils.ModelHash;
 import rs117.hd.utils.buffer.GpuIntBuffer;
 import rs117.hd.utils.collections.ConcurrentPool;
@@ -151,6 +152,10 @@ public class SceneUploader implements AutoCloseable {
 	// Lazily initialized staging buffers
 	public VertexWriteCache.Collection writeCache;
 
+	// Developer tools: tile colors for the next temporary models to inherit, only set for spawned test objects
+	@Nullable
+	public TestObjectRendering.TileColors testObjectTileColors;
+
 	public void setScene(Scene scene) {
 		if (scene == currentScene)
 			return;
@@ -169,6 +174,7 @@ public class SceneUploader implements AutoCloseable {
 		tileHeights = null;
 		currentScene = null;
 		onBeforeProcessTile = null;
+		testObjectTileColors = null;
 
 		PooledArrayType.INT.release(modelVertices);
 		modelVertices = null;
@@ -2241,6 +2247,12 @@ public class SceneUploader implements AutoCloseable {
 			if (textureId != -1)
 				color1 = color2 = color3 = 90;
 
+			// Developer tools: test objects inherit tile colors like the static objects they stand in for
+			int tileColor = testObjectTileColors == null || textureId != -1 ? -1 :
+				testObjectTileColors.get(faceOverride.inheritTileColorType);
+			if (tileColor != -1)
+				color1 = color2 = color3 = tileColor;
+
 			if (faceOverride.modifiesColor) {
 				color1 = faceOverride.modifyColor(color1);
 				color2 = faceOverride.modifyColor(color2);
@@ -2295,7 +2307,7 @@ public class SceneUploader implements AutoCloseable {
 					);
 				}
 
-				if (plugin.configUndoVanillaShading && modelOverride.undoVanillaShading) {
+				if (plugin.configUndoVanillaShading && modelOverride.undoVanillaShading && tileColor == -1) {
 					color1 = undoVanillaShading(color1, plugin.configLegacyGreyColors, faceNormals[0], faceNormals[1], faceNormals[2]);
 					color2 = undoVanillaShading(color2, plugin.configLegacyGreyColors, faceNormals[3], faceNormals[4], faceNormals[5]);
 					color3 = undoVanillaShading(color3, plugin.configLegacyGreyColors, faceNormals[6], faceNormals[7], faceNormals[8]);

@@ -2,11 +2,26 @@ package rs117.hd.utils;
 
 import java.awt.Color;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.swing.SwingUtilities;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.*;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.Keybind;
@@ -14,6 +29,8 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
+import net.runelite.client.ui.ClientToolbar;
+import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
 import net.runelite.client.ui.components.colorpicker.RuneliteColorPicker;
 import rs117.hd.HdPlugin;
@@ -24,6 +41,8 @@ import rs117.hd.overlays.ShadowMapOverlay;
 import rs117.hd.overlays.TileInfoOverlay;
 import rs117.hd.overlays.TiledLightingOverlay;
 import rs117.hd.scene.GamevalManager;
+import rs117.hd.scene.LightManager;
+import rs117.hd.scene.ModelOverrideManager;
 
 import static java.awt.event.InputEvent.CTRL_DOWN_MASK;
 import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
@@ -47,6 +66,32 @@ public class DeveloperTools implements KeyListener {
 	private static final Keybind KEY_RELOAD_SCENE = new Keybind(KeyEvent.VK_R, CTRL_DOWN_MASK);
 	private static final Keybind KEY_COLOR_PICKER = new Keybind(KeyEvent.VK_P, CTRL_DOWN_MASK | SHIFT_DOWN_MASK);
 
+	private static final Keybind KEY_SPOTANIM_PAUSE = new Keybind(KeyEvent.VK_SPACE, CTRL_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_STEP_BACK = new Keybind(KeyEvent.VK_LEFT, CTRL_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_STEP_FORWARD = new Keybind(KeyEvent.VK_RIGHT, CTRL_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_BIG_STEP_BACK = new Keybind(KeyEvent.VK_LEFT, CTRL_DOWN_MASK | SHIFT_DOWN_MASK);
+	private static final Keybind KEY_SPOTANIM_BIG_STEP_FORWARD = new Keybind(KeyEvent.VK_RIGHT, CTRL_DOWN_MASK | SHIFT_DOWN_MASK);
+	private static final int SPOTANIM_BIG_STEP_TICKS = 10;
+
+	// Default flight settings for test projectiles, in the units used by the client. Heights are above the ground.
+	// Land on the target tile's ground
+	private static final int TEST_PROJECTILE_END_HEIGHT = 0;
+	// How much projectiles arc on the way, lower is flatter
+	private static final int TEST_PROJECTILE_SLOPE = 10;
+	private static final int TEST_PROJECTILE_START_POS = 64;
+	private static final int TEST_PROJECTILE_BASE_CYCLES = 20;
+	private static final int TEST_PROJECTILE_CYCLES_PER_TILE = 5;
+	private static final int TEST_PROJECTILE_LOOP_DELAY = 25;
+
+	// Objects' definitions are in this group of the client's config cache index
+	private static final int OBJECT_CONFIG_GROUP = 6;
+	// Spread decoding every object's definition over a few ticks, to avoid a hitch
+	private static final long TEST_OBJECT_DEFINITION_NANOS_PER_TICK = 2_000_000;
+
+	private static final int TEST_SPOTANIM_SLOT = 0;
+	// Pause between loops in client cycles (20 ms each), long enough for the previous lights to be marked for removal
+	private static final int TEST_SPOTANIM_LOOP_DELAY = 50;
+
 	@Inject
 	@Named("developerMode")
 	private boolean developerMode;
@@ -56,6 +101,12 @@ public class DeveloperTools implements KeyListener {
 
 	@Inject
 	private ClientThread clientThread;
+
+	@Inject
+	private ScheduledExecutorService executor;
+
+	@Inject
+	private ClientToolbar clientToolbar;
 
 	@Inject
 	private EventBus eventBus;
@@ -74,6 +125,12 @@ public class DeveloperTools implements KeyListener {
 
 	@Inject
 	private GamevalManager gamevalManager;
+
+	@Inject
+	private LightManager lightManager;
+
+	@Inject
+	private ModelOverrideManager modelOverrideManager;
 
 	@Inject
 	private TileInfoOverlay tileInfoOverlay;
@@ -105,9 +162,89 @@ public class DeveloperTools implements KeyListener {
 
 	private RuneliteColorPicker colorPicker;
 
+	private int testSpotanimId = -1;
+	private int testSpotanimHeight;
+	private boolean testSpotanimLoop;
+	private int testSpotanimRestartCycle = -1;
+	private List<int[]> testSpotanimFrameTimes;
+	private int testSpotanimLastFrame;
+	// Frame start times recorded during the first play, used to map playback time to frames while controlling playback
+	private List<int[]> testSpotanimTimeline;
+	private boolean testSpotanimPaused;
+	private float testSpotanimSpeed = 1;
+	private float testSpotanimTimeMs;
+	private boolean testSpotanimIsPreview;
+	private final AtomicInteger testSpotanimPreviewRequest = new AtomicInteger();
+
+	private NavigationButton objectSpawnerButton;
+	@Nullable
+	private volatile ObjectSpawnerPanel objectSpawnerPanel;
+	private final Map<Integer, SpawnedTestObject> spawnedTestObjects = new LinkedHashMap<>();
+	private int sentLightsVersion = -1;
+	private int sentOverridesVersion = -1;
+	private int nextTestObjectHandle;
+	private int testProjectileId = -1;
+	private boolean testProjectileLoop;
+	private boolean testProjectileIsPreview;
+	private boolean testProjectileFired;
+	private int testProjectileNextCycle;
+	@Nullable
+	private Projectile testProjectile;
+	private volatile int testProjectileDistance = 10;
+	// Height above the ground which test projectiles start from, set from the sidebar
+	private volatile int testProjectileStartHeight = 150;
+	private final AtomicInteger testProjectilePreviewRequest = new AtomicInteger();
+	private RuneLiteObject testObjectPreview;
+	private int testObjectPreviewId = -1;
+	private final AtomicInteger testObjectPreviewRequest = new AtomicInteger();
+	// Every object definition with models, decoded from the client's cache for the sidebar once, then kept
+	@Nullable
+	private Map<Integer, TestObjectDefinition> testObjectDefinitions;
+	@Nullable
+	private TestObjectDefinitionLoad testObjectDefinitionLoad;
+	private boolean loadingTestObjectNames;
+	private final List<Consumer<Map<Integer, TestObjectDefinition>>> testObjectDefinitionCallbacks = new ArrayList<>();
+
+	/**
+	 * Object models & animations decoded from the client's cache by {@link ObjectDefinitionParser}, used to spawn test objects
+	 */
+	public static class TestObjectDefinition {
+		@Nullable
+		public String name;
+		@Nullable
+		public String displayName;
+		public int[] models;
+		public int animation = -1;
+		public int ambient;
+		public int contrast;
+		public short[] recolorFrom;
+		public short[] recolorTo;
+		public short[] retextureFrom;
+		public short[] retextureTo;
+		public int[] scale;
+		public int[] offset;
+	}
+
 	public void activate() {
 		// Listen for commands
 		eventBus.register(this);
+
+		// Swing components must only be created and modified on the Swing thread
+		// The spawner must stay developer-mode only, since RuneLite's plugin rules reject user-entered IDs and spawned content for normal users
+		if (developerMode) {
+			SwingUtilities.invokeLater(() -> {
+				if (objectSpawnerButton != null)
+					return;
+				objectSpawnerButton = NavigationButton.builder()
+					.tooltip("117 HD Spawner")
+					.icon(ObjectSpawnerPanel.createIcon())
+					// Sorted by ascending priority, so this goes right below RuneLite's configuration button at priority 0
+					.priority(1)
+					.panel(objectSpawnerPanel = new ObjectSpawnerPanel(this))
+					.build();
+				clientToolbar.addNavigation(objectSpawnerButton);
+			});
+		}
 
 		// Don't do anything else unless we're in the development environment
 		if (!Props.DEVELOPMENT)
@@ -135,6 +272,19 @@ public class DeveloperTools implements KeyListener {
 		lightGizmoOverlay.setActive(false);
 		tiledLightingOverlay.setActive(false);
 		hideUiEnabled = false;
+		SwingUtilities.invokeLater(() -> {
+			if (objectSpawnerButton != null) {
+				clientToolbar.removeNavigation(objectSpawnerButton);
+				objectSpawnerButton = null;
+				objectSpawnerPanel = null;
+				clientThread.invoke(() -> sentLightsVersion = sentOverridesVersion = -1);
+			}
+		});
+		clientThread.invoke(() -> {
+			stopTestSpotanim();
+			stopTestProjectile();
+			clearTestObjects();
+		});
 	}
 
 	public void updateConfig() {
@@ -196,6 +346,7 @@ public class DeveloperTools implements KeyListener {
 		}
 
 		// Other commands are gated behind RuneLite's --developer-mode
+		// They must stay developer-mode only, since RuneLite's plugin rules reject user-entered IDs and spawned content for normal users
 		if (!developerMode)
 			return;
 
@@ -204,6 +355,982 @@ public class DeveloperTools implements KeyListener {
 			case "varp":
 				handleVarCommand(action, args);
 				break;
+			case "spotanim":
+				handleSpotanimCommand(args);
+				break;
+			case "object":
+				handleObjectCommand(args);
+				break;
+		}
+	}
+
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged) {
+		// Test objects are positioned in local coordinates, which change meaning when a new scene loads
+		if (gameStateChanged.getGameState() != GameState.LOADING)
+			return;
+		stopTestProjectile();
+		if (!modelOverrideManager.testObjects.isEmpty()) {
+			clearTestObjects();
+			postMessage("Removed test objects due to scene load");
+		}
+	}
+
+	@Subscribe
+	public void onClientTick(ClientTick clientTick) {
+		lightManager.addTestObjectLights(modelOverrideManager.testObjects);
+		updateTestProjectile();
+		updateSpawnerHdConfigIds();
+		updateTestObjectDefinitionLoad();
+
+		if (testSpotanimId == -1)
+			return;
+
+		Player player = client.getLocalPlayer();
+		if (player == null)
+			return;
+
+		ActorSpotAnim spotanim = findTestSpotanim(player);
+
+		if (isTestSpotanimControlled()) {
+			updateControlledSpotanim(player, spotanim);
+			return;
+		}
+
+		if (spotanim != null) {
+			testSpotanimRestartCycle = -1;
+			// Record when each frame starts during the first play, relative to the spotanim's start cycle
+			int elapsedCycles = client.getGameCycle() - spotanim.getStartCycle();
+			if (testSpotanimFrameTimes != null && elapsedCycles >= 0 && spotanim.getFrame() != testSpotanimLastFrame) {
+				testSpotanimLastFrame = spotanim.getFrame();
+				testSpotanimFrameTimes.add(new int[] { testSpotanimLastFrame, elapsedCycles * Constants.CLIENT_TICK_LENGTH });
+			}
+			return;
+		}
+
+		if (testSpotanimFrameTimes != null) {
+			postSpotanimTimeline(testSpotanimFrameTimes);
+			testSpotanimTimeline = testSpotanimFrameTimes;
+			testSpotanimFrameTimes = null;
+		}
+
+		if (!testSpotanimLoop) {
+			testSpotanimId = -1;
+			return;
+		}
+
+		int cycle = client.getGameCycle();
+		if (testSpotanimRestartCycle == -1) {
+			testSpotanimRestartCycle = cycle + TEST_SPOTANIM_LOOP_DELAY;
+		} else if (cycle >= testSpotanimRestartCycle) {
+			testSpotanimRestartCycle = -1;
+			playTestSpotanim();
+		}
+	}
+
+	@Nullable
+	private ActorSpotAnim findTestSpotanim(Player player) {
+		for (var s : player.getSpotAnims())
+			if (s.getId() == testSpotanimId)
+				return s;
+		return null;
+	}
+
+	private boolean isTestSpotanimControlled() {
+		return testSpotanimPaused || testSpotanimSpeed != 1;
+	}
+
+	private int getTestSpotanimEndMs() {
+		if (testSpotanimTimeline == null || testSpotanimTimeline.isEmpty())
+			return Integer.MAX_VALUE;
+		return testSpotanimTimeline.get(testSpotanimTimeline.size() - 1)[1];
+	}
+
+	private int getTestSpotanimFrameAt(float timeMs) {
+		// Before the first play has been recorded, assume one frame per client tick, like Maya animations
+		if (testSpotanimTimeline == null || testSpotanimTimeline.isEmpty())
+			return (int) (timeMs / Constants.CLIENT_TICK_LENGTH);
+		int frame = testSpotanimTimeline.get(0)[0];
+		for (int[] entry : testSpotanimTimeline) {
+			if (entry[1] > timeMs)
+				break;
+			frame = entry[0];
+		}
+		return frame;
+	}
+
+	/**
+	 * Take over playback of the test spotanim from the client, starting from wherever it currently is.
+	 */
+	private void beginControllingTestSpotanim() {
+		if (isTestSpotanimControlled())
+			return;
+
+		Player player = client.getLocalPlayer();
+		ActorSpotAnim spotanim = player == null ? null : findTestSpotanim(player);
+		testSpotanimTimeMs = spotanim == null ? 0 : max(0, client.getGameCycle() - spotanim.getStartCycle()) * Constants.CLIENT_TICK_LENGTH;
+
+		// Measurements of the first play would be meaningless once playback is altered
+		testSpotanimFrameTimes = null;
+	}
+
+	private void updateControlledSpotanim(Player player, @Nullable ActorSpotAnim spotanim) {
+		int endMs = getTestSpotanimEndMs();
+		if (!testSpotanimPaused) {
+			testSpotanimTimeMs += testSpotanimSpeed * Constants.CLIENT_TICK_LENGTH;
+			if (testSpotanimTimeMs >= endMs) {
+				if (testSpotanimLoop) {
+					testSpotanimTimeMs = 0;
+				} else {
+					testSpotanimTimeMs = endMs;
+					testSpotanimPaused = true;
+				}
+			}
+		}
+
+		if (spotanim == null) {
+			// The client finished or replaced it, so bring it back and keep controlling it from the next tick
+			playTestSpotanim();
+			return;
+		}
+
+		// Hold the spotanim on the frame for the current playback time, so the client never advances or finishes it
+		spotanim.setFrame(getTestSpotanimFrameAt(testSpotanimTimeMs));
+		spotanim.setCycle(0);
+
+		lightManager.spotanimTimeOverrideActor = player;
+		lightManager.spotanimTimeOverrideId = testSpotanimId;
+		lightManager.spotanimTimeOverride = testSpotanimTimeMs / 1000;
+	}
+
+	private void releaseTestSpotanimControl() {
+		lightManager.spotanimTimeOverrideActor = null;
+		lightManager.spotanimTimeOverrideId = -1;
+		lightManager.spotanimTimeOverride = -1;
+	}
+
+	private void postTestSpotanimPosition() {
+		postMessage(String.format(
+			"Spotanim %s at frame %d, %d ms (speed %sx)",
+			testSpotanimPaused ? "paused" : "playing",
+			getTestSpotanimFrameAt(testSpotanimTimeMs),
+			Math.round(testSpotanimTimeMs),
+			testSpotanimSpeed
+		));
+	}
+
+	private void toggleTestSpotanimPause() {
+		if (testSpotanimId == -1)
+			return;
+		beginControllingTestSpotanim();
+		testSpotanimPaused = !testSpotanimPaused;
+		if (!isTestSpotanimControlled())
+			releaseTestSpotanimControl();
+		postTestSpotanimPosition();
+	}
+
+	private void stepTestSpotanim(int ticks) {
+		if (testSpotanimId == -1)
+			return;
+		beginControllingTestSpotanim();
+		testSpotanimPaused = true;
+		testSpotanimTimeMs = clamp(testSpotanimTimeMs + ticks * Constants.CLIENT_TICK_LENGTH, 0, getTestSpotanimEndMs());
+		postTestSpotanimPosition();
+	}
+
+	private void handleSpotanimCommand(String[] args) {
+		assert client.isClientThread();
+		String usage = "Usage: ::117hd spotanim <name|id> [height] [loop] / pause / speed <multiplier> / time <ms> / stop";
+		if (args.length < 2 || args.length > 4) {
+			postMessage(usage);
+			return;
+		}
+
+		switch (args[1].toLowerCase()) {
+			case "stop":
+			case "clear":
+				stopTestSpotanim();
+				postMessage("Stopped test spotanim");
+				return;
+			case "pause":
+			case "resume":
+				if (testSpotanimId == -1) {
+					postMessage("No test spotanim is playing");
+				} else {
+					toggleTestSpotanimPause();
+				}
+				return;
+			case "speed":
+			case "time":
+				if (testSpotanimId == -1) {
+					postMessage("No test spotanim is playing");
+					return;
+				}
+				float value;
+				try {
+					value = args.length == 3 ? Float.parseFloat(args[2]) : -1;
+				} catch (NumberFormatException e) {
+					value = -1;
+				}
+				if (value < 0 || args[1].equalsIgnoreCase("speed") && value == 0) {
+					postMessage(usage);
+					return;
+				}
+				beginControllingTestSpotanim();
+				if (args[1].equalsIgnoreCase("speed")) {
+					testSpotanimSpeed = value;
+				} else {
+					testSpotanimTimeMs = min(value, getTestSpotanimEndMs());
+					testSpotanimPaused = true;
+				}
+				if (!isTestSpotanimControlled())
+					releaseTestSpotanimControl();
+				postTestSpotanimPosition();
+				return;
+		}
+
+		String nameOrId = args[1].toUpperCase();
+		Integer id;
+		try {
+			id = Integer.parseInt(nameOrId);
+		} catch (NumberFormatException ignored) {
+			try (var gamevals = gamevalManager.obtainHandle()) {
+				id = gamevals.getSpotanims().get(nameOrId);
+			}
+		}
+		if (id == null) {
+			postMessage("Unknown spotanim: " + nameOrId);
+			return;
+		}
+
+		int height = 0;
+		boolean loop = false;
+		for (int i = 2; i < args.length; i++) {
+			if (args[i].equalsIgnoreCase("loop")) {
+				loop = true;
+				continue;
+			}
+			try {
+				height = Integer.parseInt(args[i]);
+			} catch (NumberFormatException e) {
+				postMessage(usage);
+				return;
+			}
+		}
+
+		if (client.getLocalPlayer() == null) {
+			postMessage("No local player to play the spotanim on");
+			return;
+		}
+
+		startTestSpotanim(id, height, loop, true);
+		postPlayingSpotanim(id, height, loop);
+	}
+
+	private void startTestSpotanim(int id, int height, boolean loop, boolean recordTimeline) {
+		if (!developerMode)
+			return;
+		// Start from the beginning, including the lights, even when replacing the same spotanim or its preview
+		int previousId = testSpotanimId;
+		stopTestSpotanim();
+		Player player = client.getLocalPlayer();
+		if (previousId != -1 && player != null)
+			lightManager.removeSpotanimLightsImmediately(player, previousId);
+
+		testSpotanimId = id;
+		testSpotanimHeight = height;
+		testSpotanimLoop = loop;
+		// Previews skip recording, so hovering doesn't post a timeline to the chat
+		testSpotanimFrameTimes = recordTimeline ? new ArrayList<>() : null;
+		testSpotanimLastFrame = -1;
+		playTestSpotanim();
+	}
+
+	private void postPlayingSpotanim(int id, int height, boolean loop) {
+		String name;
+		try (var gamevals = gamevalManager.obtainHandle()) {
+			name = gamevals.getSpotanimName(id);
+		}
+		postMessage("Playing spotanim " + (name == null ? id : name + " (" + id + ")") + " at height " + height + (loop ? ", looping" : ""));
+	}
+
+	/**
+	 * Play a spotanim on the local player, as if using the spotanim command. Can be called from any thread.
+	 */
+	public void playSpotanim(int id, boolean loop) {
+		clientThread.invoke(() -> {
+			if (client.getLocalPlayer() == null) {
+				postMessage("No local player to play the spotanim on");
+				return;
+			}
+			startTestSpotanim(id, 0, loop, true);
+			postPlayingSpotanim(id, 0, loop);
+		});
+	}
+
+	/**
+	 * Change whether the playing test spotanim loops, unless it's a hover preview. Can be called from any thread.
+	 */
+	public void setSpotanimLoop(boolean loop) {
+		clientThread.invoke(() -> {
+			if (testSpotanimId != -1 && !testSpotanimIsPreview)
+				testSpotanimLoop = loop;
+		});
+	}
+
+	/**
+	 * Show a looping preview of the spotanim on the local player, replacing whichever test spotanim is playing.
+	 * Can be called from any thread.
+	 */
+	public void previewSpotanim(int id) {
+		int request = testSpotanimPreviewRequest.incrementAndGet();
+		clientThread.invoke(() -> {
+			if (request != testSpotanimPreviewRequest.get() || client.getLocalPlayer() == null)
+				return;
+			startTestSpotanim(id, 0, true, false);
+			testSpotanimIsPreview = true;
+		});
+	}
+
+	public void clearSpotanimPreview() {
+		testSpotanimPreviewRequest.incrementAndGet();
+		clientThread.invoke(() -> {
+			if (testSpotanimIsPreview)
+				stopTestSpotanim();
+		});
+	}
+
+	public void stopSpotanimAndNotify() {
+		clientThread.invoke(() -> {
+			boolean wasPlaying = testSpotanimId != -1;
+			stopTestSpotanim();
+			postMessage(wasPlaying ? "Stopped test spotanim" : "No test spotanim is playing");
+		});
+	}
+
+	/**
+	 * Read the spotanim gamevals off the client thread, then pass them to the callback on the Swing thread.
+	 */
+	public void loadSpotanimNames(Consumer<Map<String, Integer>> callback) {
+		executor.execute(() -> {
+			Map<String, Integer> spotanims;
+			try {
+				spotanims = gamevalManager.readSpotanims();
+			} catch (IOException | RuntimeException ex) {
+				log.error("Failed to read spotanim gamevals", ex);
+				spotanims = Map.of();
+			}
+			Map<String, Integer> result = spotanims;
+			SwingUtilities.invokeLater(() -> callback.accept(result));
+		});
+	}
+
+	private void playTestSpotanim() {
+		Player player = client.getLocalPlayer();
+		if (player == null)
+			return;
+
+		// Replays, such as loops, need fresh lights rather than the previous play's, which may still be fading out
+		lightManager.removeSpotanimLightsImmediately(player, testSpotanimId);
+		player.createSpotAnim(TEST_SPOTANIM_SLOT, testSpotanimId, testSpotanimHeight, 0);
+
+		// Client-side spotanims don't notify plugins, so let the LightManager know to attach lights. This goes to it
+		// directly rather than through the event bus, so other plugins never mistake the test spotanim for a real one.
+		GraphicChanged changed = new GraphicChanged();
+		changed.setActor(player);
+		lightManager.onGraphicChanged(changed);
+	}
+
+	private void stopTestSpotanim() {
+		if (testSpotanimId == -1)
+			return;
+
+		Player player = client.getLocalPlayer();
+		if (player != null && player.hasSpotAnim(testSpotanimId))
+			player.removeSpotAnim(TEST_SPOTANIM_SLOT);
+
+		testSpotanimId = -1;
+		testSpotanimIsPreview = false;
+		testSpotanimLoop = false;
+		testSpotanimRestartCycle = -1;
+		testSpotanimFrameTimes = null;
+		testSpotanimTimeline = null;
+		testSpotanimPaused = false;
+		testSpotanimSpeed = 1;
+		releaseTestSpotanimControl();
+	}
+
+	private void handleObjectCommand(String[] args) {
+		assert client.isClientThread();
+		if (args.length != 2) {
+			postMessage("Usage: ::117hd object <name|id> / clear");
+			return;
+		}
+		if (args[1].equalsIgnoreCase("clear") || args[1].equalsIgnoreCase("stop")) {
+			clearTestObjectsAndNotify();
+			return;
+		}
+
+		Integer objectId;
+		try (var gamevals = gamevalManager.obtainHandle()) {
+			objectId = parseIdOrName(args[1], gamevals.getObjects());
+		}
+		if (objectId == null) {
+			postMessage("Unknown object: " + args[1]);
+			return;
+		}
+
+		spawnTestObject(objectId);
+	}
+
+	/**
+	 * Spawn a test object with the given object ID at the local player's location. Can be called from any thread.
+	 */
+	public void spawnTestObject(int objectId) {
+		withTestObjectDefinition(objectId, true, def -> {
+			// Keep the preview of the same object instead of spawning a duplicate on top of it
+			RuneLiteObject object;
+			if (testObjectPreview != null && testObjectPreviewId == objectId) {
+				object = testObjectPreview;
+				testObjectPreview = null;
+				testObjectPreviewId = -1;
+			} else {
+				object = createTestObject(objectId, def, true);
+				if (object == null)
+					return;
+			}
+
+			String name;
+			try (var gamevals = gamevalManager.obtainHandle()) {
+				name = gamevals.getObjectName(objectId);
+			}
+			Player player = client.getLocalPlayer();
+			WorldPoint location = player == null ? null : player.getWorldLocation();
+			int handle = nextTestObjectHandle++;
+			String label = def.name != null ? def.name : def.displayName != null ? def.displayName : "Object " + objectId;
+			spawnedTestObjects.put(handle, new SpawnedTestObject(handle, object, objectId, label, location));
+			notifySpawnedTestObjectsChanged();
+			postMessage("Spawned test object " + (name == null ? objectId : name + " (" + objectId + ")") +
+						(location == null ? "" : " at " + location));
+		});
+	}
+
+	public void removeTestObject(int handle) {
+		clientThread.invoke(() -> {
+			var spawned = spawnedTestObjects.remove(handle);
+			if (spawned == null)
+				return;
+			spawned.object.setActive(false);
+			modelOverrideManager.testObjects.remove(spawned.object);
+			notifySpawnedTestObjectsChanged();
+		});
+	}
+
+	/**
+	 * Rotate a spawned test object in 90 degree steps, like real objects. Its lights follow along.
+	 */
+	public void rotateTestObject(int handle, int quarterTurns) {
+		clientThread.invoke(() -> {
+			var spawned = spawnedTestObjects.get(handle);
+			if (spawned == null)
+				return;
+			spawned.object.setOrientation(mod(spawned.object.getOrientation() + quarterTurns * 512, 2048));
+			notifySpawnedTestObjectsChanged();
+		});
+	}
+
+	private void notifySpawnedTestObjectsChanged() {
+		assert client.isClientThread();
+		var panel = objectSpawnerPanel;
+		if (panel == null)
+			return;
+		List<SpawnedObjectInfo> infos = new ArrayList<>();
+		for (var spawned : spawnedTestObjects.values()) {
+			infos.add(new SpawnedObjectInfo(
+				spawned.handle,
+				spawned.objectId,
+				spawned.label,
+				spawned.location,
+				spawned.object.getOrientation() / 512 * 90
+			));
+		}
+		SwingUtilities.invokeLater(() -> panel.setSpawnedObjects(infos));
+	}
+
+	/**
+	 * Send the sidebar which IDs have lights or model overrides whenever either has been (re)loaded,
+	 * since they load in the background at startup and again whenever their JSON files are saved.
+	 */
+	private void updateSpawnerHdConfigIds() {
+		var panel = objectSpawnerPanel;
+		if (panel == null)
+			return;
+		int lightsVersion = lightManager.getConfigVersion();
+		int overridesVersion = modelOverrideManager.getConfigVersion();
+		if (lightsVersion == sentLightsVersion && overridesVersion == sentOverridesVersion)
+			return;
+		sentLightsVersion = lightsVersion;
+		sentOverridesVersion = overridesVersion;
+
+		var ids = new HdConfigIds(
+			lightManager.getObjectLightIds(),
+			modelOverrideManager.getOverriddenIds(ModelHash.TYPE_OBJECT),
+			lightManager.getGraphicsObjectLightIds(),
+			modelOverrideManager.getOverriddenIds(ModelHash.TYPE_GRAPHICS_OBJECT),
+			lightManager.getProjectileLightIds(),
+			modelOverrideManager.getOverriddenIds(ModelHash.TYPE_PROJECTILE)
+		);
+		SwingUtilities.invokeLater(() -> panel.setHdConfigIds(ids));
+	}
+
+	/**
+	 * Fire a projectile from the local player to the tile the configured distance ahead. Can be called from any thread.
+	 */
+	public void playProjectile(int id, boolean loop) {
+		clientThread.invoke(() -> {
+			if (client.getLocalPlayer() == null) {
+				postMessage("No local player to fire the projectile from");
+				return;
+			}
+			startTestProjectile(id, loop);
+			String name;
+			try (var gamevals = gamevalManager.obtainHandle()) {
+				name = gamevals.getSpotanimName(id);
+			}
+			postMessage("Firing projectile " + (name == null ? id : name + " (" + id + ")") + " " +
+						testProjectileDistance + " tiles ahead" + (loop ? ", looping" : ""));
+		});
+	}
+
+	/**
+	 * Keep firing the projectile as a preview, replacing whichever test projectile is active. Can be called from any thread.
+	 */
+	public void previewProjectile(int id) {
+		int request = testProjectilePreviewRequest.incrementAndGet();
+		clientThread.invoke(() -> {
+			if (request != testProjectilePreviewRequest.get() || client.getLocalPlayer() == null)
+				return;
+			startTestProjectile(id, true);
+			testProjectileIsPreview = true;
+		});
+	}
+
+	public void clearProjectilePreview() {
+		testProjectilePreviewRequest.incrementAndGet();
+		clientThread.invoke(() -> {
+			if (testProjectileIsPreview)
+				stopTestProjectile();
+		});
+	}
+
+	public void stopProjectileAndNotify() {
+		clientThread.invoke(() -> {
+			boolean wasActive = testProjectileId != -1;
+			stopTestProjectile();
+			postMessage(wasActive ? "Stopped test projectile" : "No test projectile is active");
+		});
+	}
+
+	public void setProjectileLoop(boolean loop) {
+		clientThread.invoke(() -> {
+			if (testProjectileId != -1 && !testProjectileIsPreview)
+				testProjectileLoop = loop;
+		});
+	}
+
+	public void setProjectileStartHeight(int height) {
+		testProjectileStartHeight = height;
+	}
+
+	public void setProjectileDistance(int tiles) {
+		testProjectileDistance = tiles;
+	}
+
+	private void startTestProjectile(int id, boolean loop) {
+		if (!developerMode)
+			return;
+		stopTestProjectile();
+		testProjectileId = id;
+		testProjectileLoop = loop;
+		testProjectileFired = false;
+		testProjectileNextCycle = client.getGameCycle();
+		updateTestProjectile();
+	}
+
+	private void stopTestProjectile() {
+		// End the flight early, so the client removes it along with its lights
+		if (testProjectile != null && testProjectile.getRemainingCycles() > 0)
+			testProjectile.setEndCycle(client.getGameCycle());
+		testProjectile = null;
+		testProjectileId = -1;
+		testProjectileIsPreview = false;
+		testProjectileLoop = false;
+	}
+
+	private void updateTestProjectile() {
+		if (testProjectileId == -1)
+			return;
+
+		// Wait for the current flight to land
+		int cycle = client.getGameCycle();
+		if (testProjectile != null) {
+			if (testProjectile.getRemainingCycles() > 0)
+				return;
+			testProjectile = null;
+			testProjectileNextCycle = cycle + TEST_PROJECTILE_LOOP_DELAY;
+		}
+
+		if (testProjectileFired && !testProjectileLoop) {
+			stopTestProjectile();
+			return;
+		}
+		if (cycle >= testProjectileNextCycle)
+			fireTestProjectile();
+	}
+
+	private void fireTestProjectile() {
+		Player player = client.getLocalPlayer();
+		if (player == null)
+			return;
+
+		// Aim at the tile the set distance ahead, in the direction the player is facing (0 = south, 512 = west)
+		WorldPoint source = player.getWorldLocation();
+		double angle = player.getOrientation() * JAU_TO_RAD;
+		int distance = testProjectileDistance;
+		WorldPoint target = source
+			.dx((int) Math.round(-Math.sin(angle) * distance))
+			.dy((int) Math.round(-Math.cos(angle) * distance));
+
+		// Purely visual: a client-side projectile isn't sent to the server
+		int cycle = client.getGameCycle();
+		Projectile projectile = client.createProjectile(
+			testProjectileId,
+			source,
+			testProjectileStartHeight,
+			player,
+			target,
+			TEST_PROJECTILE_END_HEIGHT,
+			null,
+			cycle,
+			cycle + TEST_PROJECTILE_BASE_CYCLES + distance * TEST_PROJECTILE_CYCLES_PER_TILE,
+			TEST_PROJECTILE_SLOPE,
+			TEST_PROJECTILE_START_POS
+		);
+		client.getProjectiles().addLast(projectile);
+		testProjectile = projectile;
+		testProjectileFired = true;
+
+		// Client-side projectiles may not notify plugins, so let the LightManager know to attach lights. This goes to it
+		// directly rather than through the event bus, so other plugins never mistake the test projectile for a real one.
+		ProjectileMoved moved = new ProjectileMoved();
+		moved.setProjectile(projectile);
+		moved.setPosition(LocalPoint.fromWorld(client.getTopLevelWorldView(), target));
+		moved.setZ(0);
+		lightManager.onProjectileMoved(moved);
+	}
+
+	/**
+	 * Show a temporary preview of the object at the local player's location, replacing any previous preview.
+	 * Can be called from any thread.
+	 */
+	public void previewTestObject(int objectId) {
+		int request = testObjectPreviewRequest.incrementAndGet();
+		withTestObjectDefinition(objectId, false, def -> {
+			// Skip previews which have already been replaced or cleared while loading
+			if (request != testObjectPreviewRequest.get())
+				return;
+			removeTestObjectPreview();
+			testObjectPreview = createTestObject(objectId, def, false);
+			testObjectPreviewId = testObjectPreview == null ? -1 : objectId;
+		});
+	}
+
+	public void clearTestObjectPreview() {
+		testObjectPreviewRequest.incrementAndGet();
+		clientThread.invoke(this::removeTestObjectPreview);
+	}
+
+	private void removeTestObjectPreview() {
+		if (testObjectPreview == null)
+			return;
+		testObjectPreview.setActive(false);
+		modelOverrideManager.testObjects.remove(testObjectPreview);
+		testObjectPreview = null;
+		testObjectPreviewId = -1;
+	}
+
+	private void withTestObjectDefinition(int objectId, boolean reportErrors, Consumer<TestObjectDefinition> callback) {
+		clientThread.invoke(() -> {
+			var def = readTestObjectDefinition(objectId);
+			if (def != null) {
+				callback.accept(def);
+			} else if (reportErrors) {
+				postMessage("Object " + objectId + " has no models, or couldn't be read from the client");
+			}
+		});
+	}
+
+	/**
+	 * Decode one object's definition from the cache data the client has loaded. Must be called on the client thread.
+	 */
+	@Nullable
+	private TestObjectDefinition readTestObjectDefinition(int objectId) {
+		assert client.isClientThread();
+		var cached = testObjectDefinitions == null ? null : testObjectDefinitions.get(objectId);
+		if (cached != null)
+			return cached;
+		byte[] data = client.getIndexConfig().loadData(OBJECT_CONFIG_GROUP, objectId);
+		return data == null ? null : ObjectDefinitionParser.parse(objectId, data);
+	}
+
+	/**
+	 * Decode every object with models for the sidebar, then pass them to the callback on the Swing thread.
+	 * The callback receives null if the client's cache data couldn't be read. Can be called from any thread.
+	 */
+	public void loadTestObjectDefinitions(Consumer<Map<Integer, TestObjectDefinition>> callback) {
+		clientThread.invoke(() -> {
+			var definitions = testObjectDefinitions;
+			if (definitions != null) {
+				SwingUtilities.invokeLater(() -> callback.accept(definitions));
+				return;
+			}
+			testObjectDefinitionCallbacks.add(callback);
+			if (testObjectDefinitionLoad != null || loadingTestObjectNames)
+				return;
+
+			// Read the gameval names off the client thread, then decode the definitions a batch per tick
+			loadingTestObjectNames = true;
+			executor.execute(() -> {
+				Map<Integer, String> names = new HashMap<>();
+				try {
+					gamevalManager.readObjects().forEach((name, id) -> names.putIfAbsent(id, name));
+				} catch (IOException | RuntimeException ex) {
+					log.error("Failed to read object gamevals", ex);
+				}
+				clientThread.invoke(() -> {
+					loadingTestObjectNames = false;
+					int[] ids = client.getIndexConfig().getFileIds(OBJECT_CONFIG_GROUP);
+					if (ids == null) {
+						finishTestObjectDefinitionLoad(null);
+						return;
+					}
+					testObjectDefinitionLoad = new TestObjectDefinitionLoad(ids, names);
+				});
+			});
+		});
+	}
+
+	private void updateTestObjectDefinitionLoad() {
+		var load = testObjectDefinitionLoad;
+		if (load == null)
+			return;
+
+		long deadline = System.nanoTime() + TEST_OBJECT_DEFINITION_NANOS_PER_TICK;
+		for (int decoded = 0; load.next < load.ids.length; load.next++, decoded++) {
+			// Checking the time every so often is enough, and cheaper than every definition
+			if (decoded % 100 == 0 && decoded > 0 && System.nanoTime() > deadline)
+				break;
+			int id = load.ids[load.next];
+			byte[] data = client.getIndexConfig().loadData(OBJECT_CONFIG_GROUP, id);
+			var def = data == null ? null : ObjectDefinitionParser.parse(id, data);
+			if (def != null) {
+				def.name = load.names.get(id);
+				load.definitions.put(id, def);
+			}
+		}
+		if (load.next == load.ids.length) {
+			testObjectDefinitionLoad = null;
+			finishTestObjectDefinitionLoad(Collections.unmodifiableMap(load.definitions));
+		}
+	}
+
+	private void finishTestObjectDefinitionLoad(@Nullable Map<Integer, TestObjectDefinition> definitions) {
+		testObjectDefinitions = definitions;
+		var callbacks = new ArrayList<>(testObjectDefinitionCallbacks);
+		testObjectDefinitionCallbacks.clear();
+		SwingUtilities.invokeLater(() -> callbacks.forEach(callback -> callback.accept(definitions)));
+	}
+
+	@RequiredArgsConstructor
+	private static class TestObjectDefinitionLoad {
+		final int[] ids;
+		final Map<Integer, String> names;
+		final Map<Integer, TestObjectDefinition> definitions = new HashMap<>();
+		int next;
+	}
+
+	public void clearTestObjectsAndNotify() {
+		clientThread.invoke(() -> {
+			int count = modelOverrideManager.testObjects.size();
+			clearTestObjects();
+			postMessage("Removed " + count + " test object" + (count == 1 ? "" : "s"));
+		});
+	}
+
+	@Nullable
+	private RuneLiteObject createTestObject(int objectId, TestObjectDefinition def, boolean reportErrors) {
+		assert client.isClientThread();
+		if (!developerMode)
+			return null;
+		Player player = client.getLocalPlayer();
+		if (player == null) {
+			if (reportErrors)
+				postMessage("No local player to spawn the object at");
+			return null;
+		}
+
+		ModelData[] models = new ModelData[def.models.length];
+		for (int i = 0; i < models.length; i++) {
+			models[i] = client.loadModelData(def.models[i]);
+			if (models[i] == null) {
+				if (reportErrors)
+					postMessage("Unable to load model " + def.models[i]);
+				return null;
+			}
+		}
+
+		// Apply the object definition's model changes the same way the client does
+		ModelData modelData = models.length == 1 ? models[0] : client.mergeModels(models);
+		if (def.recolorFrom != null && def.recolorTo != null) {
+			modelData = modelData.cloneColors();
+			for (int i = 0; i < min(def.recolorFrom.length, def.recolorTo.length); i++)
+				modelData.recolor(def.recolorFrom[i], def.recolorTo[i]);
+		}
+		if (def.retextureFrom != null && def.retextureTo != null) {
+			modelData = modelData.cloneTextures();
+			for (int i = 0; i < min(def.retextureFrom.length, def.retextureTo.length); i++)
+				modelData.retexture(def.retextureFrom[i], def.retextureTo[i]);
+		}
+		if (def.scale != null || def.offset != null) {
+			modelData = modelData.cloneVertices();
+			if (def.scale != null)
+				modelData.scale(def.scale[0], def.scale[1], def.scale[2]);
+			if (def.offset != null)
+				modelData.translate(def.offset[0], def.offset[1], def.offset[2]);
+		}
+
+		var worldView = client.getTopLevelWorldView();
+		LocalPoint location = LocalPoint.fromWorld(worldView, player.getWorldLocation());
+		if (location == null) {
+			if (reportErrors)
+				postMessage("The player isn't in the loaded scene");
+			return null;
+		}
+		// The renderer recognises test objects by their exact position, so give each its own, off the tile centre where
+		// game graphics usually sit. Each step is 1/128 of a tile, far too small to see.
+		do {
+			location = location.dx(1);
+		} while (isTestObjectAt(location));
+
+		// Purely visual: a RuneLiteObject has no clickbox or menu entries, and nothing is sent to the server
+		RuneLiteObject object = client.createRuneLiteObject();
+		object.setModel(modelData.light(
+			ModelData.DEFAULT_AMBIENT + def.ambient,
+			ModelData.DEFAULT_CONTRAST + def.contrast,
+			ModelData.DEFAULT_X,
+			ModelData.DEFAULT_Y,
+			ModelData.DEFAULT_Z
+		));
+		if (def.animation != -1)
+			object.setAnimationController(new AnimationController(client, def.animation));
+		object.setShouldLoop(true);
+		object.setDrawFrontTilesFirst(false);
+		object.setLocation(location, worldView.getPlane());
+		object.setActive(true);
+		modelOverrideManager.testObjects.put(object, objectId);
+		return object;
+	}
+
+	private boolean isTestObjectAt(LocalPoint location) {
+		for (var object : modelOverrideManager.testObjects.keySet())
+			if (object.getX() == location.getX() && object.getY() == location.getY())
+				return true;
+		return false;
+	}
+
+	@Nullable
+	private static Integer parseIdOrName(String nameOrId, Map<String, Integer> names) {
+		try {
+			return Integer.parseInt(nameOrId);
+		} catch (NumberFormatException ignored) {
+			return names.get(nameOrId.toUpperCase());
+		}
+	}
+
+	private void clearTestObjects() {
+		for (var object : modelOverrideManager.testObjects.keySet())
+			object.setActive(false);
+		modelOverrideManager.testObjects.clear();
+		testObjectPreview = null;
+		testObjectPreviewId = -1;
+		spawnedTestObjects.clear();
+		notifySpawnedTestObjectsChanged();
+	}
+
+	@RequiredArgsConstructor
+	private static class SpawnedTestObject {
+		final int handle;
+		final RuneLiteObject object;
+		final int objectId;
+		final String label;
+		@Nullable
+		final WorldPoint location;
+	}
+
+	/**
+	 * A snapshot of a spawned test object for the sidebar, safe to use on the Swing thread
+	 */
+	@RequiredArgsConstructor
+	public static class SpawnedObjectInfo {
+		public final int handle;
+		public final int objectId;
+		public final String label;
+		@Nullable
+		public final WorldPoint location;
+		public final int rotationDegrees;
+	}
+
+	/**
+	 * IDs with lights.json lights or model_overrides.json overrides, per kind of entry in the sidebar
+	 */
+	@RequiredArgsConstructor
+	public static class HdConfigIds {
+		public final Set<Integer> objectLights;
+		public final Set<Integer> objectOverrides;
+		public final Set<Integer> spotanimLights;
+		public final Set<Integer> spotanimOverrides;
+		public final Set<Integer> projectileLights;
+		public final Set<Integer> projectileOverrides;
+	}
+
+	private void postSpotanimTimeline(List<int[]> frameTimes) {
+		if (frameTimes.isEmpty())
+			return;
+
+		int[] last = frameTimes.get(frameTimes.size() - 1);
+
+		// Maya animations advance one frame per client tick, so a full timeline would just be frame * tick length
+		boolean onePerTick = frameTimes.stream().allMatch(e -> e[1] == e[0] * Constants.CLIENT_TICK_LENGTH);
+		if (onePerTick) {
+			postMessage(String.format(
+				"Spotanim runs one frame per client tick: frame N starts at N * %d ms. Frames 0-%d, ending around %d ms",
+				Constants.CLIENT_TICK_LENGTH, last[0], last[1] + Constants.CLIENT_TICK_LENGTH
+			));
+			return;
+		}
+
+		postMessage("Spotanim frame timeline (frame @ ms since start), " + frameTimes.size() + " frames over " + last[1] + "+ ms:");
+		var sb = new StringBuilder();
+		for (int i = 0; i < frameTimes.size(); i++) {
+			int[] entry = frameTimes.get(i);
+			if (sb.length() > 0)
+				sb.append(", ");
+			sb.append(entry[0]).append(" @ ").append(entry[1]);
+			if (i % 10 == 9 || i == frameTimes.size() - 1) {
+				postMessage(sb.toString());
+				log.debug("Spotanim timeline: {}", sb);
+				sb.setLength(0);
+			}
 		}
 	}
 
@@ -336,7 +1463,7 @@ public class DeveloperTools implements KeyListener {
 		}
 	}
 
-	private void postMessage(String message) {
+	void postMessage(String message) {
 		clientThread.invoke(() -> client.addChatMessage(
 			ChatMessageType.GAMEMESSAGE,
 			"117 HD",
@@ -369,6 +1496,16 @@ public class DeveloperTools implements KeyListener {
 			plugin.renderer.reloadScene();
 		} else if (KEY_COLOR_PICKER.matches(e)) {
 			toggleColorPicker();
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_PAUSE.matches(e)) {
+			clientThread.invoke(this::toggleTestSpotanimPause);
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_STEP_BACK.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(-1));
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_STEP_FORWARD.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(1));
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_BIG_STEP_BACK.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(-SPOTANIM_BIG_STEP_TICKS));
+		} else if (testSpotanimId != -1 && KEY_SPOTANIM_BIG_STEP_FORWARD.matches(e)) {
+			clientThread.invoke(() -> stepTestSpotanim(SPOTANIM_BIG_STEP_TICKS));
 		} else {
 			return;
 		}

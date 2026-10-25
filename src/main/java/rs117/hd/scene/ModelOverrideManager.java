@@ -2,12 +2,16 @@ package rs117.hd.scene;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.gameval.*;
@@ -50,6 +54,12 @@ public class ModelOverrideManager {
 
 	private final Int2ObjectHashMap<ModelOverride> modelOverrides = new Int2ObjectHashMap<>();
 	private final IntHashSet detailCullingBlacklist = new IntHashSet();
+
+	// Developer tools: client-side objects which should be treated as the mapped object ID
+	public final Map<RuneLiteObject, Integer> testObjects = new ConcurrentHashMap<>();
+	// Developer tools: counts how many times overrides have been loaded, so tools can tell when to refresh
+	@Getter
+	private int configVersion;
 
 	private FileWatcher.UnregisterCallback fileWatcher;
 
@@ -94,6 +104,7 @@ public class ModelOverrideManager {
 				}
 
 				log.debug("Loaded {} model overrides", modelOverrides.size());
+				configVersion++;
 
 				if (first)
 					return;
@@ -260,6 +271,33 @@ public class ModelOverrideManager {
 					return override.areaOverrides[i];
 
 		return override;
+	}
+
+	/**
+	 * Find the object ID a developer tools test object is standing in for, or -1 if the renderable isn't one.
+	 * Test objects are matched by identity or, failing that, by their exact local position.
+	 */
+	public int getTestObjectId(Renderable renderable, int localX, int localZ) {
+		if (testObjects.isEmpty() || renderable instanceof Actor || renderable instanceof Projectile || renderable instanceof DynamicObject)
+			return -1;
+		for (var entry : testObjects.entrySet()) {
+			var object = entry.getKey();
+			if (object == (Object) renderable || object.getX() == localX && object.getY() == localZ)
+				return entry.getValue();
+		}
+		return -1;
+	}
+
+	/**
+	 * Developer tools: collect the IDs of the given ModelHash type which have model overrides.
+	 * Must be called on the client thread, where overrides are loaded.
+	 */
+	public Set<Integer> getOverriddenIds(int type) {
+		HashSet<Integer> ids = new HashSet<>();
+		for (var entry : modelOverrides)
+			if (ModelHash.getUuidType(entry.getKey()) == type)
+				ids.add(ModelHash.getUuidId(entry.getKey()));
+		return ids;
 	}
 
 	@Nonnull
