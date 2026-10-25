@@ -8,6 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -23,6 +24,10 @@ import rs117.hd.HdPlugin;
 public class SceneCapture {
 	public static final ResourcePath CAPTURES_PATH = HdPlugin.PLUGIN_DIR.resolve("scene_captures");
 
+	// Tiles in each direction which make up an instance's region-sized area around the player
+	private static final int INSTANCE_REGION_RADIUS = 32;
+	// Tiles of ground saved around the captured objects, enough for big models
+	private static final int TERRAIN_MARGIN = 8;
 	private static final int SHAPE_MASK = 0x3F;
 	private static final int SHAPE_WALL_CORNER = 2;
 	private static final int SHAPE_DECORATION_STRAIGHT = 4;
@@ -34,14 +39,13 @@ public class SceneCapture {
 	private static final int SHAPE_GROUND_DECORATION = 22;
 
 	/**
-	 * How much of the scene to capture. Every recreated object is redrawn every frame, unlike the static objects it
-	 * stands in for, so a whole scene's worth is slow.
+	 * How much of the scene to capture
 	 */
 	@RequiredArgsConstructor
 	public enum Area {
 		REGION("This region", -1),
 		NEARBY("Within 16 tiles", 16),
-		SCENE("Whole scene (slow)", -1);
+		SCENE("Whole scene", -1);
 
 		private final String label;
 		// Tiles in each direction around the player, or -1 for the region or whole scene
@@ -62,14 +66,56 @@ public class SceneCapture {
 
 	public static class Capture {
 		public String name;
-		// Where the player stood, only for reference, since captures are recreated around wherever the player is
+		// Where the player stood, only for reference
 		public WorldPoint capturedAt;
+		// Whether objects are positioned relative to the south-west corner of the player's region, so they line up with
+		// the region grid wherever they're recreated, rather than relative to the player like older captures
+		public boolean regionAligned;
 		public List<CapturedObject> objects = new ArrayList<>();
+		// The ground under the objects, for those which bend to follow it
+		@Nullable
+		public Terrain terrain;
 	}
 
 	/**
-	 * One object, positioned in local units and planes relative to the player, and in height relative to the ground
-	 * the player stands on, where more negative is higher up
+	 * The height of each tile corner around the captured objects, so objects which follow the ground can be bent the
+	 * same way wherever they're recreated
+	 */
+	public static class Terrain {
+		// The south-west tile, relative to the corner of the player's region, and how many tiles across
+		public int x;
+		public int y;
+		public int width;
+		public int height;
+		// For each plane, the heights of the tile corners row by row from the south, relative to the ground the player
+		// stood on, where more negative is higher up
+		public int[][] heights;
+
+		/**
+		 * The ground's height at a point in local units relative to the region's corner, blended between tile corners
+		 * the same way the client does, or null if the point isn't covered
+		 */
+		@Nullable
+		Integer getHeight(int plane, int localX, int localY) {
+			if (heights == null || plane < 0 || plane >= heights.length)
+				return null;
+			int tileX = (localX >> Perspective.LOCAL_COORD_BITS) - x;
+			int tileY = (localY >> Perspective.LOCAL_COORD_BITS) - y;
+			if (tileX < 0 || tileY < 0 || tileX >= width || tileY >= height)
+				return null;
+			int fracX = localX & (Perspective.LOCAL_TILE_SIZE - 1);
+			int fracY = localY & (Perspective.LOCAL_TILE_SIZE - 1);
+			int[] h = heights[plane];
+			int row = width + 1;
+			int south = h[tileY * row + tileX] * (128 - fracX) + h[tileY * row + tileX + 1] * fracX >> 7;
+			int north = h[(tileY + 1) * row + tileX] * (128 - fracX) + h[(tileY + 1) * row + tileX + 1] * fracX >> 7;
+			return south * (128 - fracY) + north * fracY >> 7;
+		}
+	}
+
+	/**
+	 * One object, positioned in local units relative to the corner of the player's region, in planes relative to the
+	 * player, and in height relative to the ground the player stands on, where more negative is higher up
 	 */
 	public static class CapturedObject {
 		public int id;
@@ -107,10 +153,26 @@ public class SceneCapture {
 	}
 
 	/**
-	 * Capture every object on the player's plane and below within the area. Must be called on the client thread.
+	 * What the game and 117 HD aren't drawing, which captures leave out
+	 */
+	public interface Visibility {
+		// Whether objects at a level under a roof were drawn last frame, or null if nothing has been drawn yet
+		@Nullable
+		Boolean isLevelDrawn(int level, int roofId);
+
+		// Whether 117 HD's area hiding hides the tile, while the player is in an area which hides everything outside it
+		boolean isHiddenByArea(Tile tile);
+
+		// Whether a model override hides the object, given its ModelHash type
+		boolean isHiddenByOverride(TileObject object, int type);
+	}
+
+	/**
+	 * Capture every object within the area which the game and 117 HD currently draw, including the extended area 117 HD
+	 * loads around the scene. Must be called on the client thread.
 	 */
 	@Nullable
-	public static Capture capture(Client client, String name, Area area) {
+	public static Capture capture(Client client, String name, Area area, Visibility visibility) {
 		assert client.isClientThread();
 		Player player = client.getLocalPlayer();
 		WorldView worldView = client.getTopLevelWorldView();
@@ -123,97 +185,267 @@ public class SceneCapture {
 		Capture capture = new Capture();
 		capture.name = name;
 		capture.capturedAt = player.getWorldLocation();
+		capture.regionAligned = true;
 		Scene scene = worldView.getScene();
-		Tile[][][] tiles = scene.getTiles();
-		// Skip the planes above the player, which the game hides like roofs, and which instances fill with copies of the map.
-		// Recreated objects aren't hidden like that, so they'd stack on top of each other.
-		for (int z = 0; z <= originPlane && z < tiles.length; z++) {
+		Tile[][][] tiles = scene.getExtendedTiles();
+		int cornerX = getRegionCorner(scene.getBaseX(), origin.getX());
+		int cornerY = getRegionCorner(scene.getBaseY(), origin.getY());
+		// Instances piece rooms together from chunks of several regions, and their own coordinates don't line up with rooms,
+		// so capture a region-sized square centred on the player instead
+		boolean instanceRegion = area == Area.REGION && worldView.isInstance();
+		int tileRadius = instanceRegion ? INSTANCE_REGION_RADIUS : area.tileRadius;
+		int originRegion = getRegionId(scene, origin.getSceneX(), origin.getSceneY());
+		byte[][][] settings = scene.getExtendedTileSettings();
+		int[][][] roofs = scene.getRoofs();
+		int extendedOffset = (settings[0].length - Constants.SCENE_SIZE) / 2;
+		var capturer = new Capturer(client, capture, visibility, cornerX, cornerY, originPlane, groundHeight);
+		for (int z = 0; z < tiles.length; z++) {
 			for (Tile[] column : tiles[z]) {
 				for (Tile tile : column) {
 					if (tile == null)
 						continue;
 					var sceneLocation = tile.getSceneLocation();
-					if (area == Area.REGION ? (
-						scene.getBaseX() + sceneLocation.getX() >> 6 != capture.capturedAt.getX() >> 6 ||
-						scene.getBaseY() + sceneLocation.getY() >> 6 != capture.capturedAt.getY() >> 6
-					) : area.tileRadius != -1 && (
-						Math.abs(sceneLocation.getX() - origin.getSceneX()) > area.tileRadius ||
-						Math.abs(sceneLocation.getY() - origin.getSceneY()) > area.tileRadius
-					))
+					// Skip what the game hides, like the planes above the player, which instances can fill with other
+					// states of the area. Recreated objects aren't hidden like that, so they'd stack on top of each other.
+					int roofId = getRoofId(settings, roofs, z, sceneLocation.getX() + extendedOffset, sceneLocation.getY() + extendedOffset);
+					Boolean drawn = visibility.isLevelDrawn(z, roofId);
+					if (drawn == null ? z > originPlane : !drawn)
+						continue;
+					if (visibility.isHiddenByArea(tile))
+						continue;
+					if (area == Area.REGION && !instanceRegion ?
+						getRegionId(scene, sceneLocation.getX(), sceneLocation.getY()) != originRegion :
+						tileRadius != -1 && (
+							Math.abs(sceneLocation.getX() - origin.getSceneX()) > tileRadius ||
+							Math.abs(sceneLocation.getY() - origin.getSceneY()) > tileRadius
+						))
 						continue;
 
-					for (GameObject object : tile.getGameObjects()) {
-						// Skip actors & projectiles, and objects bigger than one tile everywhere but their first tile
-						if (object == null || ModelHash.isTemporaryObject(object.getHash()) ||
-							object.getRenderable() == null || object.getRenderable() instanceof Actor ||
-							!object.getSceneMinLocation().equals(sceneLocation))
-							continue;
-						var captured = capture(client, object, Kind.GAME, object.getConfig(), origin, originPlane, groundHeight);
-						if (captured != null) {
-							captured.modelOrientation = object.getModelOrientation();
-							capture.objects.add(captured);
-						}
-					}
-
-					WallObject wall = tile.getWallObject();
-					if (wall != null && wall.getRenderable1() != null)
-						add(capture, capture(client, wall, Kind.WALL, wall.getConfig(), origin, originPlane, groundHeight));
-
-					DecorativeObject decoration = tile.getDecorativeObject();
-					if (decoration != null && decoration.getRenderable() != null) {
-						var captured = capture(client, decoration, Kind.DECORATION, decoration.getConfig(), origin, originPlane, groundHeight);
-						if (captured != null) {
-							captured.xOffset = decoration.getXOffset();
-							captured.yOffset = decoration.getYOffset();
-							capture.objects.add(captured);
-						}
-					}
-
-					GroundObject ground = tile.getGroundObject();
-					if (ground != null && ground.getRenderable() != null)
-						add(capture, capture(client, ground, Kind.GROUND, ground.getConfig(), origin, originPlane, groundHeight));
+					capturer.captureTile(tile);
+					// The ground under a bridge is kept as a separate tile, which is drawn along with the bridge
+					if (tile.getBridge() != null)
+						capturer.captureTile(tile.getBridge());
 				}
 			}
 		}
+		capture.terrain = captureTerrain(scene, capture.objects, cornerX, cornerY, groundHeight);
 		return capture;
 	}
 
-	private static void add(Capture capture, @Nullable CapturedObject object) {
-		if (object != null)
-			capture.objects.add(object);
-	}
+	/**
+	 * Captures the objects on tiles, relative to the corner of the player's region
+	 */
+	@RequiredArgsConstructor
+	private static class Capturer {
+		final Client client;
+		final Capture capture;
+		final Visibility visibility;
+		final int cornerX;
+		final int cornerY;
+		final int originPlane;
+		final int groundHeight;
 
-	@Nullable
-	private static CapturedObject capture(
-		Client client,
-		TileObject object,
-		Kind kind,
-		int config,
-		LocalPoint origin,
-		int originPlane,
-		int groundHeight
-	) {
-		// Objects which change with varbits are captured as whatever they currently look like
-		int id = object.getId();
-		var def = client.getObjectDefinition(id);
-		if (def.getImpostorIds() != null) {
-			var impostor = def.getImpostor();
-			if (impostor == null)
-				return null;
-			id = impostor.getId();
+		void captureTile(Tile tile) {
+			for (GameObject object : tile.getGameObjects()) {
+				// Skip actors & projectiles, and objects bigger than one tile everywhere but their first tile
+				if (object == null || ModelHash.isTemporaryObject(object.getHash()) ||
+					object.getRenderable() == null || object.getRenderable() instanceof Actor ||
+					!object.getSceneMinLocation().equals(tile.getSceneLocation()))
+					continue;
+				var captured = capture(object, Kind.GAME, object.getConfig(), ModelHash.TYPE_GAME_OBJECT);
+				if (captured != null) {
+					captured.modelOrientation = object.getModelOrientation();
+					capture.objects.add(captured);
+				}
+			}
+
+			WallObject wall = tile.getWallObject();
+			if (wall != null && wall.getRenderable1() != null)
+				add(capture(wall, Kind.WALL, wall.getConfig(), ModelHash.TYPE_WALL_OBJECT));
+
+			DecorativeObject decoration = tile.getDecorativeObject();
+			if (decoration != null && decoration.getRenderable() != null) {
+				var captured = capture(decoration, Kind.DECORATION, decoration.getConfig(), ModelHash.TYPE_DECORATIVE_OBJECT);
+				if (captured != null) {
+					captured.xOffset = decoration.getXOffset();
+					captured.yOffset = decoration.getYOffset();
+					capture.objects.add(captured);
+				}
+			}
+
+			GroundObject ground = tile.getGroundObject();
+			if (ground != null && ground.getRenderable() != null)
+				add(capture(ground, Kind.GROUND, ground.getConfig(), ModelHash.TYPE_GROUND_OBJECT));
 		}
 
-		var captured = new CapturedObject();
-		captured.id = id;
-		captured.kind = kind;
-		captured.shape = config & SHAPE_MASK;
-		captured.rotation = config >>> 6 & 3;
-		captured.x = object.getX() - origin.getX();
-		captured.y = object.getY() - origin.getY();
-		captured.height = object.getZ() - groundHeight;
-		captured.plane = object.getPlane() - originPlane;
-		return captured;
+		private void add(@Nullable CapturedObject object) {
+			if (object != null)
+				capture.objects.add(object);
+		}
+
+		@Nullable
+		private CapturedObject capture(TileObject object, Kind kind, int config, int type) {
+			if (visibility.isHiddenByOverride(object, type))
+				return null;
+
+			// Objects which change with varbits are captured as whatever they currently look like
+			int id = object.getId();
+			var def = client.getObjectDefinition(id);
+			if (def.getImpostorIds() != null) {
+				var impostor = def.getImpostor();
+				if (impostor == null)
+					return null;
+				id = impostor.getId();
+			}
+
+			var captured = new CapturedObject();
+			captured.id = id;
+			captured.kind = kind;
+			captured.shape = config & SHAPE_MASK;
+			captured.rotation = config >>> 6 & 3;
+			captured.x = object.getX() - cornerX;
+			captured.y = object.getY() - cornerY;
+			captured.height = object.getZ() - groundHeight;
+			captured.plane = object.getPlane() - originPlane;
+			return captured;
+		}
 	}
+
+	/**
+	 * Save the tile corner heights under the objects, with some room around them for big models
+	 */
+	@Nullable
+	private static Terrain captureTerrain(Scene scene, List<CapturedObject> objects, int cornerX, int cornerY, int groundHeight) {
+		if (objects.isEmpty())
+			return null;
+		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
+		for (var object : objects) {
+			minX = Math.min(minX, object.x >> Perspective.LOCAL_COORD_BITS);
+			minY = Math.min(minY, object.y >> Perspective.LOCAL_COORD_BITS);
+			maxX = Math.max(maxX, object.x >> Perspective.LOCAL_COORD_BITS);
+			maxY = Math.max(maxY, object.y >> Perspective.LOCAL_COORD_BITS);
+		}
+
+		int[][][] tileHeights = scene.getTileHeights();
+		int extendedOffset = (tileHeights[0].length - Constants.SCENE_SIZE) / 2;
+		// Region-relative tiles to extended scene tiles, which have one more corner than tiles along each side
+		int toExtendedX = (cornerX >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
+		int toExtendedY = (cornerY >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
+		var terrain = new Terrain();
+		terrain.x = Math.max(minX - TERRAIN_MARGIN, -toExtendedX);
+		terrain.y = Math.max(minY - TERRAIN_MARGIN, -toExtendedY);
+		terrain.width = Math.min(maxX + TERRAIN_MARGIN, tileHeights[0].length - 2 - toExtendedX) - terrain.x + 1;
+		terrain.height = Math.min(maxY + TERRAIN_MARGIN, tileHeights[0][0].length - 2 - toExtendedY) - terrain.y + 1;
+		if (terrain.width <= 0 || terrain.height <= 0)
+			return null;
+
+		terrain.heights = new int[tileHeights.length][(terrain.width + 1) * (terrain.height + 1)];
+		for (int plane = 0; plane < tileHeights.length; plane++)
+			for (int y = 0; y <= terrain.height; y++)
+				for (int x = 0; x <= terrain.width; x++)
+					terrain.heights[plane][y * (terrain.width + 1) + x] =
+						tileHeights[plane][toExtendedX + terrain.x + x][toExtendedY + terrain.y + y] - groundHeight;
+		return terrain;
+	}
+
+	/**
+	 * Finish a recreated object's model the way the client does after rotating it: scale it, move it by its definition's
+	 * offset, bend it to the ground, then move it back by the nudge which gave it a unique position. The client does all of
+	 * this along the world's axes, so the model is rotated first, and back again after unless it should stay rotated like
+	 * static scenery, since RuneLiteObjects rotate when drawn.
+	 */
+	public static ModelData finishModel(
+		ModelData model,
+		DeveloperTools.TestObjectDefinition def,
+		int quarterTurns,
+		@Nullable Consumer<ModelData> contour,
+		int nudge,
+		boolean keepRotated
+	) {
+		model = rotate(model, quarterTurns);
+		if (def.scale != null)
+			model.scale(def.scale[0], def.scale[1], def.scale[2]);
+		if (def.offset != null)
+			model.translate(def.offset[0], def.offset[1], def.offset[2]);
+		if (contour != null)
+			contour.accept(model);
+		model.translate(-nudge, 0, 0);
+		return keepRotated ? model : rotate(model, 4 - quarterTurns);
+	}
+
+	/**
+	 * Bend a model which is already rotated like the client's to follow the captured ground, like the client does for
+	 * objects marked to, either fully or only its lower part
+	 */
+	public static void contour(
+		ModelData model,
+		int contouredGround,
+		Terrain terrain,
+		int plane,
+		int objectX,
+		int objectY,
+		int objectHeight
+	) {
+		float[] xs = model.getVerticesX();
+		float[] ys = model.getVerticesY();
+		float[] zs = model.getVerticesZ();
+		int count = model.getVerticesCount();
+		float top = 0;
+		for (int i = 0; i < count; i++)
+			top = Math.max(top, -ys[i]);
+		for (int i = 0; i < count; i++) {
+			Integer ground = terrain.getHeight(plane, objectX + (int) xs[i], objectY + (int) zs[i]);
+			if (ground == null)
+				continue;
+			int offset = ground - objectHeight;
+			if (contouredGround == 0) {
+				ys[i] += offset;
+			} else if (top > 0) {
+				// Only bend the part of the model below the threshold, less so the higher up it is
+				int threshold = (int) (-ys[i] * 65536 / top);
+				if (threshold < contouredGround)
+					ys[i] += (float) offset * (contouredGround - threshold) / contouredGround;
+			}
+		}
+	}
+
+	private static ModelData rotate(ModelData model, int quarterTurns) {
+		switch (quarterTurns & 3) {
+			case 1:
+				return model.rotateY90Ccw();
+			case 2:
+				return model.rotateY180Ccw();
+			case 3:
+				return model.rotateY270Ccw();
+			default:
+				return model;
+		}
+	}
+
+	/**
+	 * The roof a tile's objects are hidden with, worked out the same way as 117 HD's SceneUploader
+	 */
+	private static int getRoofId(byte[][][] settings, int[][][] roofs, int level, int extendedX, int extendedY) {
+		int mapLevel = level;
+		if ((settings[1][extendedX][extendedY] & Constants.TILE_FLAG_BRIDGE) != 0)
+			++mapLevel;
+		boolean visibleBelow = mapLevel <= 3 && (settings[mapLevel][extendedX][extendedY] & Constants.TILE_FLAG_VIS_BELOW) != 0;
+		if (visibleBelow || mapLevel == 0)
+			return 0;
+		return roofs[mapLevel - 1][extendedX][extendedY];
+	}
+
+	/**
+	 * The local coordinate of the south-west edge of the region containing a local coordinate, along one axis
+	 */
+	public static int getRegionCorner(int sceneBase, int local) {
+		return ((sceneBase + (local >> Perspective.LOCAL_COORD_BITS) & ~63) - sceneBase) << Perspective.LOCAL_COORD_BITS;
+	}
+
+	private static int getRegionId(Scene scene, int sceneX, int sceneY) {
+		return (scene.getBaseX() + sceneX >> 6) << 8 | scene.getBaseY() + sceneY >> 6;
+	}
+
 
 	/**
 	 * The models the client builds for an object of this kind, shape & rotation, which most objects only have one of
@@ -300,12 +532,19 @@ public class SceneCapture {
 		CAPTURES_PATH.mkdirs();
 		String baseName = capture.name.replaceAll("[^A-Za-z0-9 _-]", "_").trim();
 		if (baseName.isEmpty())
-			baseName = "capture-" + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+			baseName = getDefaultName(null);
 		String fileName = baseName + ".json";
 		for (int i = 2; CAPTURES_PATH.resolve(fileName).exists(); i++)
 			fileName = baseName + " (" + i + ").json";
 		CAPTURES_PATH.resolve(fileName).writeString(gson.toJson(capture));
 		return fileName;
+	}
+
+	/**
+	 * A name for a capture which wasn't given one, from where it was captured, such as an environment, and when
+	 */
+	public static String getDefaultName(@Nullable String place) {
+		return (place == null ? "capture" : place) + "_" + new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
 	}
 
 	public static Capture load(Gson gson, String fileName) throws IOException {

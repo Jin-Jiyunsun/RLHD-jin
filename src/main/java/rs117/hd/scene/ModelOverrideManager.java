@@ -3,6 +3,7 @@ package rs117.hd.scene;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -23,6 +24,7 @@ import rs117.hd.utils.FileWatcher;
 import rs117.hd.utils.ModelHash;
 import rs117.hd.utils.Props;
 import rs117.hd.utils.ResourcePath;
+import rs117.hd.utils.TestObjectRendering;
 import rs117.hd.utils.collections.Int2ObjectHashMap;
 import rs117.hd.utils.collections.IntHashSet;
 
@@ -59,6 +61,13 @@ public class ModelOverrideManager {
 	// below, which also index them by position, since a recreated scene capture can add thousands.
 	public final Map<RuneLiteObject, Integer> testObjects = new ConcurrentHashMap<>();
 	private final Map<Long, Integer> testObjectPositions = new ConcurrentHashMap<>();
+	// Developer tools: recreated objects uploaded with their zone like static scenery, by the extended tile they stand on.
+	// Read while zones upload on other threads, so lists are replaced rather than changed.
+	public final Map<Integer, List<TestObjectRendering.StaticObject>> staticTestObjects = new ConcurrentHashMap<>();
+
+	public static int packStaticTestObjectTile(int level, int tileExX, int tileExY) {
+		return level << 16 | tileExX << 8 | tileExY;
+	}
 	// Developer tools: counts how many times overrides have been loaded, so tools can tell when to refresh
 	@Getter
 	private int configVersion;

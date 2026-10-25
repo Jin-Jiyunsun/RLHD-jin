@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -26,6 +27,8 @@ import net.runelite.api.*;
 import net.runelite.api.coords.*;
 import net.runelite.api.events.*;
 import net.runelite.client.callback.ClientThread;
+import net.runelite.client.callback.RenderCallback;
+import net.runelite.client.callback.RenderCallbackManager;
 import net.runelite.client.config.Keybind;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -42,6 +45,7 @@ import rs117.hd.overlays.LightGizmoOverlay;
 import rs117.hd.overlays.ShadowMapOverlay;
 import rs117.hd.overlays.TileInfoOverlay;
 import rs117.hd.overlays.TiledLightingOverlay;
+import rs117.hd.renderer.zone.SceneManager;
 import rs117.hd.scene.GamevalManager;
 import rs117.hd.scene.LightManager;
 import rs117.hd.scene.ModelOverrideManager;
@@ -140,6 +144,12 @@ public class DeveloperTools implements KeyListener {
 	private ModelOverrideManager modelOverrideManager;
 
 	@Inject
+	private SceneManager sceneManager;
+
+	@Inject
+	private RenderCallbackManager renderCallbackManager;
+
+	@Inject
 	private TileInfoOverlay tileInfoOverlay;
 
 	@Inject
@@ -211,10 +221,30 @@ public class DeveloperTools implements KeyListener {
 	private TestObjectDefinitionLoad testObjectDefinitionLoad;
 	private boolean loadingTestObjectNames;
 	private final List<Consumer<Map<Integer, TestObjectDefinition>>> testObjectDefinitionCallbacks = new ArrayList<>();
-	// Objects recreated from a scene capture, kept out of the spawned objects list since there can be thousands
+	// Objects recreated from a scene capture, kept out of the spawned objects list since there can be thousands. Most are
+	// uploaded like static scenery, while animated ones need RuneLiteObjects.
 	private final List<RuneLiteObject> recreatedSceneObjects = new ArrayList<>();
+	private final List<TestObjectRendering.StaticObject> recreatedStaticObjects = new ArrayList<>();
 	@Nullable
 	private SceneRecreation sceneRecreation;
+	// How far recreated objects are raised above their captured height, set from the sidebar
+	private int sceneHeightOffset;
+	private boolean onlyDrawingTestObjects;
+	// Stop drawing everything but test objects, the same way the Blindfold plugin hides things. It only affects drawing,
+	// leaving clickboxes, menus and everything else alone.
+	private final RenderCallback onlyDrawTestObjects = new RenderCallback() {
+		@Override
+		public boolean drawTile(Scene scene, Tile tile) {
+			return false;
+		}
+
+		@Override
+		public boolean drawObject(Scene scene, TileObject object) {
+			// Test objects are drawn wrapped in a temporary game object, which the renderer matches by its position
+			return object instanceof GameObject &&
+				   modelOverrideManager.getTestObjectId(((GameObject) object).getRenderable(), object.getX(), object.getY()) != -1;
+		}
+	};
 
 	/**
 	 * Object models & animations decoded from the client's cache by {@link ObjectDefinitionParser}, used to spawn test objects
@@ -230,6 +260,8 @@ public class DeveloperTools implements KeyListener {
 		@Nullable
 		public int[] modelTypes;
 		public boolean mirrored;
+		// -1 if the model doesn't follow the ground, 0 if it all does, or how much of its lower part does, out of 65536
+		public int contouredGround = -1;
 		public int animation = -1;
 		public int ambient;
 		public int contrast;
@@ -300,6 +332,11 @@ public class DeveloperTools implements KeyListener {
 			stopTestSpotanim();
 			stopTestProjectile();
 			clearTestObjects();
+			if (onlyDrawingTestObjects) {
+				onlyDrawingTestObjects = false;
+				lightManager.hideUndrawnObjectLights = false;
+				renderCallbackManager.unregister(onlyDrawTestObjects);
+			}
 		});
 	}
 
@@ -387,7 +424,7 @@ public class DeveloperTools implements KeyListener {
 			return;
 		stopTestProjectile();
 		sceneRecreation = null;
-		if (!modelOverrideManager.testObjects.isEmpty()) {
+		if (!modelOverrideManager.testObjects.isEmpty() || !recreatedStaticObjects.isEmpty()) {
 			clearTestObjects();
 			postMessage("Removed test objects due to scene load");
 		}
@@ -396,6 +433,7 @@ public class DeveloperTools implements KeyListener {
 	@Subscribe
 	public void onClientTick(ClientTick clientTick) {
 		lightManager.addTestObjectLights(modelOverrideManager.testObjects);
+		lightManager.addStaticTestObjectLights(recreatedStaticObjects);
 		updateTestProjectile();
 		updateSpawnerHdConfigIds();
 		updateTestObjectDefinitionLoad();
@@ -1193,7 +1231,8 @@ public class DeveloperTools implements KeyListener {
 		clientThread.invoke(() -> {
 			if (!developerMode)
 				return;
-			var capture = SceneCapture.capture(client, name, area);
+			String captureName = name.isEmpty() ? SceneCapture.getDefaultName(getPlayerEnvironmentName()) : name;
+			var capture = SceneCapture.capture(client, captureName, area, sceneVisibility);
 			if (capture == null) {
 				postMessage("No local player to capture the scene around");
 				return;
@@ -1211,6 +1250,56 @@ public class DeveloperTools implements KeyListener {
 				}
 			});
 		});
+	}
+
+	/**
+	 * Leaves what the game and 117 HD aren't drawing out of scene captures, checked the same way 117 HD's SceneUploader does
+	 */
+	private final SceneCapture.Visibility sceneVisibility = new SceneCapture.Visibility() {
+		private final int[] worldPos = new int[3];
+
+		@Nullable
+		@Override
+		public Boolean isLevelDrawn(int level, int roofId) {
+			return sceneManager.isLevelDrawn(level, roofId);
+		}
+
+		@Override
+		public boolean isHiddenByArea(Tile tile) {
+			var ctx = plugin.getSceneContext();
+			if (ctx == null || ctx.currentArea == null)
+				return false;
+			var sceneLocation = tile.getSceneLocation();
+			ctx.sceneToWorld(sceneLocation.getX(), sceneLocation.getY(), tile.getPlane(), worldPos);
+			return !ctx.currentArea.containsPoint(worldPos);
+		}
+
+		@Override
+		public boolean isHiddenByOverride(TileObject object, int type) {
+			var ctx = plugin.getSceneContext();
+			if (ctx == null)
+				return false;
+			var sceneLocation = object.getLocalLocation();
+			ctx.localToWorld(sceneLocation.getX(), sceneLocation.getY(), object.getPlane(), worldPos);
+			return modelOverrideManager.getOverride(ModelHash.packUuid(type, object.getId()), worldPos).hide;
+		}
+	};
+
+	/**
+	 * The name of the 117 HD environment the player is in, like the tile info overlay shows, or null if there's none
+	 */
+	@Nullable
+	private String getPlayerEnvironmentName() {
+		var ctx = plugin.getSceneContext();
+		Player player = client.getLocalPlayer();
+		if (ctx == null || player == null)
+			return null;
+		var location = player.getLocalLocation();
+		int[] worldPos = ctx.localToWorld(location.getX(), location.getY(), client.getTopLevelWorldView().getPlane());
+		for (var environment : ctx.environments)
+			if (environment.area.containsPoint(worldPos))
+				return environment.toString();
+		return null;
 	}
 
 	/**
@@ -1268,22 +1357,29 @@ public class DeveloperTools implements KeyListener {
 		int originPlane = worldView.getPlane();
 		int groundHeight = Perspective.getTileHeight(client, origin, originPlane);
 		var recreation = new SceneRecreation(capture.name == null ? "the scene capture" : capture.name);
+		recreation.terrain = capture.terrain;
+		recreation.capturedPlane = capture.capturedAt == null ? 0 : capture.capturedAt.getPlane();
+		// Line objects up with the region grid like where they were captured, or around the player for older captures
+		var scene = worldView.getScene();
+		int baseX = capture.regionAligned ? SceneCapture.getRegionCorner(scene.getBaseX(), origin.getX()) : origin.getX();
+		int baseY = capture.regionAligned ? SceneCapture.getRegionCorner(scene.getBaseY(), origin.getY()) : origin.getY();
 		for (var object : capture.objects) {
-			int plane = originPlane + object.plane;
-			if (object.kind == null || plane < 0 || plane >= Constants.MAX_Z) {
-				recreation.skipped++;
+			if (object.kind == null) {
+				recreation.skippedUnreadable++;
 				continue;
 			}
 			for (var part : SceneCapture.getParts(object)) {
-				int x = origin.getX() + object.x + (part.offset ? object.xOffset : 0);
-				int y = origin.getY() + object.y + (part.offset ? object.yOffset : 0);
+				int x = baseX + object.x + (part.offset ? object.xOffset : 0);
+				int y = baseY + object.y + (part.offset ? object.yOffset : 0);
 				var location = new LocalPoint(x, y, worldView);
 				if (!location.isInScene()) {
-					recreation.skipped++;
+					recreation.skippedOutsideScene++;
 					continue;
 				}
 				int orientation = mod((part.rotation & 3) * 512 + object.modelOrientation, 2048);
-				recreation.pending.add(new PendingScenePart(object.id, part, location, plane, orientation, groundHeight + object.height));
+				// Everything goes on the player's plane, since the captured heights already keep objects on other planes
+				// where they were, and the player's plane isn't hidden like the planes above it can be
+				recreation.pending.add(new PendingScenePart(object, part, location, originPlane, orientation, groundHeight + object.height));
 			}
 		}
 		// Big captures take a while, so start with what's around the player rather than the scene's edge
@@ -1304,40 +1400,195 @@ public class DeveloperTools implements KeyListener {
 		long deadline = System.nanoTime() + SCENE_RECREATION_NANOS_PER_TICK;
 		while (recreation.next < recreation.pending.size() && System.nanoTime() < deadline) {
 			var pending = recreation.pending.get(recreation.next++);
-			var def = readTestObjectDefinition(pending.objectId);
-			int[] modelIds = def == null ? null : SceneCapture.getModelIds(def, pending.part);
-			Model model = modelIds == null ? null : buildTestObjectModel(
+			var captured = pending.object;
+			var def = readTestObjectDefinition(captured.id);
+			if (def == null) {
+				recreation.skippedUnreadable++;
+				continue;
+			}
+			int[] modelIds = SceneCapture.getModelIds(def, pending.part);
+			if (modelIds == null) {
+				recreation.skippedNoModel++;
+				continue;
+			}
+			int quarterTurns = pending.part.rotation & 3;
+			Consumer<ModelData> contour = def.contouredGround < 0 || recreation.terrain == null ? null : rotated -> SceneCapture.contour(
+				rotated,
+				def.contouredGround,
+				recreation.terrain,
+				recreation.capturedPlane + captured.plane,
+				captured.x + (pending.part.offset ? captured.xOffset : 0),
+				captured.y + (pending.part.offset ? captured.yOffset : 0),
+				captured.height
+			);
+			// Heights go up as they decrease
+			int height = pending.height - sceneHeightOffset;
+
+			// Upload objects like static scenery where possible, so they're not redrawn every frame. Animations need
+			// RuneLiteObjects though, as do objects without a tile to be uploaded with.
+			Tile tile = def.animation == -1 ? getSceneTile(pending.location, pending.plane) : null;
+			if (tile != null) {
+				Model model = buildTestObjectModel(
+					def,
+					modelIds,
+					def.mirrored != pending.part.isMirrored(),
+					pending.part.isDiagonal(),
+					// Kept rotated like the client's, since static scenery isn't rotated again when drawn
+					modelData -> SceneCapture.finishModel(modelData, def, quarterTurns, contour, 0, true),
+					false
+				);
+				if (model == null) {
+					recreation.skippedNoModel++;
+					continue;
+				}
+				var object = new TestObjectRendering.StaticObject(
+					captured.id,
+					model,
+					HDUtils.getModelPreOrientation(captured.shape | captured.rotation << 6),
+					captured.modelOrientation,
+					mod(1024 + pending.orientation, 2048),
+					pending.plane,
+					pending.location.getX(),
+					pending.location.getY()
+				);
+				object.height = height;
+				addStaticSceneObject(tile, object);
+				recreation.addedStaticObjects = true;
+				continue;
+			}
+
+			// The renderer recognises test objects by their exact position, so move each off the spot where the real object
+			// it stands in for would be, and off other test objects, such as parts of the same wall
+			var location = pending.location;
+			int nudge = 0;
+			do {
+				location = location.dx(1);
+				nudge++;
+			} while (isTestObjectAt(location));
+
+			int nudgeBack = nudge;
+			Model model = buildTestObjectModel(
 				def,
 				modelIds,
 				def.mirrored != pending.part.isMirrored(),
 				pending.part.isDiagonal(),
-				(pending.part.rotation & 1) == 1,
+				// Moving the model back by the nudge lets pieces nudged by different amounts still meet without cracks
+				modelData -> SceneCapture.finishModel(modelData, def, quarterTurns, contour, nudgeBack, false),
 				false
 			);
 			if (model == null) {
-				recreation.skipped++;
+				recreation.skippedNoModel++;
 				continue;
 			}
-
-			// Parts of the same wall share a position, which the renderer needs to be unique
-			var location = pending.location;
-			while (isTestObjectAt(location))
-				location = location.dx(1);
-			var object = placeTestObject(pending.objectId, def, model, location, pending.plane, pending.orientation, pending.height);
+			var object = placeTestObject(captured.id, def, model, location, pending.plane, pending.orientation, height);
 			if (object != null)
 				recreatedSceneObjects.add(object);
 		}
 
 		if (recreation.next == recreation.pending.size()) {
 			sceneRecreation = null;
-			postMessage("Recreated " + recreatedSceneObjects.size() + " objects from " + recreation.name +
-						(recreation.skipped == 0 ? "" : ", skipping " + recreation.skipped + " which couldn't be rebuilt"));
+			// Static objects only show once their zones are uploaded again, which 117 HD can do without a game reload
+			if (recreation.addedStaticObjects)
+				plugin.renderer.reloadScene();
+			String message = "Recreated " + (recreatedSceneObjects.size() + recreatedStaticObjects.size()) + " objects from " +
+							 recreation.name;
+			if (recreation.skippedOutsideScene > 0)
+				message += ". Skipped " + recreation.skippedOutsideScene + " outside the loaded scene";
+			if (recreation.skippedUnreadable > 0)
+				message += ". Skipped " + recreation.skippedUnreadable + " whose definition couldn't be read";
+			if (recreation.skippedNoModel > 0)
+				message += ". Skipped " + recreation.skippedNoModel + " without a model for their shape";
+			postMessage(message);
 		}
+	}
+
+	/**
+	 * Raise every recreated object by the same amount, in local units where 128 is a tile's width, including those
+	 * still to be spawned. Their lights follow along.
+	 */
+	public void setSceneHeightOffset(int offset) {
+		clientThread.invoke(() -> {
+			if (!developerMode)
+				return;
+			int delta = offset - sceneHeightOffset;
+			sceneHeightOffset = offset;
+			for (var object : recreatedSceneObjects)
+				object.setZ(object.getZ() - delta);
+			for (var object : recreatedStaticObjects)
+				object.height -= delta;
+			if (!recreatedStaticObjects.isEmpty())
+				plugin.renderer.reloadScene();
+		});
+	}
+
+	/**
+	 * The tile at a local point in the top-level scene, including the extended area around it, or null if there's none
+	 */
+	@Nullable
+	private Tile getSceneTile(LocalPoint location, int plane) {
+		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
+		int extendedOffset = (tiles[0].length - Constants.SCENE_SIZE) / 2;
+		int tileExX = (location.getX() >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
+		int tileExY = (location.getY() >> Perspective.LOCAL_COORD_BITS) + extendedOffset;
+		if (plane < 0 || plane >= tiles.length || tileExX < 0 || tileExY < 0 ||
+			tileExX >= tiles[plane].length || tileExY >= tiles[plane][tileExX].length)
+			return null;
+		return tiles[plane][tileExX][tileExY];
+	}
+
+	/**
+	 * Store a static recreated object to be uploaded with its tile, replacing the tile's list for zones uploading meanwhile
+	 */
+	private void addStaticSceneObject(Tile tile, TestObjectRendering.StaticObject object) {
+		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
+		int extendedOffset = (tiles[0].length - Constants.SCENE_SIZE) / 2;
+		var sceneLocation = tile.getSceneLocation();
+		int key = ModelOverrideManager.packStaticTestObjectTile(
+			tile.getRenderLevel(),
+			sceneLocation.getX() + extendedOffset,
+			sceneLocation.getY() + extendedOffset
+		);
+		modelOverrideManager.staticTestObjects.compute(key, (k, objects) -> {
+			var copy = objects == null ? new ArrayList<TestObjectRendering.StaticObject>() : new ArrayList<>(objects);
+			copy.add(object);
+			return copy;
+		});
+		recreatedStaticObjects.add(object);
+	}
+
+	private void removeStaticSceneObjects() {
+		if (recreatedStaticObjects.isEmpty())
+			return;
+		for (var object : recreatedStaticObjects)
+			object.removed = true;
+		recreatedStaticObjects.clear();
+		modelOverrideManager.staticTestObjects.clear();
+		plugin.renderer.reloadScene();
+	}
+
+	/**
+	 * Hide the tiles, objects, NPCs and players around the player, leaving only spawned & recreated test objects drawn
+	 */
+	public void setOnlyDrawTestObjects(boolean only) {
+		clientThread.invoke(() -> {
+			if (!developerMode || only == onlyDrawingTestObjects)
+				return;
+			onlyDrawingTestObjects = only;
+			lightManager.hideUndrawnObjectLights = only;
+			if (only) {
+				renderCallbackManager.register(onlyDrawTestObjects);
+			} else {
+				renderCallbackManager.unregister(onlyDrawTestObjects);
+			}
+			// Static tiles & objects are only checked when the scene is uploaded, which 117 HD can redo without a game
+			// reload, unlike Blindfold, so test objects aren't removed
+			plugin.renderer.reloadScene();
+		});
 	}
 
 	public void removeRecreatedSceneAndNotify() {
 		clientThread.invoke(() -> {
-			int count = recreatedSceneObjects.size();
+			int count = recreatedSceneObjects.size() + recreatedStaticObjects.size();
 			removeRecreatedScene();
 			postMessage("Removed " + count + " recreated object" + (count == 1 ? "" : "s"));
 		});
@@ -1350,6 +1601,7 @@ public class DeveloperTools implements KeyListener {
 			modelOverrideManager.removeTestObject(object);
 		}
 		recreatedSceneObjects.clear();
+		removeStaticSceneObjects();
 	}
 
 	@RequiredArgsConstructor
@@ -1357,12 +1609,18 @@ public class DeveloperTools implements KeyListener {
 		final String name;
 		final List<PendingScenePart> pending = new ArrayList<>();
 		int next;
-		int skipped;
+		boolean addedStaticObjects;
+		int skippedOutsideScene;
+		int skippedUnreadable;
+		int skippedNoModel;
+		@Nullable
+		SceneCapture.Terrain terrain;
+		int capturedPlane;
 	}
 
 	@RequiredArgsConstructor
 	private static class PendingScenePart {
-		final int objectId;
+		final SceneCapture.CapturedObject object;
 		final SceneCapture.Part part;
 		final LocalPoint location;
 		final int plane;
@@ -1382,7 +1640,7 @@ public class DeveloperTools implements KeyListener {
 			return null;
 		}
 
-		Model model = buildTestObjectModel(def, def.models, false, false, false, reportErrors);
+		Model model = buildTestObjectModel(def, def.models, false, false, null, reportErrors);
 		if (model == null)
 			return null;
 
@@ -1404,8 +1662,8 @@ public class DeveloperTools implements KeyListener {
 
 	/**
 	 * Build an object's model from some of its model IDs, applying the definition's model changes like the client does.
-	 * Mirroring, the 45 degree turn of diagonal wall decorations and swapping the scale for odd rotations are for objects
-	 * recreated from a scene capture, which the client builds from more than the centrepiece model.
+	 * Mirroring, the 45 degree turn of diagonal wall decorations and finishing the model in place of scaling & offsetting
+	 * it are for objects recreated from a scene capture, which the client builds from more than the centrepiece model.
 	 */
 	@Nullable
 	private Model buildTestObjectModel(
@@ -1413,7 +1671,7 @@ public class DeveloperTools implements KeyListener {
 		int[] modelIds,
 		boolean mirror,
 		boolean diagonal,
-		boolean swapScale,
+		@Nullable UnaryOperator<ModelData> finish,
 		boolean reportErrors
 	) {
 		ModelData[] models = new ModelData[modelIds.length];
@@ -1442,16 +1700,13 @@ public class DeveloperTools implements KeyListener {
 			for (int i = 0; i < min(def.retextureFrom.length, def.retextureTo.length); i++)
 				modelData.retexture(def.retextureFrom[i], def.retextureTo[i]);
 		}
-		if (def.scale != null || def.offset != null) {
+		if (finish != null) {
+			// Recreated objects are scaled, offset and more along the world's axes after rotating, like the client does
+			modelData = finish.apply(modelData.cloneVertices());
+		} else if (def.scale != null || def.offset != null) {
 			modelData = modelData.cloneVertices();
-			if (def.scale != null) {
-				// The client scales after rotating, while test objects rotate afterwards when drawn
-				if (swapScale) {
-					modelData.scale(def.scale[2], def.scale[1], def.scale[0]);
-				} else {
-					modelData.scale(def.scale[0], def.scale[1], def.scale[2]);
-				}
-			}
+			if (def.scale != null)
+				modelData.scale(def.scale[0], def.scale[1], def.scale[2]);
 			if (def.offset != null)
 				modelData.translate(def.offset[0], def.offset[1], def.offset[2]);
 		}
@@ -1518,6 +1773,7 @@ public class DeveloperTools implements KeyListener {
 		testObjectPreviewId = -1;
 		spawnedTestObjects.clear();
 		recreatedSceneObjects.clear();
+		removeStaticSceneObjects();
 		sceneRecreation = null;
 		notifySpawnedTestObjectsChanged();
 	}

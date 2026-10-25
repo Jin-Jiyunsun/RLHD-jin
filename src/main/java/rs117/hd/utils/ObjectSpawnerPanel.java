@@ -131,7 +131,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private final JPanel savedCapturesColumn = new JPanel(new GridLayout(0, 1, 0, 4));
 	private final JTextField sceneNameField = new JTextField();
 	private final JComboBox<String> sceneCaptureList = new JComboBox<>();
-	private final JButton recreateButton = createButton("Recreate around me");
+	private final JButton recreateButton = createButton("Recreate in my region");
 	private final ResultsModel results = new ResultsModel();
 	private final JList<Entry> resultList = new JList<>(results) {
 		// Always fit the sidebar's width, otherwise one long name widens every row and pushes the flags out of view
@@ -423,13 +423,14 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		nameLabel.setFont(FontManager.getRunescapeSmallFont());
 		nameLabel.setForeground(Color.WHITE);
 		sceneNameField.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		sceneNameField.putClientProperty("JTextField.placeholderText", "Defaults to the date & time");
+		sceneNameField.putClientProperty("JTextField.placeholderText", "Defaults to environment & time");
 		JPanel nameRow = new JPanel(new BorderLayout(6, 0));
 		nameRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		nameRow.add(nameLabel, BorderLayout.WEST);
 		nameRow.add(sceneNameField, BorderLayout.CENTER);
 
 		JComboBox<SceneCapture.Area> areaList = new JComboBox<>(SceneCapture.Area.values());
+		areaList.setSelectedItem(SceneCapture.Area.SCENE);
 		JButton captureButton = createButton("Capture scene");
 		captureButton.addActionListener(e -> developerTools.captureScene(
 			sceneNameField.getText().trim(),
@@ -444,12 +445,32 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		captureColumn.add(captureButton);
 
 		JTextArea captureInfo = createWrappingText();
-		captureInfo.setText("Saves every object on your plane and below within the chosen distance, relative to where you " +
-							"stand, to .runelite/117hd/scene_captures. Recreated objects are redrawn every frame, so big " +
-							"captures are slow.");
+		captureInfo.setText("Saves every object the game is drawing in the chosen area, lined up with the region grid, to " +
+							".runelite/117hd/scene_captures.");
 
 		// Don't let a long file name widen the sidebar
 		sceneCaptureList.setPrototypeDisplayValue("A capture name");
+
+		JLabel heightOffsetLabel = new JLabel("Height offset");
+		heightOffsetLabel.setFont(FontManager.getRunescapeSmallFont());
+		heightOffsetLabel.setForeground(Color.WHITE);
+		heightOffsetLabel.setToolTipText("Raise every recreated object, in 1/128ths of a tile. Negative values lower them.");
+		JSpinner heightOffsetSpinner = new JSpinner(new SpinnerNumberModel(0, -10000, 10000, 16));
+		heightOffsetSpinner.setPreferredSize(startHeightSpinner.getPreferredSize());
+		heightOffsetSpinner.addChangeListener(e -> developerTools.setSceneHeightOffset((Integer) heightOffsetSpinner.getValue()));
+		JToggleButton onlyTestObjectsButton = new JToggleButton("Hide everything else");
+		styleButton(onlyTestObjectsButton);
+		onlyTestObjectsButton.setToolTipText("Only draw spawned & recreated objects, hiding the ground, objects, NPCs and players");
+		onlyTestObjectsButton.addActionListener(e -> {
+			boolean only = onlyTestObjectsButton.isSelected();
+			onlyTestObjectsButton.setForeground(only ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+			developerTools.setOnlyDrawTestObjects(only);
+		});
+
+		JPanel heightOffsetRow = new JPanel(new BorderLayout(6, 0));
+		heightOffsetRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		heightOffsetRow.add(heightOffsetLabel, BorderLayout.CENTER);
+		heightOffsetRow.add(heightOffsetSpinner, BorderLayout.EAST);
 		recreateButton.addActionListener(e -> {
 			Object selected = sceneCaptureList.getSelectedItem();
 			if (selected != null)
@@ -459,10 +480,13 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		savedCapturesColumn.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		savedCapturesColumn.add(createHeader("Saved captures"));
 		savedCapturesColumn.add(sceneCaptureList);
+		savedCapturesColumn.add(heightOffsetRow);
 		savedCapturesColumn.add(recreateButton);
+		savedCapturesColumn.add(onlyTestObjectsButton);
 
 		JTextArea recreateInfo = createWrappingText();
-		recreateInfo.setText("Recreated objects keep their height relative to you, and stay until removed or the scene reloads");
+		recreateInfo.setText("Recreated objects line up with your region's grid, keep their height relative to you, and stay " +
+							 "until removed or the scene reloads");
 
 		JPanel capturePart = new JPanel(new BorderLayout(0, 4));
 		capturePart.setBackground(ColorScheme.DARK_GRAY_COLOR);

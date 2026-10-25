@@ -3,6 +3,7 @@ package rs117.hd.scene.lights;
 import javax.annotation.Nullable;
 import net.runelite.api.*;
 import rs117.hd.scene.SceneContext;
+import rs117.hd.utils.TestObjectRendering;
 
 import static rs117.hd.utils.MathUtils.*;
 
@@ -64,6 +65,7 @@ public class Light
 	public TileObject tileObject;
 	public GraphicsObject graphicsObject;
 	public RuneLiteObject runeLiteObject;
+	public TestObjectRendering.StaticObject staticTestObject;
 	public int tileObjectId;
 	public int spotanimId = -1;
 	public int[] projectileRefCounter;

@@ -19,10 +19,46 @@ import static rs117.hd.utils.MathUtils.*;
  */
 public class TestObjectRendering {
 	/**
+	 * A recreated object uploaded with its zone like static scenery, instead of being redrawn every frame like a
+	 * RuneLiteObject. Its model is already rotated the way the client rotates the object it stands in for.
+	 */
+	@RequiredArgsConstructor
+	public static class StaticObject {
+		public final int objectId;
+		public final Model model;
+		// The same orientations 117 HD gets for the real object: before & while being drawn
+		public final int preOrientation;
+		public final int orientation;
+		// For the object's lights, which real objects orient by their rotation
+		public final int lightOrientation;
+		public final int plane;
+		// Local coordinates in the scene
+		public final int x;
+		public final int y;
+		// Changed by the height offset, after which the scene must be uploaded again
+		public volatile int height;
+		public volatile boolean removed;
+	}
+
+	/**
+	 * Whether a static recreated object's light should stay, keeping it at the object's current height
+	 */
+	public static boolean updateLight(Light light, StaticObject object) {
+		light.origin[1] = object.height - light.def.height - 1;
+		if (object.removed) {
+			light.markedForRemoval = true;
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Update a light attached to a test object, returning whether the object still exists to keep the light on.
 	 */
 	public static boolean updateLight(Light light, RuneLiteObject object) {
 		light.orientation = getLightOrientation(object);
+		// Follow the object up and down, such as when a recreated scene capture's height offset changes
+		light.origin[1] = object.getZ() - light.def.height - 1;
 		if (!object.isActive()) {
 			light.markedForRemoval = true;
 			return false;

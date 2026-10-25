@@ -129,6 +129,8 @@ public class LightManager {
 	// Developer tools: counts how many times lights have been loaded, so tools can tell when to refresh
 	@Getter
 	private int configVersion;
+	// Developer tools: hide the lights of objects which render callbacks stop from being drawn, while only test objects are shown
+	public boolean hideUndrawnObjectLights;
 
 	private final ArrayList<Light> WORLD_LIGHTS = new ArrayList<>();
 	private final ListMultimap<Integer, LightDefinition> NPC_LIGHTS = ArrayListMultimap.create();
@@ -298,6 +300,8 @@ public class LightManager {
 				}
 			} else if (light.runeLiteObject != null) {
 				parentExists = TestObjectRendering.updateLight(light, light.runeLiteObject);
+			} else if (light.staticTestObject != null) {
+				parentExists = TestObjectRendering.updateLight(light, light.staticTestObject);
 			} else if (light.projectile != null) {
 				light.origin[0] = (int) light.projectile.getX();
 				light.origin[1] = (int) light.projectile.getZ() - light.def.height;
@@ -415,7 +419,11 @@ public class LightManager {
 
 			if (!plugin.configSpotanimLights && (light.spotanimId != -1 || light.graphicsObject != null))
 				hiddenTemporarily = true;
-			if (!plugin.configObjectLights && (light.tileObject != null || light.runeLiteObject != null || light.worldLight))
+			if (!plugin.configObjectLights && (
+				light.tileObject != null || light.runeLiteObject != null || light.staticTestObject != null || light.worldLight
+			))
+				hiddenTemporarily = true;
+			if (hideUndrawnObjectLights && light.tileObject != null && !renderCallbackManager.drawObject(ctx.scene, light.tileObject))
 				hiddenTemporarily = true;
 
 			copyTo(light.sceneLocalPos, light.origin);
@@ -1026,6 +1034,38 @@ public class LightManager {
 				light.origin[0] = lp.getX();
 				light.origin[1] = tileHeight - light.def.height - 1;
 				light.origin[2] = lp.getY();
+				lights.add(light);
+			}
+		}
+	}
+
+	/**
+	 * Developer tools: the same as {@link #addTestObjectLights}, for recreated objects uploaded like static scenery
+	 */
+	public void addStaticTestObjectLights(List<TestObjectRendering.StaticObject> objects) {
+		if (objects.isEmpty() || plugin.getSceneContext() == null)
+			return;
+		Set<TestObjectRendering.StaticObject> lit = Collections.newSetFromMap(new IdentityHashMap<>());
+		for (var light : lights)
+			if (light.staticTestObject != null && !light.markedForRemoval)
+				lit.add(light.staticTestObject);
+
+		for (var object : objects) {
+			if (object.removed || lit.contains(object))
+				continue;
+			var defs = OBJECT_LIGHTS.get(object.objectId);
+			if (defs.isEmpty())
+				continue;
+
+			for (LightDefinition def : defs) {
+				Light light = new Light(def);
+				light.staticTestObject = object;
+				light.tileObjectId = object.objectId;
+				light.plane = object.plane;
+				light.orientation = object.lightOrientation;
+				light.origin[0] = object.x;
+				light.origin[1] = object.height - light.def.height - 1;
+				light.origin[2] = object.y;
 				lights.add(light);
 			}
 		}

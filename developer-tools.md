@@ -73,16 +73,37 @@ once you've logged in.
 ### Scenes
 
 - **Capture scene** saves every object, wall, wall decoration and ground object in the chosen area to
-  `.runelite/117hd/scene_captures`, positioned relative to where you stand. NPCs and players aren't included, and
-  objects which change with varbits are saved as they currently look. Leave the name empty to name it by the date.
-- Only your plane and the planes below it are captured. The game hides the planes above you like roofs, and instances
-  often fill them with copies of the map, which would otherwise stack up when recreated.
-- The area is the 64x64 tile region you're in, everything within 16 tiles of you in each direction, or the whole loaded
-  scene. Unlike the real objects they stand in for, recreated objects are redrawn every frame, so a whole scene's worth
-  can drop the frame rate a lot.
-- **Saved captures** lists the files in that folder. **Recreate around me** spawns the selected capture's objects as
-  test objects around you, keeping their height relative to you and their planes relative to yours, with their
-  `model_overrides.json` textures and `lights.json` lights. Objects which land outside the loaded scene are skipped.
+  `.runelite/117hd/scene_captures`, positioned relative to the south-west corner of the 64x64 tile region you're in.
+  NPCs and players aren't included, and
+  objects which change with varbits are saved as they currently look. Leave the name empty to name it after
+  the 117 HD environment you're in, as shown by the tile info overlay, and the date and time, like
+  `TFA_LOBBY_2026-10-25_22-13-05`.
+- Only objects the game and 117 HD are currently drawing are captured, on any plane, including the extended area 117 HD
+  loads around the scene and the ground under bridges. The game hides some planes like roofs, and instances often fill
+  those with other states of the area, which would otherwise stack up when recreated. Objects hidden by 117 HD's area
+  hiding or by a `model_overrides.json` entry are left out too.
+- In instances, the region is a 64x64 tile square centred on you instead, since instances piece rooms together from
+  several regions, and their own coordinates don't line up with rooms.
+- The area is the whole loaded scene by default, or the 64x64 tile region you're in, or everything within 16 tiles of
+  you in each direction.
+- **Saved captures** lists the files in that folder. **Recreate in my region** spawns the selected capture's objects as
+  test objects in the region you're in, lined up with the region grid the same way they were where they were captured,
+  wherever in the region you stand. Captures from before this was added are recreated around you instead. Objects keep
+  their height relative to you, with their `model_overrides.json` textures and
+  `lights.json` lights. They all go on your plane, so the game never hides them like a roof, while their heights keep
+  objects from other planes where they were. Objects which land outside the loaded scene are skipped, and the chat says
+  how many were skipped and why.
+- **Hide everything else** stops drawing the ground, objects, NPCs and players, leaving only spawned and recreated
+  objects, like the Blindfold plugin does. Lights of hidden objects go out too. It only changes what's drawn, so
+  clickboxes and menus are left alone. Turning it on or off reloads 117 HD's copy of the scene, which keeps test objects.
+- Captures also save the ground's height around the objects, so objects which the game bends to follow the ground, like
+  many cave walls, are bent the same way when recreated. Captures from before this was added recreate those flat.
+- **Height offset** raises every recreated object by the same amount, in 1/128ths of a tile, or lowers them with
+  negative values. It moves recreated objects and their lights straight away, and applies to later recreations too.
+- Recreated objects are uploaded with the scene like real scenery, so even a whole scene's worth runs about as fast as
+  the real thing. Animated objects are the exception: like spawned objects, they're redrawn every frame. Static objects
+  appear once the whole capture has spawned, when 117 HD uploads its copy of the scene again, as it also does when the
+  height offset changes or they're removed.
 - Big captures spawn over a few seconds. Recreating another capture replaces the previous one, and **Remove recreated
   objects** removes it. Recreated objects aren't listed under spawned objects, but are also removed when a new scene
   loads.

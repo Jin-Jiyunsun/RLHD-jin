@@ -24,6 +24,7 @@
  */
 package rs117.hd.renderer.zone;
 
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -507,9 +508,29 @@ public class SceneUploader implements AutoCloseable {
 			estimateRenderableSize(z, gameObject.getRenderable(), modelOverride);
 		}
 
+		// Developer tools: recreated objects uploaded like static scenery on this tile
+		var staticTestObjects = getStaticTestObjects(tileZ, tileExX, tileExY);
+		if (staticTestObjects != null) {
+			for (var object : staticTestObjects) {
+				ModelOverride modelOverride = modelOverrideManager.getOverride(getStaticTestObjectUuid(object), worldPos);
+				if (!modelOverride.hide)
+					estimateRenderableSize(z, object.model, modelOverride);
+			}
+		}
+
 		Tile bridge = t.getBridge();
 		if (bridge != null)
 			estimateZoneTileSize(ctx, z, bridge);
+	}
+
+	@Nullable
+	private List<TestObjectRendering.StaticObject> getStaticTestObjects(int level, int tileExX, int tileExY) {
+		var objects = modelOverrideManager.staticTestObjects;
+		return objects.isEmpty() ? null : objects.get(ModelOverrideManager.packStaticTestObjectTile(level, tileExX, tileExY));
+	}
+
+	private static int getStaticTestObjectUuid(TestObjectRendering.StaticObject object) {
+		return ModelHash.packUuid(ModelHash.TYPE_OBJECT, object.objectId);
 	}
 
 	private void uploadZoneTile(
@@ -727,6 +748,30 @@ public class SceneUploader implements AutoCloseable {
 				alphaBuffer,
 				textureBuffer
 			);
+		}
+
+		// Developer tools: recreated objects uploaded like static scenery on this tile, which ignore render callbacks,
+		// so they stay while everything else is hidden
+		var staticTestObjects = getStaticTestObjects(tileZ, tileExX, tileExY);
+		if (staticTestObjects != null) {
+			for (var object : staticTestObjects) {
+				uploadZoneRenderable(
+					ctx,
+					zone,
+					t,
+					object.model,
+					getStaticTestObjectUuid(object),
+					object.preOrientation,
+					object.orientation,
+					object.x, object.height, object.y,
+					-1, -1, -1, -1,
+					object.objectId,
+					tileExX, tileExY, tileZ,
+					vertexBuffer,
+					alphaBuffer,
+					textureBuffer
+				);
+			}
 		}
 	}
 

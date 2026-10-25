@@ -119,11 +119,17 @@ public class ObjectDefinitionParser {
 					case 62:
 						def.mirrored = true;
 						break;
+					// Bending the model to follow the ground, either fully or only its lower part
+					case 21:
+						def.contouredGround = 0;
+						break;
+					case 81:
+						def.contouredGround = (in.get() & 0xFF) * 256;
+						break;
 
 					// Everything below doesn't affect how the object looks, so it's only read past
 					case 17:
 					case 18:
-					case 21:
 					case 22:
 					case 23:
 					case 27:
@@ -140,7 +146,6 @@ public class ObjectDefinitionParser {
 					case 28:
 					case 69:
 					case 75:
-					case 81:
 					case 91:
 					case 95:
 					case 96:

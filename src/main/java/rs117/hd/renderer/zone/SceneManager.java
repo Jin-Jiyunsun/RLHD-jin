@@ -124,6 +124,18 @@ public class SceneManager {
 
 	public boolean isRoot(WorldViewContext context) { return root == context; }
 
+	/**
+	 * Developer tools: whether the top-level scene's objects at this level, under this roof, were drawn last frame,
+	 * or null if nothing has been drawn yet. Must be called on the client thread.
+	 */
+	@Nullable
+	public Boolean isLevelDrawn(int level, int roofId) {
+		if (root.sceneContext == null || root.hideRoofIds == null)
+			return null;
+		return level >= root.minLevel && level <= root.maxLevel &&
+			   !(level > root.level && root.hideRoofIds.contains(roofId));
+	}
+
 	public WorldViewContext getContext(Scene scene) {
 		return getContext(scene.getWorldViewId());
 	}
