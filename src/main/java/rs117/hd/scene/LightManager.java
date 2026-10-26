@@ -1053,14 +1053,14 @@ public class LightManager {
 		for (var object : objects) {
 			if (object.removed || lit.contains(object))
 				continue;
-			var defs = (object.type == ModelHash.TYPE_NPC ? NPC_LIGHTS : OBJECT_LIGHTS).get(object.objectId);
+			var defs = (object.type == ModelHash.TYPE_NPC ? NPC_LIGHTS : OBJECT_LIGHTS).get(object.id);
 			if (defs.isEmpty())
 				continue;
 
 			for (LightDefinition def : defs) {
 				Light light = new Light(def);
 				light.staticTestObject = object;
-				light.tileObjectId = object.objectId;
+				light.tileObjectId = object.id;
 				light.plane = object.plane;
 				light.orientation = object.lightOrientation;
 				light.origin[0] = object.x;

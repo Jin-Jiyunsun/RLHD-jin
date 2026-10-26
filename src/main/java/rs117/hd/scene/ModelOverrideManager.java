@@ -64,18 +64,18 @@ public class ModelOverrideManager {
 	// Developer tools: recreated objects uploaded with their zone like static scenery, by the extended tile they stand on.
 	// Read while zones upload on other threads, so lists are replaced rather than changed.
 	public final Map<Integer, List<TestObjectRendering.StaticObject>> staticTestObjects = new ConcurrentHashMap<>();
-	// Developer tools: a recreated plain floor drawn in place of the real tiles it covers, by the same extended tiles.
+	// Developer tools: a recreated floor drawn in place of the real tiles it covers, by the same extended tiles.
 	// More than one can land on a tile, since recreated captures put every plane on the player's.
 	public final Map<Integer, List<TestObjectRendering.FloorTile>> staticTestFloor = new ConcurrentHashMap<>();
-
-	public static int packStaticTestObjectTile(int level, int tileExX, int tileExY) {
-		return level << 16 | tileExX << 8 | tileExY;
-	}
 	// Developer tools: counts how many times overrides have been loaded, so tools can tell when to refresh
 	@Getter
 	private int configVersion;
 
 	private FileWatcher.UnregisterCallback fileWatcher;
+
+	public static int packStaticTestObjectTile(int level, int tileExX, int tileExY) {
+		return level << 16 | tileExX << 8 | tileExY;
+	}
 
 	public void startUp() {
 		fileWatcher = MODEL_OVERRIDES_PATH.watch((path, first) -> clientThread.invoke(() -> {

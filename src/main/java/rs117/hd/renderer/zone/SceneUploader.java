@@ -46,8 +46,8 @@ import rs117.hd.scene.model_overrides.UvType;
 import rs117.hd.scene.tile_overrides.TileOverride;
 import rs117.hd.scene.water_types.WaterType;
 import rs117.hd.utils.HDUtils;
-import rs117.hd.utils.TestObjectRendering;
 import rs117.hd.utils.ModelHash;
+import rs117.hd.utils.TestObjectRendering;
 import rs117.hd.utils.buffer.GpuIntBuffer;
 import rs117.hd.utils.collections.ConcurrentPool;
 import rs117.hd.utils.collections.PooledArrayType;
@@ -512,7 +512,7 @@ public class SceneUploader implements AutoCloseable {
 			estimateRenderableSize(z, gameObject.getRenderable(), modelOverride);
 		}
 
-		// Developer tools: recreated objects uploaded like static scenery on this tile, and the recreated plain floor
+		// Developer tools: recreated objects uploaded like static scenery on this tile, and the recreated floor
 		var staticTestObjects = getStaticTestObjects(tileZ, tileExX, tileExY);
 		if (staticTestObjects != null) {
 			for (var object : staticTestObjects) {
@@ -659,7 +659,7 @@ public class SceneUploader implements AutoCloseable {
 	}
 
 	private static int getStaticTestObjectUuid(TestObjectRendering.StaticObject object) {
-		return ModelHash.packUuid(object.type, object.objectId);
+		return ModelHash.packUuid(object.type, object.id);
 	}
 
 	private void uploadZoneTile(
@@ -685,7 +685,7 @@ public class SceneUploader implements AutoCloseable {
 
 		boolean drawTile = renderCallbackManager.drawTile(ctx.scene, t);
 
-		// Developer tools: a recreated scene capture's plain floor replaces the real tile, even while it's hidden
+		// Developer tools: a recreated scene capture's floor replaces the real tile, even while it's hidden
 		var staticTestFloor = getStaticTestFloor(tileZ, tileExX, tileExY);
 		if (staticTestFloor != null) {
 			drawTile = false;
@@ -902,7 +902,7 @@ public class SceneUploader implements AutoCloseable {
 					object.orientation,
 					object.x, object.height, object.y,
 					-1, -1, -1, -1,
-					object.objectId,
+					object.id,
 					tileExX, tileExY, tileZ,
 					vertexBuffer,
 					alphaBuffer,

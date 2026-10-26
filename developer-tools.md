@@ -4,7 +4,7 @@ Tools for tuning 117 HD's lights and textures:
 
 - **Spawner**: search, preview and spawn objects, spotanims and projectiles, with their textures and lights
 - **Spotanim keys**: pause and step a playing spotanim to time its lights
-- **Scene captures**: save the objects in a scene, then recreate them somewhere else
+- **Scene captures**: save a scene's objects, NPCs and ground, then recreate them somewhere else
 
 ## Spawner sidebar
 
@@ -75,7 +75,7 @@ logged in.
   like the Blindfold plugin. Lights of hidden objects go out too. Recreating turns it on and removing turns it off, but
   it can be toggled any time.
 - **Remove recreated scene** removes it, as does recreating another capture or loading a new scene.
-- To rename or delete captures, use the folder directly.
+- To rename or delete captures, use the folder, then press the refresh arrow next to **Saved captures**.
 
 ## Spotanim keys
 

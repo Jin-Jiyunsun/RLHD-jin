@@ -26,7 +26,8 @@ public class TestObjectRendering {
 	public static class StaticObject {
 		// The ModelHash type it stands in for, an object or NPC, which picks its model overrides & lights
 		public final int type;
-		public final int objectId;
+		// The object or NPC ID
+		public final int id;
 		public final Model model;
 		// The same orientations 117 HD gets for the real object: before & while being drawn
 		public final int preOrientation;
@@ -42,7 +43,7 @@ public class TestObjectRendering {
 	}
 
 	/**
-	 * A tile of a recreated scene capture's plain floor, drawn in place of the real tile it lands on
+	 * A tile of a recreated scene capture's floor, drawn in place of the real tile it lands on
 	 */
 	@RequiredArgsConstructor
 	public static class FloorTile {

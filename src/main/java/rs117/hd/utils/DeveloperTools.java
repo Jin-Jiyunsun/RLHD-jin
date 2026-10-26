@@ -329,8 +329,8 @@ public class DeveloperTools implements KeyListener {
 		// Listen for commands
 		eventBus.register(this);
 
-		// Swing components must only be created and modified on the Swing thread
-		// The spawner must stay developer-mode only, since RuneLite's plugin rules reject user-entered IDs and spawned content for normal users
+		// Swing components must only be created and modified on the Swing thread. The spawner must stay developer-mode only,
+		// since RuneLite's plugin rules reject user-entered IDs and spawned content for normal users.
 		if (developerMode) {
 			SwingUtilities.invokeLater(() -> {
 				if (objectSpawnerButton != null)
@@ -575,19 +575,6 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	private void updateControlledSpotanim(Player player, @Nullable ActorSpotAnim spotanim) {
-		int endMs = getTestSpotanimEndMs();
-		if (!testSpotanimPaused) {
-			testSpotanimTimeMs += Constants.CLIENT_TICK_LENGTH;
-			if (testSpotanimTimeMs >= endMs) {
-				if (testSpotanimLoop) {
-					testSpotanimTimeMs = 0;
-				} else {
-					testSpotanimTimeMs = endMs;
-					testSpotanimPaused = true;
-				}
-			}
-		}
-
 		if (spotanim == null) {
 			// The client finished or replaced it, so bring it back and keep controlling it from the next tick
 			playTestSpotanim();
@@ -677,7 +664,7 @@ public class DeveloperTools implements KeyListener {
 		});
 	}
 
-	// The frame timings are always recorded for pausing & stepping, but only posted to the chat when turned on
+	// Clicked spotanims' frame timings are recorded for pausing & stepping either way, but only posted when turned on
 	public void setPostSpotanimFrameTimings(boolean post) {
 		postSpotanimFrameTimings = post;
 	}
@@ -1157,7 +1144,7 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
-	 * Capture every object in an area around the player, relative to the player, and save it to a file.
+	 * Capture the objects, NPCs and ground the game draws in an area around the player, and save them to a file.
 	 * Can be called from any thread.
 	 */
 	public void captureScene(String name, SceneCapture.Area area) {
@@ -1176,7 +1163,8 @@ public class DeveloperTools implements KeyListener {
 			executor.execute(() -> {
 				try {
 					String fileName = SceneCapture.save(gson, capture);
-					postMessage("Captured " + capture.objects.size() + " objects to " + SceneCapture.CAPTURES_PATH.resolve(fileName));
+					postMessage("Captured " + capture.objects.size() + " objects, " + capture.npcs.size() + " NPCs and " +
+								capture.tiles.size() + " tiles to " + SceneCapture.CAPTURES_PATH.resolve(fileName));
 					var panel = objectSpawnerPanel;
 					if (panel != null)
 						SwingUtilities.invokeLater(() -> panel.setSelectedSceneCapture(fileName));
@@ -1225,7 +1213,7 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
-	 * Spawn a saved scene capture's objects around the player, replacing any previously recreated capture
+	 * Recreate a saved scene capture in the player's region, replacing any previously recreated one
 	 */
 	public void recreateSceneCapture(String fileName) {
 		if (!developerMode)
@@ -1264,10 +1252,10 @@ public class DeveloperTools implements KeyListener {
 		var recreation = new SceneRecreation(capture.name == null ? "the scene capture" : capture.name);
 		recreation.terrain = capture.terrain;
 		recreation.capturedPlane = capture.capturedAt == null ? 0 : capture.capturedAt.getPlane();
-		// Line objects up with the region grid like where they were captured, or around the player for older captures
+		// Line everything up with the region grid like where it was captured
 		var scene = worldView.getScene();
-		int baseX = capture.regionAligned ? SceneCapture.getRegionCorner(scene.getBaseX(), origin.getX()) : origin.getX();
-		int baseY = capture.regionAligned ? SceneCapture.getRegionCorner(scene.getBaseY(), origin.getY()) : origin.getY();
+		int baseX = SceneCapture.getRegionCorner(scene.getBaseX(), origin.getX());
+		int baseY = SceneCapture.getRegionCorner(scene.getBaseY(), origin.getY());
 		for (var object : capture.objects) {
 			if (object.kind == null) {
 				recreation.skippedUnreadable++;
@@ -1285,13 +1273,12 @@ public class DeveloperTools implements KeyListener {
 				int orientation = mod((part.rotation & 3) * 512 + object.modelOrientation, 2048);
 				// Everything goes on the player's plane, since the captured heights already keep objects on other planes
 				// where they were, and the player's plane isn't hidden like the planes above it can be
-				recreation.pending.add(new PendingScenePart(object, part, location, originPlane, orientation, groundHeight + object.height));
+				int height = groundHeight + object.height;
+				recreation.pending.add(new PendingScenePart(object, part, location, originPlane, orientation, height));
 			}
 		}
-		if (capture.regionAligned) {
-			recreateFloor(capture, baseX, baseY, originPlane, groundHeight, recreation);
-			recreateNpcs(capture, baseX, baseY, originPlane, groundHeight, recreation);
-		}
+		recreateFloor(capture, baseX, baseY, originPlane, groundHeight, recreation);
+		recreateNpcs(capture, baseX, baseY, originPlane, groundHeight, recreation);
 
 		// Big captures take a while, so start with what's around the player rather than the scene's edge
 		recreation.pending.sort(Comparator.comparingLong(pending -> {
@@ -1435,9 +1422,16 @@ public class DeveloperTools implements KeyListener {
 	 */
 	@Nullable
 	private Tile getSceneTile(LocalPoint location, int plane) {
+		return getExtendedTile(
+			plane,
+			(location.getX() >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET,
+			(location.getY() >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET
+		);
+	}
+
+	@Nullable
+	private Tile getExtendedTile(int plane, int tileExX, int tileExY) {
 		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
-		int tileExX = (location.getX() >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET;
-		int tileExY = (location.getY() >> Perspective.LOCAL_COORD_BITS) + HDUtils.EXTENDED_SCENE_OFFSET;
 		if (plane < 0 || plane >= tiles.length || tileExX < 0 || tileExY < 0 ||
 			tileExX >= tiles[plane].length || tileExY >= tiles[plane][tileExX].length)
 			return null;
@@ -1463,17 +1457,22 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
-	 * Lay a capture's tiles out as a plain floor in the player's region, shaped by the captured ground, to be drawn in
-	 * place of the real tiles once the scene is uploaded again. Like objects, every plane goes on the player's.
+	 * Lay a capture's tiles out as a floor in the player's region, to be drawn in place of the real tiles once the scene
+	 * is uploaded again. Like objects, every plane goes on the player's.
 	 */
-	private void recreateFloor(SceneCapture.Capture capture, int baseX, int baseY, int originPlane, int groundHeight, SceneRecreation recreation) {
-		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
+	private void recreateFloor(
+		SceneCapture.Capture capture,
+		int baseX,
+		int baseY,
+		int originPlane,
+		int groundHeight,
+		SceneRecreation recreation
+	) {
 		for (var captured : capture.tiles) {
 			int tileExX = (baseX >> Perspective.LOCAL_COORD_BITS) + captured.x + HDUtils.EXTENDED_SCENE_OFFSET;
 			int tileExY = (baseY >> Perspective.LOCAL_COORD_BITS) + captured.y + HDUtils.EXTENDED_SCENE_OFFSET;
-			Tile tile = tileExX < 0 || tileExY < 0 || tileExX >= tiles[originPlane].length || tileExY >= tiles[originPlane][tileExX].length ?
-				null : tiles[originPlane][tileExX][tileExY];
-			var floorTile = tile == null ? null : createFloorTile(capture, captured, groundHeight, recreation.capturedPlane);
+			Tile tile = getExtendedTile(originPlane, tileExX, tileExY);
+			var floorTile = tile == null ? null : createFloorTile(captured, groundHeight);
 			if (floorTile == null) {
 				recreation.skippedFloorTiles++;
 				continue;
@@ -1493,7 +1492,14 @@ public class DeveloperTools implements KeyListener {
 	 * Place frozen copies of a capture's NPCs, built from their definitions' models, colours & scale, and uploaded like
 	 * static scenery. They're never animated and do nothing, since they only show what was there.
 	 */
-	private void recreateNpcs(SceneCapture.Capture capture, int baseX, int baseY, int originPlane, int groundHeight, SceneRecreation recreation) {
+	private void recreateNpcs(
+		SceneCapture.Capture capture,
+		int baseX,
+		int baseY,
+		int originPlane,
+		int groundHeight,
+		SceneRecreation recreation
+	) {
 		var worldView = client.getTopLevelWorldView();
 		for (var captured : capture.npcs) {
 			var location = new LocalPoint(baseX + captured.x, baseY + captured.y, worldView);
@@ -1560,48 +1566,23 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
-	 * A captured tile's triangles at the player's ground height, or for older captures, a square shaped by the captured
-	 * terrain in the tile's one colour. Null if an older capture's terrain doesn't cover the tile.
+	 * A captured tile's triangles at the player's ground height, or null if the capture saved no shape for it
 	 */
 	@Nullable
-	private static TestObjectRendering.FloorTile createFloorTile(
-		SceneCapture.Capture capture,
-		SceneCapture.CapturedTile captured,
-		int groundHeight,
-		int capturedPlane
-	) {
-		if (captured.vertices != null && captured.colors != null) {
-			int[] vertices = captured.vertices.clone();
-			for (int i = 1; i < vertices.length; i += 3)
-				vertices[i] += groundHeight;
-			return new TestObjectRendering.FloorTile(
-				vertices,
-				captured.colors,
-				captured.worldPos,
-				captured.underlayId,
-				captured.overlayId,
-				captured.textures,
-				captured.overrideTypes
-			);
-		}
-
-		var terrain = capture.terrain;
-		int plane = capturedPlane + captured.plane;
-		Integer sw = terrain == null ? null : terrain.getCornerHeight(plane, captured.x, captured.y);
-		Integer se = terrain == null ? null : terrain.getCornerHeight(plane, captured.x + 1, captured.y);
-		Integer ne = terrain == null ? null : terrain.getCornerHeight(plane, captured.x + 1, captured.y + 1);
-		Integer nw = terrain == null ? null : terrain.getCornerHeight(plane, captured.x, captured.y + 1);
-		if (sw == null || se == null || ne == null || nw == null)
+	private static TestObjectRendering.FloorTile createFloorTile(SceneCapture.CapturedTile captured, int groundHeight) {
+		if (captured.vertices == null || captured.colors == null)
 			return null;
-		int size = Perspective.LOCAL_TILE_SIZE;
-		int c = captured.color;
+		int[] vertices = captured.vertices.clone();
+		for (int i = 1; i < vertices.length; i += 3)
+			vertices[i] += groundHeight;
 		return new TestObjectRendering.FloorTile(
-			new int[] {
-				size, groundHeight + ne, size, 0, groundHeight + nw, size, size, groundHeight + se, 0,
-				0, groundHeight + sw, 0, size, groundHeight + se, 0, 0, groundHeight + nw, size
-			},
-			new int[] { c, c, c, c, c, c },
-			null, 0, 0, null, null
+			vertices,
+			captured.colors,
+			captured.worldPos,
+			captured.underlayId,
+			captured.overlayId,
+			captured.textures,
+			captured.overrideTypes
 		);
 	}
 
@@ -1631,17 +1612,16 @@ public class DeveloperTools implements KeyListener {
 			} else {
 				renderCallbackManager.unregister(onlyDrawTestObjects);
 			}
-			// Static tiles & objects are only checked when the scene is uploaded, which 117 HD can redo without a game
-			// reload, unlike Blindfold, so test objects aren't removed
+			// 117 HD only asks render callbacks about static tiles & objects while uploading the scene, which it can redo
+			// without the game reload Blindfold uses, so test objects stay
 			reloadScene();
 		});
 	}
 
 	public void removeRecreatedSceneAndNotify() {
 		clientThread.invoke(() -> {
-			int count = recreatedSceneObjects.size() + recreatedStaticObjects.size();
 			removeRecreatedScene();
-			postMessage("Removed the recreated scene's " + count + " object" + (count == 1 ? "" : "s") + " and floor");
+			postMessage("Removed the recreated scene");
 		});
 	}
 
@@ -1775,8 +1755,8 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
-	 * Spawn a test object with a built model. Every spawned, previewed or recreated test object goes through here.
-	 * Its location must be free of other test objects, and a null height keeps it on the ground.
+	 * Spawn a test object with a built model, for spawned, previewed and animated recreated objects. Its location must be
+	 * free of other test objects, and a null height keeps it on the ground.
 	 */
 	@Nullable
 	private RuneLiteObject placeTestObject(

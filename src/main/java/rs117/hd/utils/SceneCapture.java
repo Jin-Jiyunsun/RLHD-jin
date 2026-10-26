@@ -21,8 +21,8 @@ import rs117.hd.HdPlugin;
 import rs117.hd.scene.ProceduralGenerator;
 
 /**
- * Developer tools: saves every object in the loaded scene relative to the player, so {@link DeveloperTools} can spawn
- * them again as test objects somewhere else. Captures are kept as JSON files in 117 HD's folder in .runelite.
+ * Developer tools: saves the objects, NPCs and ground the game draws around the player, so {@link DeveloperTools} can
+ * recreate them somewhere else. Captures are kept as JSON files in 117 HD's folder in .runelite.
  */
 public class SceneCapture {
 	public static final ResourcePath CAPTURES_PATH = HdPlugin.PLUGIN_DIR.resolve("scene_captures");
@@ -73,16 +73,13 @@ public class SceneCapture {
 
 	public static class Capture {
 		public String name;
-		// Where the player stood, only for reference
+		// Where the player stood, whose plane turns the relative planes below back into the terrain's
 		public WorldPoint capturedAt;
 		// The environments.json environment in use, by key or area name, which recreating the capture switches to
 		@Nullable
 		public String environment;
-		// Whether objects are positioned relative to the south-west corner of the player's region, so they line up with
-		// the region grid wherever they're recreated, rather than relative to the player like older captures
-		public boolean regionAligned;
 		public List<CapturedObject> objects = new ArrayList<>();
-		// The ground's tiles, recreated as a plain floor in their shapes & colours
+		// The ground's tiles, recreated as a floor in their shapes & colours
 		public List<CapturedTile> tiles = new ArrayList<>();
 		// NPCs, recreated as frozen copies of their models, with no animations or actions
 		public List<CapturedNpc> npcs = new ArrayList<>();
@@ -124,13 +121,11 @@ public class SceneCapture {
 		// For each triangle: its vanilla texture or -1, and which of the tile's overrides it uses
 		public int[] textures;
 		public int[] overrideTypes;
-		// Only in older captures: a single colour for the whole tile, shaped by the terrain instead
-		public int color;
 	}
 
 	/**
-	 * The height of each tile corner around the captured objects, so objects which follow the ground can be bent the
-	 * same way wherever they're recreated
+	 * The height of each tile corner in the captured area, so objects which follow the ground can be bent the same way
+	 * wherever they're recreated
 	 */
 	public static class Terrain {
 		// The south-west tile, relative to the corner of the player's region, and how many tiles across
@@ -138,23 +133,9 @@ public class SceneCapture {
 		public int y;
 		public int width;
 		public int height;
-		// For each plane, the heights of the tile corners row by row from the south, relative to the ground the player
-		// stood on, where more negative is higher up
+		// For each of the scene's planes, the heights of the tile corners row by row from the south, relative to the
+		// ground the player stood on, where more negative is higher up
 		public int[][] heights;
-
-		/**
-		 * The height of a tile's south-west corner, in tiles relative to the region's corner, or null if it isn't covered
-		 */
-		@Nullable
-		public Integer getCornerHeight(int plane, int tileX, int tileY) {
-			if (heights == null || plane < 0 || plane >= heights.length)
-				return null;
-			tileX -= x;
-			tileY -= y;
-			if (tileX < 0 || tileY < 0 || tileX > width || tileY > height)
-				return null;
-			return heights[plane][tileY * (width + 1) + tileX];
-		}
 
 		/**
 		 * The ground's height at a point in local units relative to the region's corner, blended between tile corners
@@ -253,7 +234,6 @@ public class SceneCapture {
 		Capture capture = new Capture();
 		capture.name = name;
 		capture.capturedAt = player.getWorldLocation();
-		capture.regionAligned = true;
 		Scene scene = worldView.getScene();
 		Tile[][][] tiles = scene.getExtendedTiles();
 		int cornerX = getRegionCorner(scene.getBaseX(), origin.getX());
@@ -648,7 +628,6 @@ public class SceneCapture {
 	private static int getRegionId(Scene scene, int sceneX, int sceneY) {
 		return (scene.getBaseX() + sceneX >> 6) << 8 | scene.getBaseY() + sceneY >> 6;
 	}
-
 
 	/**
 	 * The models the client builds for an object of this kind, shape & rotation, which most objects only have one of

@@ -160,7 +160,6 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private List<Entry> objectEntries = List.of();
 	private List<Entry> spotanimEntries = List.of();
 	private List<Entry> projectileEntries = List.of();
-	private List<DeveloperTools.SpawnedObjectInfo> spawnedObjects = List.of();
 	private int hoveredId = -1;
 	private int marqueeIndex = -1;
 	private long marqueeStartMs;
@@ -203,22 +202,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		searchBar.setPreferredSize(new Dimension(PANEL_WIDTH - 20, 30));
 		searchBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		searchBar.setHoverBackgroundColor(ColorScheme.DARK_GRAY_HOVER_COLOR);
-		searchBar.getDocument().addDocumentListener(new DocumentListener() {
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				updateResults();
-			}
-
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				updateResults();
-			}
-
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				updateResults();
-			}
-		});
+		searchBar.getDocument().addDocumentListener(onDocumentChange(this::updateResults));
 
 		// Only one filter can be on at a time, and clicking the active one turns it off again
 		filterRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -252,18 +236,14 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		});
 		updateFrameTimingsButton();
 
-		JLabel distanceLabel = new JLabel("Tiles ahead");
-		distanceLabel.setFont(FontManager.getRunescapeSmallFont());
-		distanceLabel.setForeground(Color.WHITE);
+		JLabel distanceLabel = createLabel("Tiles ahead");
 		distanceRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		distanceRow.add(distanceLabel, BorderLayout.CENTER);
 		distanceRow.add(distanceSpinner, BorderLayout.EAST);
 		distanceSpinner.addChangeListener(e -> developerTools.setProjectileDistance((Integer) distanceSpinner.getValue()));
 		developerTools.setProjectileDistance(DEFAULT_PROJECTILE_DISTANCE);
 
-		JLabel startHeightLabel = new JLabel("Start height");
-		startHeightLabel.setFont(FontManager.getRunescapeSmallFont());
-		startHeightLabel.setForeground(Color.WHITE);
+		JLabel startHeightLabel = createLabel("Start height");
 		startHeightRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		startHeightRow.add(startHeightLabel, BorderLayout.CENTER);
 		startHeightRow.add(startHeightSpinner, BorderLayout.EAST);
@@ -381,31 +361,14 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		listTop.add(listHeader, BorderLayout.NORTH);
 		listTop.add(searchBar, BorderLayout.CENTER);
 
-		JLabel startFromLabel = new JLabel("Start from");
-		startFromLabel.setFont(FontManager.getRunescapeSmallFont());
-		startFromLabel.setForeground(Color.WHITE);
+		JLabel startFromLabel = createLabel("Start from");
 		startFromField.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		// Shown by RuneLite's look and feel while the field is empty
 		startFromField.putClientProperty("JTextField.placeholderText", "1000, 1000+100, 500-679 or TFA_");
 		startFromField.setToolTipText(
 			"<html>1000: start from ID 1000<br>1000+100: 100 entries from ID 1000<br>500-679: only IDs 500 to 679<br>" +
 			"A gameval works anywhere an ID does, like TFA_XARTH+100</html>");
-		startFromField.getDocument().addDocumentListener(new DocumentListener() {
-			@Override
-			public void insertUpdate(DocumentEvent e) {
-				updateResults();
-			}
-
-			@Override
-			public void removeUpdate(DocumentEvent e) {
-				updateResults();
-			}
-
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				updateResults();
-			}
-		});
+		startFromField.getDocument().addDocumentListener(onDocumentChange(this::updateResults));
 		JPanel startFromRow = new JPanel(new BorderLayout(6, 0));
 		startFromRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		startFromRow.add(startFromLabel, BorderLayout.WEST);
@@ -437,12 +400,10 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	}
 
 	/**
-	 * Build the tab for capturing the scene to a file, and recreating saved captures around the player
+	 * Build the tab for capturing the scene to a file, and recreating saved captures in the player's region
 	 */
 	private void createScenesSection() {
-		JLabel nameLabel = new JLabel("Name");
-		nameLabel.setFont(FontManager.getRunescapeSmallFont());
-		nameLabel.setForeground(Color.WHITE);
+		JLabel nameLabel = createLabel("Name");
 		sceneNameField.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		sceneNameField.putClientProperty("JTextField.placeholderText", "Defaults to environment & time");
 		JPanel nameRow = new JPanel(new BorderLayout(6, 0));
@@ -466,16 +427,16 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		captureColumn.add(captureButton);
 
 		JTextArea captureInfo = createWrappingText();
-		captureInfo.setText("Saves every object the game is drawing in the chosen area, lined up with the region grid, to " +
+		captureInfo.setText("Saves the objects, NPCs, ground and environment the game is drawing in the chosen area to " +
 							".runelite/117hd/scene_captures.");
 
-
 		styleButton(onlyTestObjectsButton);
-		onlyTestObjectsButton.setToolTipText("Only draw spawned & recreated objects and your character, hiding the ground, objects, NPCs and other players");
+		onlyTestObjectsButton.setToolTipText(
+			"Only draw spawned & recreated objects and your character, hiding the ground, objects, NPCs and other players");
 		onlyTestObjectsButton.addActionListener(e -> setOnlyDrawTestObjects(onlyTestObjectsButton.isSelected()));
 		recreateButton.addActionListener(e -> recreateSelectedSceneCapture());
 
-		// A few rows of saved captures, scrolling once there are more, where double-clicking one recreates it
+		// Saved captures scroll once there are more than fit, and double-clicking one recreates it
 		sceneCaptureList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		sceneCaptureList.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		sceneCaptureList.setFont(FontManager.getRunescapeSmallFont());
@@ -505,7 +466,11 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		savedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		savedPart.setBorder(createSectionDivider());
 		// Pick up captures added, renamed or deleted in the folder outside the client
-		JButton refreshButton = createIconButton(createRotateIcon(true), "Reload saved captures from the folder", () -> refreshSceneCaptures(null));
+		JButton refreshButton = createIconButton(
+			createRotateIcon(true),
+			"Reload saved captures from the folder",
+			() -> refreshSceneCaptures(null)
+		);
 		JPanel savedHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		savedHeader.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		savedHeader.add(createHeader("Saved captures"));
@@ -519,8 +484,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		recreatedSceneColumn.add(createHeader("Recreated scene"));
 		recreatedSceneColumn.add(onlyTestObjectsButton);
 		JTextArea recreateInfo = createWrappingText();
-		recreateInfo.setText("Recreated objects line up with your region's grid, keep their height relative to you, and stay " +
-							 "until removed or the scene reloads");
+		recreateInfo.setText("Recreated scenes line up with your region's grid, keep their height relative to you, use the " +
+							 "captured environment, and stay until removed or the scene reloads");
 		JPanel recreatedPart = new JPanel(new BorderLayout(0, 4));
 		recreatedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		recreatedPart.add(recreatedSceneColumn, BorderLayout.NORTH);
@@ -552,7 +517,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 
 	private void setOnlyDrawTestObjects(boolean only) {
 		onlyTestObjectsButton.setSelected(only);
-		onlyTestObjectsButton.setForeground(only ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+		setHighlighted(onlyTestObjectsButton, only);
 		developerTools.setOnlyDrawTestObjects(only);
 	}
 
@@ -600,7 +565,6 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	 * Show the spawned test objects, each with buttons to rotate or remove it. Must be called on the Swing thread.
 	 */
 	public void setSpawnedObjects(List<DeveloperTools.SpawnedObjectInfo> spawnedObjects) {
-		this.spawnedObjects = spawnedObjects;
 		setSpawnedMarqueeLabel(null);
 		spawnedRows.removeAll();
 		if (spawnedObjects.isEmpty()) {
@@ -692,7 +656,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		setHoveredEntry(null);
 		this.mode = mode;
 		for (Mode m : Mode.values())
-			modeButtons[m.ordinal()].setForeground(m == mode ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+			setHighlighted(modeButtons[m.ordinal()], m == mode);
 		clearButton.setText(mode.clearLabel);
 		listHeader.setText("All " + mode.label.toLowerCase(Locale.ROOT));
 
@@ -705,11 +669,10 @@ public class ObjectSpawnerPanel extends PluginPanel {
 			controls.add(loopButton);
 		if (mode == Mode.SPOTANIMS)
 			controls.add(frameTimingsButton);
-		// Clearing objects belongs under the spawned objects or saved captures, while the other lists have no such box
+		// The clear button goes with what it clears where there's a section for it: the spawned objects or recreated scene
 		if (mode == Mode.OBJECTS) {
 			spawnedSection.add(clearButton, BorderLayout.SOUTH);
 		} else if (mode == Mode.SCENES) {
-			// At the end of the recreated scene section
 			recreatedSceneColumn.add(clearButton);
 		} else {
 			controls.add(clearButton);
@@ -748,12 +711,12 @@ public class ObjectSpawnerPanel extends PluginPanel {
 
 	private void updateLoopButton() {
 		loopButton.setText(loop ? "Looping: on" : "Looping: off");
-		loopButton.setForeground(loop ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+		setHighlighted(loopButton, loop);
 	}
 
 	private void updateFrameTimingsButton() {
 		frameTimingsButton.setText(frameTimings ? "Frame timings: on" : "Frame timings: off");
-		frameTimingsButton.setForeground(frameTimings ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+		setHighlighted(frameTimingsButton, frameTimings);
 	}
 
 	private void setSpotanims(Map<String, Integer> spotanims) {
@@ -1033,6 +996,13 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		);
 	}
 
+	private static JLabel createLabel(String text) {
+		JLabel label = new JLabel(text);
+		label.setFont(FontManager.getRunescapeSmallFont());
+		label.setForeground(Color.WHITE);
+		return label;
+	}
+
 	private static JLabel createHeader(String text) {
 		JLabel header = new JLabel(text);
 		header.setFont(FontManager.getRunescapeBoldFont());
@@ -1050,9 +1020,32 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		button.setFocusPainted(false);
 	}
 
+	private static void setHighlighted(AbstractButton button, boolean on) {
+		button.setForeground(on ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+	}
+
+	private static DocumentListener onDocumentChange(Runnable action) {
+		return new DocumentListener() {
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				action.run();
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				action.run();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				action.run();
+			}
+		};
+	}
+
 	private static JButton createIconButton(BufferedImage icon, String tooltip, Runnable action) {
 		JButton button = new JButton(new ImageIcon(icon));
-		button.setFocusPainted(false);
+		styleButton(button);
 		button.setToolTipText(tooltip);
 		button.setMargin(new Insets(0, 0, 0, 0));
 		button.setPreferredSize(new Dimension(22, 22));
@@ -1132,7 +1125,6 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		g.dispose();
 		return image;
 	}
-
 
 	/**
 	 * Where the list starts, given as IDs or gamevals, since a gameval is just another way of writing its ID.
