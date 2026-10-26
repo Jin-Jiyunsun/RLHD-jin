@@ -7,7 +7,9 @@ import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -82,9 +84,23 @@ public class SceneCapture {
 		public List<CapturedObject> objects = new ArrayList<>();
 		// The ground's tiles, recreated as a plain floor in their shapes & colours
 		public List<CapturedTile> tiles = new ArrayList<>();
+		// NPCs, recreated as frozen copies of their models, with no animations or actions
+		public List<CapturedNpc> npcs = new ArrayList<>();
 		// The ground under the objects & tiles, for the floor's shape and objects which bend to follow the ground
 		@Nullable
 		public Terrain terrain;
+	}
+
+	/**
+	 * One NPC, positioned like objects, facing the way it faced
+	 */
+	public static class CapturedNpc {
+		public int id;
+		public int x;
+		public int y;
+		public int height;
+		public int plane;
+		public int orientation;
 	}
 
 	/**
@@ -251,6 +267,8 @@ public class SceneCapture {
 		int[][][] roofs = scene.getRoofs();
 		int extendedOffset = HDUtils.EXTENDED_SCENE_OFFSET;
 		var capturer = new Capturer(client, scene, capture, visibility, cornerX, cornerY, originPlane, groundHeight);
+		// Tiles which passed the checks above, so NPCs standing on them are captured by the same rules
+		Set<Integer> capturedTiles = new HashSet<>();
 		for (int z = 0; z < tiles.length; z++) {
 			for (Tile[] column : tiles[z]) {
 				for (Tile tile : column) {
@@ -275,14 +293,53 @@ public class SceneCapture {
 
 					capturer.captureTile(tile);
 					capturer.captureGround(tile, z);
+					capturedTiles.add(packTile(z, sceneLocation.getX(), sceneLocation.getY()));
 					// The ground under a bridge is kept as a separate tile, which is drawn along with the bridge
 					if (tile.getBridge() != null)
 						capturer.captureTile(tile.getBridge());
 				}
 			}
 		}
+		captureNpcs(client, worldView, capture, capturedTiles, cornerX, cornerY, originPlane, groundHeight);
 		capture.terrain = captureTerrain(scene, capture, cornerX, cornerY, groundHeight);
 		return capture;
+	}
+
+	private static int packTile(int level, int sceneX, int sceneY) {
+		return level << 16 | (sceneX + HDUtils.EXTENDED_SCENE_OFFSET) << 8 | sceneY + HDUtils.EXTENDED_SCENE_OFFSET;
+	}
+
+	/**
+	 * Capture the NPCs standing on captured tiles as they currently look, leaving out pets, which follow players around
+	 */
+	private static void captureNpcs(
+		Client client,
+		WorldView worldView,
+		Capture capture,
+		Set<Integer> capturedTiles,
+		int cornerX,
+		int cornerY,
+		int originPlane,
+		int groundHeight
+	) {
+		for (NPC npc : worldView.npcs()) {
+			var composition = npc.getTransformedComposition();
+			if (composition == null || composition.isFollower() || composition.getModels() == null)
+				continue;
+			var location = npc.getLocalLocation();
+			int plane = npc.getWorldLocation().getPlane();
+			if (!capturedTiles.contains(packTile(plane, location.getSceneX(), location.getSceneY())))
+				continue;
+
+			var captured = new CapturedNpc();
+			captured.id = composition.getId();
+			captured.x = location.getX() - cornerX;
+			captured.y = location.getY() - cornerY;
+			captured.height = Perspective.getTileHeight(client, location, plane) - groundHeight;
+			captured.plane = plane - originPlane;
+			captured.orientation = npc.getOrientation();
+			capture.npcs.add(captured);
+		}
 	}
 
 	/**

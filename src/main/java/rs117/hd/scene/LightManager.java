@@ -1053,7 +1053,7 @@ public class LightManager {
 		for (var object : objects) {
 			if (object.removed || lit.contains(object))
 				continue;
-			var defs = OBJECT_LIGHTS.get(object.objectId);
+			var defs = (object.type == ModelHash.TYPE_NPC ? NPC_LIGHTS : OBJECT_LIGHTS).get(object.objectId);
 			if (defs.isEmpty())
 				continue;
 

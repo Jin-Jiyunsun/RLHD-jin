@@ -24,6 +24,8 @@ public class TestObjectRendering {
 	 */
 	@RequiredArgsConstructor
 	public static class StaticObject {
+		// The ModelHash type it stands in for, an object or NPC, which picks its model overrides & lights
+		public final int type;
 		public final int objectId;
 		public final Model model;
 		// The same orientations 117 HD gets for the real object: before & while being drawn

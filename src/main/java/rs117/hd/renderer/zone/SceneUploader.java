@@ -659,7 +659,7 @@ public class SceneUploader implements AutoCloseable {
 	}
 
 	private static int getStaticTestObjectUuid(TestObjectRendering.StaticObject object) {
-		return ModelHash.packUuid(ModelHash.TYPE_OBJECT, object.objectId);
+		return ModelHash.packUuid(object.type, object.objectId);
 	}
 
 	private void uploadZoneTile(

@@ -381,14 +381,15 @@ public class DeveloperTools implements KeyListener {
 			}
 		});
 		clientThread.invoke(() -> {
-			stopTestSpotanim();
-			stopTestProjectile();
-			clearTestObjects();
+			// Stop hiding the scene first, since the render callback would otherwise keep hiding it after 117 HD stops
 			if (onlyDrawingTestObjects) {
 				onlyDrawingTestObjects = false;
 				lightManager.hideUndrawnObjectLights = false;
 				renderCallbackManager.unregister(onlyDrawTestObjects);
 			}
+			stopTestSpotanim();
+			stopTestProjectile();
+			clearTestObjects();
 		});
 	}
 
@@ -1287,8 +1288,10 @@ public class DeveloperTools implements KeyListener {
 				recreation.pending.add(new PendingScenePart(object, part, location, originPlane, orientation, groundHeight + object.height));
 			}
 		}
-		if (capture.regionAligned)
+		if (capture.regionAligned) {
 			recreateFloor(capture, baseX, baseY, originPlane, groundHeight, recreation);
+			recreateNpcs(capture, baseX, baseY, originPlane, groundHeight, recreation);
+		}
 
 		// Big captures take a while, so start with what's around the player rather than the scene's edge
 		recreation.pending.sort(Comparator.comparingLong(pending -> {
@@ -1348,6 +1351,7 @@ public class DeveloperTools implements KeyListener {
 					continue;
 				}
 				var object = new TestObjectRendering.StaticObject(
+					ModelHash.TYPE_OBJECT,
 					captured.id,
 					model,
 					HDUtils.getModelPreOrientation(captured.shape | captured.rotation << 6),
@@ -1400,8 +1404,10 @@ public class DeveloperTools implements KeyListener {
 			sceneRecreation = null;
 			// Static objects only show once their zones are uploaded again, which 117 HD can do without a game reload
 			if (recreation.addedStaticObjects)
-				plugin.renderer.reloadScene();
-			String message = "Recreated " + (recreatedSceneObjects.size() + recreatedStaticObjects.size()) + " objects" +
+				reloadScene();
+			int objects = recreatedSceneObjects.size() + recreatedStaticObjects.size() - recreation.recreatedNpcs;
+			String message = "Recreated " + objects + " objects" +
+							 (recreation.recreatedNpcs == 0 ? "" : ", " + recreation.recreatedNpcs + " NPCs") +
 							 (recreatedFloorTiles == 0 ? "" : " and " + recreatedFloorTiles + " floor tiles") + " from " + recreation.name;
 			if (recreation.skippedOutsideScene > 0)
 				message += ". Skipped " + recreation.skippedOutsideScene + " outside the loaded scene";
@@ -1413,6 +1419,15 @@ public class DeveloperTools implements KeyListener {
 				message += ". Skipped " + recreation.skippedFloorTiles + " floor tiles where there's no tile to replace";
 			postMessage(message);
 		}
+	}
+
+	/**
+	 * Upload 117 HD's copy of the scene again, unless the renderer has already been destroyed, such as while 117 HD stops
+	 */
+	private void reloadScene() {
+		var renderer = plugin.renderer;
+		if (renderer != null)
+			renderer.reloadScene();
 	}
 
 	/**
@@ -1475,6 +1490,76 @@ public class DeveloperTools implements KeyListener {
 	}
 
 	/**
+	 * Place frozen copies of a capture's NPCs, built from their definitions' models, colours & scale, and uploaded like
+	 * static scenery. They're never animated and do nothing, since they only show what was there.
+	 */
+	private void recreateNpcs(SceneCapture.Capture capture, int baseX, int baseY, int originPlane, int groundHeight, SceneRecreation recreation) {
+		var worldView = client.getTopLevelWorldView();
+		for (var captured : capture.npcs) {
+			var location = new LocalPoint(baseX + captured.x, baseY + captured.y, worldView);
+			Tile tile = getSceneTile(location, originPlane);
+			if (tile == null) {
+				recreation.skippedOutsideScene++;
+				continue;
+			}
+			Model model = buildNpcModel(captured.id);
+			if (model == null) {
+				recreation.skippedNoModel++;
+				continue;
+			}
+			var object = new TestObjectRendering.StaticObject(
+				ModelHash.TYPE_NPC,
+				captured.id,
+				model,
+				0,
+				captured.orientation,
+				captured.orientation,
+				originPlane,
+				location.getX(),
+				location.getY(),
+				groundHeight + captured.height
+			);
+			addStaticSceneObject(tile, object);
+			recreation.recreatedNpcs++;
+			recreation.addedStaticObjects = true;
+		}
+	}
+
+	@Nullable
+	private Model buildNpcModel(int npcId) {
+		var composition = client.getNpcDefinition(npcId);
+		int[] modelIds = composition == null ? null : composition.getModels();
+		if (modelIds == null || modelIds.length == 0)
+			return null;
+		ModelData[] models = new ModelData[modelIds.length];
+		for (int i = 0; i < models.length; i++) {
+			models[i] = client.loadModelData(modelIds[i]);
+			if (models[i] == null)
+				return null;
+		}
+
+		ModelData modelData = models.length == 1 ? models[0] : client.mergeModels(models);
+		short[] recolorFrom = composition.getColorToReplace();
+		short[] recolorTo = composition.getColorToReplaceWith();
+		if (recolorFrom != null && recolorTo != null) {
+			modelData = modelData.cloneColors();
+			for (int i = 0; i < min(recolorFrom.length, recolorTo.length); i++)
+				modelData.recolor(recolorFrom[i], recolorTo[i]);
+		}
+		int width = composition.getWidthScale();
+		int height = composition.getHeightScale();
+		if (width != 128 || height != 128)
+			modelData = modelData.cloneVertices().scale(width, height, width);
+		return modelData.light(
+			ModelData.DEFAULT_AMBIENT,
+			ModelData.DEFAULT_CONTRAST,
+			ModelData.DEFAULT_X,
+			ModelData.DEFAULT_Y,
+			ModelData.DEFAULT_Z
+		);
+	}
+
+	/**
 	 * A captured tile's triangles at the player's ground height, or for older captures, a square shaped by the captured
 	 * terrain in the tile's one colour. Null if an older capture's terrain doesn't cover the tile.
 	 */
@@ -1529,7 +1614,7 @@ public class DeveloperTools implements KeyListener {
 		recreatedFloorTiles = 0;
 		modelOverrideManager.staticTestObjects.clear();
 		modelOverrideManager.staticTestFloor.clear();
-		plugin.renderer.reloadScene();
+		reloadScene();
 	}
 
 	/**
@@ -1548,7 +1633,7 @@ public class DeveloperTools implements KeyListener {
 			}
 			// Static tiles & objects are only checked when the scene is uploaded, which 117 HD can redo without a game
 			// reload, unlike Blindfold, so test objects aren't removed
-			plugin.renderer.reloadScene();
+			reloadScene();
 		});
 	}
 
@@ -1581,6 +1666,7 @@ public class DeveloperTools implements KeyListener {
 		int skippedUnreadable;
 		int skippedNoModel;
 		int skippedFloorTiles;
+		int recreatedNpcs;
 		@Nullable
 		SceneCapture.Terrain terrain;
 		int capturedPlane;

@@ -46,7 +46,8 @@ logged in.
 **Capturing**
 
 - **Capture scene** saves objects, walls, wall decorations and ground objects to `.runelite/117hd/scene_captures`,
-  positioned relative to the corner of the 64x64 tile region you're in. NPCs and players aren't included.
+  positioned relative to the corner of the 64x64 tile region you're in, along with NPCs. Players and pets aren't
+  included.
 - With no name, a capture is named after your 117 HD environment and the time, like `TFA_LOBBY_2026-10-25_22-13-05`.
 - The area is the whole scene by default, your region, or 16 tiles around you. In instances, the region is a 64x64
   square centred on you, since instance coordinates don't line up with rooms.
@@ -62,6 +63,9 @@ logged in.
 - The capture's environment is used while it's recreated. Edits to it in `environments.json` show up live.
 - Recreated objects are uploaded like real scenery, so whole scenes run at normal frame rates. They appear once the
   capture has finished spawning. Animated objects are redrawn every frame, like spawned objects.
+- NPCs are recreated as frozen copies of their models, facing the way they faced, with their model overrides and lights.
+  They're never animated and do nothing. Without an animation, some show their models' base pose rather than how they
+  stand in game.
 - The ground is recreated as a floor in place of the real tiles, with the tiles' shapes and colours. Its
   `tile_overrides.json` overrides are picked from where the tiles really are, and update live when you save the file.
   Ground blending, water and override replacements aren't applied. Tiles only get a floor where there's a real tile to
