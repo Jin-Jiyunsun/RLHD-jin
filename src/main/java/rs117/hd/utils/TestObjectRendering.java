@@ -47,6 +47,16 @@ public class TestObjectRendering {
 		// Three corners per triangle, each as a position within the tile & a height, with a colour for each corner
 		public final int[] vertices;
 		public final int[] colors;
+		// What picks the tile's tile overrides each time it's uploaded, or a null position for older captures without them
+		@Nullable
+		public final int[] worldPos;
+		public final int underlayId;
+		public final int overlayId;
+		// For each triangle: its vanilla texture or -1, and which of the tile's overrides it uses
+		@Nullable
+		public final int[] textures;
+		@Nullable
+		public final int[] overrideTypes;
 	}
 
 	/**

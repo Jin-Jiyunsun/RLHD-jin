@@ -282,6 +282,20 @@ public class DeveloperTools implements KeyListener {
 			ctx.localToWorld(location.getX(), location.getY(), object.getPlane(), worldPos);
 			return modelOverrideManager.getOverride(ModelHash.packUuid(type, object.getId()), worldPos).hide;
 		}
+
+		@Override
+		public void getWorldPosition(Tile tile, int level, int[] result) {
+			var ctx = plugin.getSceneContext();
+			var sceneLocation = tile.getSceneLocation();
+			if (ctx == null) {
+				var world = WorldPoint.fromScene(client.getTopLevelWorldView(), sceneLocation.getX(), sceneLocation.getY(), level);
+				result[0] = world.getX();
+				result[1] = world.getY();
+				result[2] = world.getPlane();
+				return;
+			}
+			ctx.sceneToWorld(sceneLocation.getX(), sceneLocation.getY(), level, result);
+		}
 	};
 
 	/**
@@ -1475,7 +1489,15 @@ public class DeveloperTools implements KeyListener {
 			int[] vertices = captured.vertices.clone();
 			for (int i = 1; i < vertices.length; i += 3)
 				vertices[i] += groundHeight;
-			return new TestObjectRendering.FloorTile(vertices, captured.colors);
+			return new TestObjectRendering.FloorTile(
+				vertices,
+				captured.colors,
+				captured.worldPos,
+				captured.underlayId,
+				captured.overlayId,
+				captured.textures,
+				captured.overrideTypes
+			);
 		}
 
 		var terrain = capture.terrain;
@@ -1493,7 +1515,8 @@ public class DeveloperTools implements KeyListener {
 				size, groundHeight + ne, size, 0, groundHeight + nw, size, size, groundHeight + se, 0,
 				0, groundHeight + sw, 0, size, groundHeight + se, 0, 0, groundHeight + nw, size
 			},
-			new int[] { c, c, c, c, c, c }
+			new int[] { c, c, c, c, c, c },
+			null, 0, 0, null, null
 		);
 	}
 

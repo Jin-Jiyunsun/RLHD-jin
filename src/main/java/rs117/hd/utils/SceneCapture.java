@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import net.runelite.api.*;
 import net.runelite.api.coords.*;
 import rs117.hd.HdPlugin;
+import rs117.hd.scene.ProceduralGenerator;
 
 /**
  * Developer tools: saves every object in the loaded scene relative to the player, so {@link DeveloperTools} can spawn
@@ -26,6 +27,10 @@ public class SceneCapture {
 
 	// Tiles in each direction which make up an instance's region-sized area around the player
 	private static final int INSTANCE_REGION_RADIUS = 32;
+	// Which of a tile's tile overrides a floor triangle uses: the main one for painted tiles, or underlay or overlay
+	public static final int OVERRIDE_MAIN = 0;
+	public static final int OVERRIDE_UNDERLAY = 1;
+	public static final int OVERRIDE_OVERLAY = 2;
 	// Tiles of ground saved around the captured objects, enough for big models
 	private static final int TERRAIN_MARGIN = 8;
 	private static final int SHAPE_MASK = 0x3F;
@@ -94,6 +99,15 @@ public class SceneCapture {
 		// stood on, with a colour for each corner
 		public int[] vertices;
 		public int[] colors;
+		// Where the tile really is, in the real map's coordinates for instances, and its underlay & overlay, which pick its
+		// tile_overrides.json override again whenever it's uploaded, so edits to the file show up without recapturing
+		@Nullable
+		public int[] worldPos;
+		public int underlayId;
+		public int overlayId;
+		// For each triangle: its vanilla texture or -1, and which of the tile's overrides it uses
+		public int[] textures;
+		public int[] overrideTypes;
 		// Only in older captures: a single colour for the whole tile, shaped by the terrain instead
 		public int color;
 	}
@@ -200,6 +214,9 @@ public class SceneCapture {
 
 		// Whether a model override hides the object, given its ModelHash type
 		boolean isHiddenByOverride(TileObject object, int type);
+
+		// Where a tile really is, in the real map's coordinates for instances, the same way 117 HD picks its tile overrides
+		void getWorldPosition(Tile tile, int level, int[] result);
 	}
 
 	/**
@@ -233,7 +250,7 @@ public class SceneCapture {
 		byte[][][] settings = scene.getExtendedTileSettings();
 		int[][][] roofs = scene.getRoofs();
 		int extendedOffset = HDUtils.EXTENDED_SCENE_OFFSET;
-		var capturer = new Capturer(client, capture, visibility, cornerX, cornerY, originPlane, groundHeight);
+		var capturer = new Capturer(client, scene, capture, visibility, cornerX, cornerY, originPlane, groundHeight);
 		for (int z = 0; z < tiles.length; z++) {
 			for (Tile[] column : tiles[z]) {
 				for (Tile tile : column) {
@@ -257,7 +274,7 @@ public class SceneCapture {
 						continue;
 
 					capturer.captureTile(tile);
-					capturer.captureGround(tile, z, scene.getTileHeights());
+					capturer.captureGround(tile, z);
 					// The ground under a bridge is kept as a separate tile, which is drawn along with the bridge
 					if (tile.getBridge() != null)
 						capturer.captureTile(tile.getBridge());
@@ -274,6 +291,7 @@ public class SceneCapture {
 	@RequiredArgsConstructor
 	private static class Capturer {
 		final Client client;
+		final Scene scene;
 		final Capture capture;
 		final Visibility visibility;
 		final int cornerX;
@@ -318,12 +336,15 @@ public class SceneCapture {
 		 * Capture a tile's ground as triangles with a colour at each corner, the same way the client gives them to 117 HD.
 		 * Painted tiles are two triangles from the tile's corners, while shaped tiles have their own.
 		 */
-		void captureGround(Tile tile, int level, int[][][] tileHeights) {
+		void captureGround(Tile tile, int level) {
+			int[][][] tileHeights = scene.getTileHeights();
 			var sceneLocation = tile.getSceneLocation();
 			var paint = tile.getSceneTilePaint();
 			var model = tile.getSceneTileModel();
 			List<Integer> vertices = new ArrayList<>();
 			List<Integer> colors = new ArrayList<>();
+			List<Integer> textures = new ArrayList<>();
+			List<Integer> overrideTypes = new ArrayList<>();
 			if (paint != null) {
 				if (paint.getNeColor() == HDUtils.HIDDEN_HSL)
 					return;
@@ -341,6 +362,10 @@ public class SceneCapture {
 				addCorner(vertices, colors, 0, sw, 0, paint.getSwColor());
 				addCorner(vertices, colors, size, se, 0, paint.getSeColor());
 				addCorner(vertices, colors, 0, nw, size, paint.getNwColor());
+				for (int triangle = 0; triangle < 2; triangle++) {
+					textures.add(paint.getTexture());
+					overrideTypes.add(OVERRIDE_MAIN);
+				}
 			} else if (model != null) {
 				int originX = sceneLocation.getX() << Perspective.LOCAL_COORD_BITS;
 				int originY = sceneLocation.getY() << Perspective.LOCAL_COORD_BITS;
@@ -349,9 +374,12 @@ public class SceneCapture {
 				int[] vertexZ = model.getVertexZ();
 				int[][] faces = { model.getFaceX(), model.getFaceY(), model.getFaceZ() };
 				int[][] faceColors = { model.getTriangleColorA(), model.getTriangleColorB(), model.getTriangleColorC() };
+				int[] faceTextures = model.getTriangleTextureId();
 				for (int face = 0; face < faces[0].length; face++) {
 					if (faceColors[0][face] == HDUtils.HIDDEN_HSL)
 						continue;
+					textures.add(faceTextures == null ? -1 : faceTextures[face]);
+					overrideTypes.add(ProceduralGenerator.isOverlayFace(tile, face) ? OVERRIDE_OVERLAY : OVERRIDE_UNDERLAY);
 					for (int corner = 0; corner < 3; corner++) {
 						int vertex = faces[corner][face];
 						addCorner(
@@ -373,6 +401,14 @@ public class SceneCapture {
 			captured.plane = level - originPlane;
 			captured.vertices = vertices.stream().mapToInt(Integer::intValue).toArray();
 			captured.colors = colors.stream().mapToInt(Integer::intValue).toArray();
+			captured.textures = textures.stream().mapToInt(Integer::intValue).toArray();
+			captured.overrideTypes = overrideTypes.stream().mapToInt(Integer::intValue).toArray();
+			captured.worldPos = new int[3];
+			visibility.getWorldPosition(tile, level, captured.worldPos);
+			int tileExX = sceneLocation.getX() + HDUtils.EXTENDED_SCENE_OFFSET;
+			int tileExY = sceneLocation.getY() + HDUtils.EXTENDED_SCENE_OFFSET;
+			captured.underlayId = scene.getUnderlayIds()[level][tileExX][tileExY];
+			captured.overlayId = scene.getOverlayIds()[level][tileExX][tileExY];
 			capture.tiles.add(captured);
 		}
 

@@ -62,8 +62,10 @@ logged in.
 - The capture's environment is used while it's recreated. Edits to it in `environments.json` show up live.
 - Recreated objects are uploaded like real scenery, so whole scenes run at normal frame rates. They appear once the
   capture has finished spawning. Animated objects are redrawn every frame, like spawned objects.
-- The ground is recreated as a plain floor in place of the real tiles, with the tiles' shapes and corner colours, but no
-  textures, 117 HD blending or water. Tiles only get a floor where there's a real tile to replace.
+- The ground is recreated as a floor in place of the real tiles, with the tiles' shapes and colours. Its
+  `tile_overrides.json` overrides are picked from where the tiles really are, and update live when you save the file.
+  Ground blending, water and override replacements aren't applied. Tiles only get a floor where there's a real tile to
+  replace.
 - Anything outside the loaded scene is skipped, and the chat says how many objects were skipped and why.
 - **Hide everything else** hides the ground, objects, NPCs and other players, leaving test objects and your character,
   like the Blindfold plugin. Lights of hidden objects go out too. Recreating turns it on and removing turns it off, but

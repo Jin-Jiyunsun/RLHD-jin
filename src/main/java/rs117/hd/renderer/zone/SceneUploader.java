@@ -36,6 +36,7 @@ import rs117.hd.scene.MaterialManager;
 import rs117.hd.scene.ModelOverrideManager;
 import rs117.hd.scene.ProceduralGenerator;
 import rs117.hd.scene.SceneContext;
+import rs117.hd.scene.TileOverrideManager;
 import rs117.hd.scene.ground_materials.GroundMaterial;
 import rs117.hd.scene.materials.Material;
 import rs117.hd.scene.model_overrides.InheritTileColorType;
@@ -110,6 +111,9 @@ public class SceneUploader implements AutoCloseable {
 
 	@Inject
 	private ProceduralGenerator proceduralGenerator;
+
+	@Inject
+	private TileOverrideManager tileOverrideManager;
 
 	@FunctionalInterface
 	public interface OnBeforeProcessTileFunc {
@@ -543,7 +547,9 @@ public class SceneUploader implements AutoCloseable {
 	}
 
 	/**
-	 * Developer tools: draw a recreated scene capture's plain floor tiles from their triangles, like {@link #uploadCustomTilePaint}
+	 * Developer tools: draw a recreated scene capture's floor tiles from their triangles. Their tile overrides are picked
+	 * here, from where the tiles really are, so edits to tile_overrides.json show up whenever the scene is uploaded again.
+	 * Overrides apply like they do on real tiles, except for blending, water and replacements, which need the real scene.
 	 */
 	private void uploadStaticTestFloor(
 		ZoneSceneContext ctx,
@@ -557,25 +563,96 @@ public class SceneUploader implements AutoCloseable {
 		if (writeCache == null)
 			writeCache = new VertexWriteCache.Collection();
 		writeCache.setOutputBuffers(vertexBuffer, vertexBuffer, textureBuffer);
+		final var vb = writeCache.getVertexBuffer();
+		final var tb = writeCache.getTextureBuffer();
 
 		// Stop gap filling from covering it up
 		ctx.filledTiles[tileExX][tileExY] |= (byte) (1 << tileZ);
 		int terrainData = HDUtils.packTerrainData(true, 0, WaterType.NONE, tileZ);
-		int packedMaterial = Material.NONE.packMaterialData(ModelOverride.NONE, UvType.GEOMETRY, false);
-		int x = (tileExX - ctx.sceneOffset) * LOCAL_TILE_SIZE - basex;
-		int z = (tileExY - ctx.sceneOffset) * LOCAL_TILE_SIZE - basez;
+		int baseX = (tileExX - ctx.sceneOffset) * LOCAL_TILE_SIZE - basex;
+		int baseZ = (tileExY - ctx.sceneOffset) * LOCAL_TILE_SIZE - basez;
+		TileOverride[] overrides = new TileOverride[3];
+		Material[] materials = new Material[3];
+		int[] colors = new int[3];
 		for (var tile : floor) {
 			int[] v = tile.vertices;
-			int[] c = tile.colors;
-			for (int i = 0; i < c.length; i += 3) {
+			int[] wp = tile.worldPos;
+			if (wp != null) {
+				int overlay = TileOverride.OVERLAY_FLAG | tile.overlayId;
+				overrides[0] = tileOverrideManager.getOverrideBeforeReplacements(wp, overlay, tile.underlayId);
+				overrides[1] = tileOverrideManager.getOverrideBeforeReplacements(wp, tile.underlayId);
+				overrides[2] = tileOverrideManager.getOverrideBeforeReplacements(wp, overlay);
+			}
+
+			for (int t = 0, i = 0; i < tile.colors.length; t++, i += 3) {
+				int textureId = tile.textures == null ? -1 : tile.textures[t];
+				var override = wp == null || tile.overrideTypes == null ? NONE : overrides[tile.overrideTypes[t]];
+				if (proceduralGenerator.seasonalWaterType(override, textureId) != WaterType.NONE)
+					override = NONE;
+				System.arraycopy(tile.colors, i, colors, 0, 3);
+				materials[0] = materials[1] = materials[2] = Material.NONE;
+
+				if (textureId != -1) {
+					var material = materialManager.fromVanillaTexture(textureId);
+					// Disable tile overrides for newly introduced vanilla textures
+					if (material.isFallbackVanillaMaterial)
+						override = NONE;
+					materials[0] = materials[1] = materials[2] = material;
+				}
+
+				int uvOrientation = 0;
+				float uvScale = 1;
+				GroundMaterial groundMaterial = null;
+				if (override != NONE) {
+					groundMaterial = override.groundMaterial;
+					uvOrientation = override.uvOrientation;
+					uvScale = override.uvScale;
+					for (int k = 0; k < 3; k++)
+						colors[k] = override.modifyColor(colors[k]);
+				} else if (textureId == -1 && wp != null) {
+					// Fall back to the default ground material if the tile is untextured
+					groundMaterial = override.groundMaterial;
+				}
+
 				int a = i * 3;
-				putTerrainTriangle(
-					c[i], c[i + 1], c[i + 2],
-					packedMaterial, terrainData,
-					x + v[a], v[a + 1], z + v[a + 2], 0, 0,
-					x + v[a + 3], v[a + 4], z + v[a + 5], 0, 0,
-					x + v[a + 6], v[a + 7], z + v[a + 8], 0, 0
+				if (plugin.configGroundTextures && groundMaterial != null) {
+					for (int k = 0; k < 3; k++) {
+						materials[k] = groundMaterial.getRandomMaterial(
+							wp[0] + (v[a + k * 3] >> LOCAL_COORD_BITS),
+							wp[1] + (v[a + k * 3 + 2] >> LOCAL_COORD_BITS),
+							wp[2]
+						);
+					}
+				}
+
+				// Textures line up with where the tile really is, the same way they do on shaped tiles
+				float uvcos = -uvScale, uvsin = 0;
+				if (uvOrientation % 2048 != 0) {
+					float rad = -uvOrientation * JAU_TO_RAD;
+					uvcos = cos(rad) * -uvScale;
+					uvsin = sin(rad) * -uvScale;
+				}
+				float uvx = wp == null ? 0 : fract(wp[0] * uvcos - wp[1] * uvsin);
+				float uvy = wp == null ? 0 : fract(wp[0] * uvsin + wp[1] * uvcos);
+
+				int faceIdx = tb.putFace(
+					colors[0], colors[1], colors[2],
+					materials[0].packMaterialData(ModelOverride.NONE, UvType.GEOMETRY, false),
+					materials[1].packMaterialData(ModelOverride.NONE, UvType.GEOMETRY, false),
+					materials[2].packMaterialData(ModelOverride.NONE, UvType.GEOMETRY, false),
+					terrainData, terrainData, terrainData
 				);
+				for (int k = 0; k < 3; k++) {
+					int vx = v[a + k * 3], vy = v[a + k * 3 + 1], vz = v[a + k * 3 + 2];
+					float dx = (float) vx / LOCAL_TILE_SIZE;
+					float dz = (float) vz / LOCAL_TILE_SIZE;
+					vb.putStaticVertex(
+						baseX + vx, vy, baseZ + vz,
+						uvx + dx * uvcos - dz * uvsin, uvy + dx * uvsin + dz * uvcos, 0,
+						0, -1, 0,
+						faceIdx, false
+					);
+				}
 			}
 		}
 		writeCache.release();
