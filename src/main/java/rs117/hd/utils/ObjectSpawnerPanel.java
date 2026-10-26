@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import javax.swing.AbstractButton;
 import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -503,7 +504,14 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		JPanel savedPart = new JPanel(new BorderLayout(0, 4));
 		savedPart.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		savedPart.setBorder(createSectionDivider());
-		savedPart.add(createHeader("Saved captures"), BorderLayout.NORTH);
+		// Pick up captures added, renamed or deleted in the folder outside the client
+		JButton refreshButton = createIconButton(createRotateIcon(true), "Reload saved captures from the folder", () -> refreshSceneCaptures(null));
+		JPanel savedHeader = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+		savedHeader.setBackground(ColorScheme.DARK_GRAY_COLOR);
+		savedHeader.add(createHeader("Saved captures"));
+		savedHeader.add(Box.createHorizontalStrut(6));
+		savedHeader.add(refreshButton);
+		savedPart.add(savedHeader, BorderLayout.NORTH);
 		savedPart.add(sceneCaptureScroll, BorderLayout.CENTER);
 		savedPart.add(recreateButton, BorderLayout.SOUTH);
 

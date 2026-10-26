@@ -75,9 +75,27 @@ public class SceneCapture {
 		// the region grid wherever they're recreated, rather than relative to the player like older captures
 		public boolean regionAligned;
 		public List<CapturedObject> objects = new ArrayList<>();
-		// The ground under the objects, for those which bend to follow it
+		// The ground's tiles, recreated as a plain floor in their shapes & colours
+		public List<CapturedTile> tiles = new ArrayList<>();
+		// The ground under the objects & tiles, for the floor's shape and objects which bend to follow the ground
 		@Nullable
 		public Terrain terrain;
+	}
+
+	/**
+	 * One tile of ground, positioned in tiles relative to the corner of the player's region, and in planes relative to
+	 * the player
+	 */
+	public static class CapturedTile {
+		public int x;
+		public int y;
+		public int plane;
+		// Three corners per triangle, each as a position within the tile & a height relative to the ground the player
+		// stood on, with a colour for each corner
+		public int[] vertices;
+		public int[] colors;
+		// Only in older captures: a single colour for the whole tile, shaped by the terrain instead
+		public int color;
 	}
 
 	/**
@@ -93,6 +111,20 @@ public class SceneCapture {
 		// For each plane, the heights of the tile corners row by row from the south, relative to the ground the player
 		// stood on, where more negative is higher up
 		public int[][] heights;
+
+		/**
+		 * The height of a tile's south-west corner, in tiles relative to the region's corner, or null if it isn't covered
+		 */
+		@Nullable
+		public Integer getCornerHeight(int plane, int tileX, int tileY) {
+			if (heights == null || plane < 0 || plane >= heights.length)
+				return null;
+			tileX -= x;
+			tileY -= y;
+			if (tileX < 0 || tileY < 0 || tileX > width || tileY > height)
+				return null;
+			return heights[plane][tileY * (width + 1) + tileX];
+		}
 
 		/**
 		 * The ground's height at a point in local units relative to the region's corner, blended between tile corners
@@ -225,13 +257,14 @@ public class SceneCapture {
 						continue;
 
 					capturer.captureTile(tile);
+					capturer.captureGround(tile, z, scene.getTileHeights());
 					// The ground under a bridge is kept as a separate tile, which is drawn along with the bridge
 					if (tile.getBridge() != null)
 						capturer.captureTile(tile.getBridge());
 				}
 			}
 		}
-		capture.terrain = captureTerrain(scene, capture.objects, cornerX, cornerY, groundHeight);
+		capture.terrain = captureTerrain(scene, capture, cornerX, cornerY, groundHeight);
 		return capture;
 	}
 
@@ -281,6 +314,75 @@ public class SceneCapture {
 				add(capture(ground, Kind.GROUND, ground.getConfig(), ModelHash.TYPE_GROUND_OBJECT));
 		}
 
+		/**
+		 * Capture a tile's ground as triangles with a colour at each corner, the same way the client gives them to 117 HD.
+		 * Painted tiles are two triangles from the tile's corners, while shaped tiles have their own.
+		 */
+		void captureGround(Tile tile, int level, int[][][] tileHeights) {
+			var sceneLocation = tile.getSceneLocation();
+			var paint = tile.getSceneTilePaint();
+			var model = tile.getSceneTileModel();
+			List<Integer> vertices = new ArrayList<>();
+			List<Integer> colors = new ArrayList<>();
+			if (paint != null) {
+				if (paint.getNeColor() == HDUtils.HIDDEN_HSL)
+					return;
+				int tileExX = sceneLocation.getX() + HDUtils.EXTENDED_SCENE_OFFSET;
+				int tileExY = sceneLocation.getY() + HDUtils.EXTENDED_SCENE_OFFSET;
+				int sw = tileHeights[level][tileExX][tileExY] - groundHeight;
+				int se = tileHeights[level][tileExX + 1][tileExY] - groundHeight;
+				int ne = tileHeights[level][tileExX + 1][tileExY + 1] - groundHeight;
+				int nw = tileHeights[level][tileExX][tileExY + 1] - groundHeight;
+				int size = Perspective.LOCAL_TILE_SIZE;
+				// Split the same way as 117 HD splits painted tiles
+				addCorner(vertices, colors, size, ne, size, paint.getNeColor());
+				addCorner(vertices, colors, 0, nw, size, paint.getNwColor());
+				addCorner(vertices, colors, size, se, 0, paint.getSeColor());
+				addCorner(vertices, colors, 0, sw, 0, paint.getSwColor());
+				addCorner(vertices, colors, size, se, 0, paint.getSeColor());
+				addCorner(vertices, colors, 0, nw, size, paint.getNwColor());
+			} else if (model != null) {
+				int originX = sceneLocation.getX() << Perspective.LOCAL_COORD_BITS;
+				int originY = sceneLocation.getY() << Perspective.LOCAL_COORD_BITS;
+				int[] vertexX = model.getVertexX();
+				int[] vertexY = model.getVertexY();
+				int[] vertexZ = model.getVertexZ();
+				int[][] faces = { model.getFaceX(), model.getFaceY(), model.getFaceZ() };
+				int[][] faceColors = { model.getTriangleColorA(), model.getTriangleColorB(), model.getTriangleColorC() };
+				for (int face = 0; face < faces[0].length; face++) {
+					if (faceColors[0][face] == HDUtils.HIDDEN_HSL)
+						continue;
+					for (int corner = 0; corner < 3; corner++) {
+						int vertex = faces[corner][face];
+						addCorner(
+							vertices, colors,
+							vertexX[vertex] - originX,
+							vertexY[vertex] - groundHeight,
+							vertexZ[vertex] - originY,
+							faceColors[corner][face]
+						);
+					}
+				}
+			}
+			if (colors.isEmpty())
+				return;
+
+			var captured = new CapturedTile();
+			captured.x = sceneLocation.getX() - (cornerX >> Perspective.LOCAL_COORD_BITS);
+			captured.y = sceneLocation.getY() - (cornerY >> Perspective.LOCAL_COORD_BITS);
+			captured.plane = level - originPlane;
+			captured.vertices = vertices.stream().mapToInt(Integer::intValue).toArray();
+			captured.colors = colors.stream().mapToInt(Integer::intValue).toArray();
+			capture.tiles.add(captured);
+		}
+
+		private static void addCorner(List<Integer> vertices, List<Integer> colors, int x, int height, int y, int color) {
+			vertices.add(x);
+			vertices.add(height);
+			vertices.add(y);
+			colors.add(color);
+		}
+
 		private void add(@Nullable CapturedObject object) {
 			if (object != null)
 				capture.objects.add(object);
@@ -315,18 +417,24 @@ public class SceneCapture {
 	}
 
 	/**
-	 * Save the tile corner heights under the objects, with some room around them for big models
+	 * Save the tile corner heights under the objects & tiles, with some room around them for big models
 	 */
 	@Nullable
-	private static Terrain captureTerrain(Scene scene, List<CapturedObject> objects, int cornerX, int cornerY, int groundHeight) {
-		if (objects.isEmpty())
+	private static Terrain captureTerrain(Scene scene, Capture capture, int cornerX, int cornerY, int groundHeight) {
+		if (capture.objects.isEmpty() && capture.tiles.isEmpty())
 			return null;
 		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE;
-		for (var object : objects) {
+		for (var object : capture.objects) {
 			minX = Math.min(minX, object.x >> Perspective.LOCAL_COORD_BITS);
 			minY = Math.min(minY, object.y >> Perspective.LOCAL_COORD_BITS);
 			maxX = Math.max(maxX, object.x >> Perspective.LOCAL_COORD_BITS);
 			maxY = Math.max(maxY, object.y >> Perspective.LOCAL_COORD_BITS);
+		}
+		for (var tile : capture.tiles) {
+			minX = Math.min(minX, tile.x);
+			minY = Math.min(minY, tile.y);
+			maxX = Math.max(maxX, tile.x);
+			maxY = Math.max(maxY, tile.y);
 		}
 
 		int[][][] tileHeights = scene.getTileHeights();

@@ -64,6 +64,9 @@ public class ModelOverrideManager {
 	// Developer tools: recreated objects uploaded with their zone like static scenery, by the extended tile they stand on.
 	// Read while zones upload on other threads, so lists are replaced rather than changed.
 	public final Map<Integer, List<TestObjectRendering.StaticObject>> staticTestObjects = new ConcurrentHashMap<>();
+	// Developer tools: a recreated plain floor drawn in place of the real tiles it covers, by the same extended tiles.
+	// More than one can land on a tile, since recreated captures put every plane on the player's.
+	public final Map<Integer, List<TestObjectRendering.FloorTile>> staticTestFloor = new ConcurrentHashMap<>();
 
 	public static int packStaticTestObjectTile(int level, int tileExX, int tileExY) {
 		return level << 16 | tileExX << 8 | tileExY;

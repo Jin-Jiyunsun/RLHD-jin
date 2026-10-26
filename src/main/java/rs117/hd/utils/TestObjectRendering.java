@@ -40,6 +40,16 @@ public class TestObjectRendering {
 	}
 
 	/**
+	 * A tile of a recreated scene capture's plain floor, drawn in place of the real tile it lands on
+	 */
+	@RequiredArgsConstructor
+	public static class FloorTile {
+		// Three corners per triangle, each as a position within the tile & a height, with a colour for each corner
+		public final int[] vertices;
+		public final int[] colors;
+	}
+
+	/**
 	 * Whether a static recreated object's light should stay
 	 */
 	public static boolean updateLight(Light light, StaticObject object) {

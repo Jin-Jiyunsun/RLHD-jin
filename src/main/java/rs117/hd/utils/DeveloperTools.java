@@ -229,6 +229,7 @@ public class DeveloperTools implements KeyListener {
 	// uploaded like static scenery, while animated ones need RuneLiteObjects.
 	private final List<RuneLiteObject> recreatedSceneObjects = new ArrayList<>();
 	private final List<TestObjectRendering.StaticObject> recreatedStaticObjects = new ArrayList<>();
+	private int recreatedFloorTiles;
 	@Nullable
 	private SceneRecreation sceneRecreation;
 	private boolean onlyDrawingTestObjects;
@@ -454,7 +455,7 @@ public class DeveloperTools implements KeyListener {
 			return;
 		stopTestProjectile();
 		sceneRecreation = null;
-		if (!modelOverrideManager.testObjects.isEmpty() || !recreatedStaticObjects.isEmpty()) {
+		if (!modelOverrideManager.testObjects.isEmpty() || !recreatedStaticObjects.isEmpty() || recreatedFloorTiles > 0) {
 			clearTestObjects();
 			postMessage("Removed test objects due to scene load");
 		}
@@ -1272,6 +1273,9 @@ public class DeveloperTools implements KeyListener {
 				recreation.pending.add(new PendingScenePart(object, part, location, originPlane, orientation, groundHeight + object.height));
 			}
 		}
+		if (capture.regionAligned)
+			recreateFloor(capture, baseX, baseY, originPlane, groundHeight, recreation);
+
 		// Big captures take a while, so start with what's around the player rather than the scene's edge
 		recreation.pending.sort(Comparator.comparingLong(pending -> {
 			long dx = pending.location.getX() - origin.getX();
@@ -1383,14 +1387,16 @@ public class DeveloperTools implements KeyListener {
 			// Static objects only show once their zones are uploaded again, which 117 HD can do without a game reload
 			if (recreation.addedStaticObjects)
 				plugin.renderer.reloadScene();
-			String message = "Recreated " + (recreatedSceneObjects.size() + recreatedStaticObjects.size()) + " objects from " +
-							 recreation.name;
+			String message = "Recreated " + (recreatedSceneObjects.size() + recreatedStaticObjects.size()) + " objects" +
+							 (recreatedFloorTiles == 0 ? "" : " and " + recreatedFloorTiles + " floor tiles") + " from " + recreation.name;
 			if (recreation.skippedOutsideScene > 0)
 				message += ". Skipped " + recreation.skippedOutsideScene + " outside the loaded scene";
 			if (recreation.skippedUnreadable > 0)
 				message += ". Skipped " + recreation.skippedUnreadable + " whose definition couldn't be read";
 			if (recreation.skippedNoModel > 0)
 				message += ". Skipped " + recreation.skippedNoModel + " without a model for their shape";
+			if (recreation.skippedFloorTiles > 0)
+				message += ". Skipped " + recreation.skippedFloorTiles + " floor tiles where there's no tile to replace";
 			postMessage(message);
 		}
 	}
@@ -1427,13 +1433,79 @@ public class DeveloperTools implements KeyListener {
 		recreatedStaticObjects.add(object);
 	}
 
+	/**
+	 * Lay a capture's tiles out as a plain floor in the player's region, shaped by the captured ground, to be drawn in
+	 * place of the real tiles once the scene is uploaded again. Like objects, every plane goes on the player's.
+	 */
+	private void recreateFloor(SceneCapture.Capture capture, int baseX, int baseY, int originPlane, int groundHeight, SceneRecreation recreation) {
+		var tiles = client.getTopLevelWorldView().getScene().getExtendedTiles();
+		for (var captured : capture.tiles) {
+			int tileExX = (baseX >> Perspective.LOCAL_COORD_BITS) + captured.x + HDUtils.EXTENDED_SCENE_OFFSET;
+			int tileExY = (baseY >> Perspective.LOCAL_COORD_BITS) + captured.y + HDUtils.EXTENDED_SCENE_OFFSET;
+			Tile tile = tileExX < 0 || tileExY < 0 || tileExX >= tiles[originPlane].length || tileExY >= tiles[originPlane][tileExX].length ?
+				null : tiles[originPlane][tileExX][tileExY];
+			var floorTile = tile == null ? null : createFloorTile(capture, captured, groundHeight, recreation.capturedPlane);
+			if (floorTile == null) {
+				recreation.skippedFloorTiles++;
+				continue;
+			}
+			int key = ModelOverrideManager.packStaticTestObjectTile(tile.getRenderLevel(), tileExX, tileExY);
+			modelOverrideManager.staticTestFloor.compute(key, (k, floor) -> {
+				var copy = floor == null ? new ArrayList<TestObjectRendering.FloorTile>() : new ArrayList<>(floor);
+				copy.add(floorTile);
+				return copy;
+			});
+			recreatedFloorTiles++;
+			recreation.addedStaticObjects = true;
+		}
+	}
+
+	/**
+	 * A captured tile's triangles at the player's ground height, or for older captures, a square shaped by the captured
+	 * terrain in the tile's one colour. Null if an older capture's terrain doesn't cover the tile.
+	 */
+	@Nullable
+	private static TestObjectRendering.FloorTile createFloorTile(
+		SceneCapture.Capture capture,
+		SceneCapture.CapturedTile captured,
+		int groundHeight,
+		int capturedPlane
+	) {
+		if (captured.vertices != null && captured.colors != null) {
+			int[] vertices = captured.vertices.clone();
+			for (int i = 1; i < vertices.length; i += 3)
+				vertices[i] += groundHeight;
+			return new TestObjectRendering.FloorTile(vertices, captured.colors);
+		}
+
+		var terrain = capture.terrain;
+		int plane = capturedPlane + captured.plane;
+		Integer sw = terrain == null ? null : terrain.getCornerHeight(plane, captured.x, captured.y);
+		Integer se = terrain == null ? null : terrain.getCornerHeight(plane, captured.x + 1, captured.y);
+		Integer ne = terrain == null ? null : terrain.getCornerHeight(plane, captured.x + 1, captured.y + 1);
+		Integer nw = terrain == null ? null : terrain.getCornerHeight(plane, captured.x, captured.y + 1);
+		if (sw == null || se == null || ne == null || nw == null)
+			return null;
+		int size = Perspective.LOCAL_TILE_SIZE;
+		int c = captured.color;
+		return new TestObjectRendering.FloorTile(
+			new int[] {
+				size, groundHeight + ne, size, 0, groundHeight + nw, size, size, groundHeight + se, 0,
+				0, groundHeight + sw, 0, size, groundHeight + se, 0, 0, groundHeight + nw, size
+			},
+			new int[] { c, c, c, c, c, c }
+		);
+	}
+
 	private void removeStaticSceneObjects() {
-		if (recreatedStaticObjects.isEmpty())
+		if (recreatedStaticObjects.isEmpty() && recreatedFloorTiles == 0)
 			return;
 		for (var object : recreatedStaticObjects)
 			object.removed = true;
 		recreatedStaticObjects.clear();
+		recreatedFloorTiles = 0;
 		modelOverrideManager.staticTestObjects.clear();
+		modelOverrideManager.staticTestFloor.clear();
 		plugin.renderer.reloadScene();
 	}
 
@@ -1461,7 +1533,7 @@ public class DeveloperTools implements KeyListener {
 		clientThread.invoke(() -> {
 			int count = recreatedSceneObjects.size() + recreatedStaticObjects.size();
 			removeRecreatedScene();
-			postMessage("Removed " + count + " recreated object" + (count == 1 ? "" : "s"));
+			postMessage("Removed the recreated scene's " + count + " object" + (count == 1 ? "" : "s") + " and floor");
 		});
 	}
 
@@ -1485,6 +1557,7 @@ public class DeveloperTools implements KeyListener {
 		int skippedOutsideScene;
 		int skippedUnreadable;
 		int skippedNoModel;
+		int skippedFloorTiles;
 		@Nullable
 		SceneCapture.Terrain terrain;
 		int capturedPlane;

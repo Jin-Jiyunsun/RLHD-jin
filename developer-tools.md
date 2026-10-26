@@ -53,7 +53,7 @@ logged in.
 - Only what's being drawn is captured: the extended scene and the ground under bridges are included, while hidden planes
   (which instances often fill with other states of the area), area hiding and hidden model overrides are left out.
 - Captures also save the terrain, so objects that bend to the ground (like cave walls) bend the same way when recreated,
-  and the `environments.json` environment in use.
+  each tile's shape and colours for the floor, and the `environments.json` environment in use.
 
 **Recreating**
 
@@ -62,6 +62,8 @@ logged in.
 - The capture's environment is used while it's recreated. Edits to it in `environments.json` show up live.
 - Recreated objects are uploaded like real scenery, so whole scenes run at normal frame rates. They appear once the
   capture has finished spawning. Animated objects are redrawn every frame, like spawned objects.
+- The ground is recreated as a plain floor in place of the real tiles, with the tiles' shapes and corner colours, but no
+  textures, 117 HD blending or water. Tiles only get a floor where there's a real tile to replace.
 - Anything outside the loaded scene is skipped, and the chat says how many objects were skipped and why.
 - **Hide everything else** hides the ground, objects, NPCs and other players, leaving test objects and your character,
   like the Blindfold plugin. Lights of hidden objects go out too. Recreating turns it on and removing turns it off, but

@@ -508,13 +508,20 @@ public class SceneUploader implements AutoCloseable {
 			estimateRenderableSize(z, gameObject.getRenderable(), modelOverride);
 		}
 
-		// Developer tools: recreated objects uploaded like static scenery on this tile
+		// Developer tools: recreated objects uploaded like static scenery on this tile, and the recreated plain floor
 		var staticTestObjects = getStaticTestObjects(tileZ, tileExX, tileExY);
 		if (staticTestObjects != null) {
 			for (var object : staticTestObjects) {
 				ModelOverride modelOverride = modelOverrideManager.getOverride(getStaticTestObjectUuid(object), worldPos);
 				if (!modelOverride.hide)
 					estimateRenderableSize(z, object.model, modelOverride);
+			}
+		}
+		var staticTestFloor = getStaticTestFloor(tileZ, tileExX, tileExY);
+		if (staticTestFloor != null) {
+			for (var tile : staticTestFloor) {
+				z.sizeO += tile.colors.length / 3;
+				z.sizeF += tile.colors.length / 3;
 			}
 		}
 
@@ -527,6 +534,51 @@ public class SceneUploader implements AutoCloseable {
 	private List<TestObjectRendering.StaticObject> getStaticTestObjects(int level, int tileExX, int tileExY) {
 		var objects = modelOverrideManager.staticTestObjects;
 		return objects.isEmpty() ? null : objects.get(ModelOverrideManager.packStaticTestObjectTile(level, tileExX, tileExY));
+	}
+
+	@Nullable
+	private List<TestObjectRendering.FloorTile> getStaticTestFloor(int level, int tileExX, int tileExY) {
+		var floor = modelOverrideManager.staticTestFloor;
+		return floor.isEmpty() ? null : floor.get(ModelOverrideManager.packStaticTestObjectTile(level, tileExX, tileExY));
+	}
+
+	/**
+	 * Developer tools: draw a recreated scene capture's plain floor tiles from their triangles, like {@link #uploadCustomTilePaint}
+	 */
+	private void uploadStaticTestFloor(
+		ZoneSceneContext ctx,
+		List<TestObjectRendering.FloorTile> floor,
+		int tileExX,
+		int tileExY,
+		int tileZ,
+		GpuIntBuffer vertexBuffer,
+		GpuIntBuffer textureBuffer
+	) {
+		if (writeCache == null)
+			writeCache = new VertexWriteCache.Collection();
+		writeCache.setOutputBuffers(vertexBuffer, vertexBuffer, textureBuffer);
+
+		// Stop gap filling from covering it up
+		ctx.filledTiles[tileExX][tileExY] |= (byte) (1 << tileZ);
+		int terrainData = HDUtils.packTerrainData(true, 0, WaterType.NONE, tileZ);
+		int packedMaterial = Material.NONE.packMaterialData(ModelOverride.NONE, UvType.GEOMETRY, false);
+		int x = (tileExX - ctx.sceneOffset) * LOCAL_TILE_SIZE - basex;
+		int z = (tileExY - ctx.sceneOffset) * LOCAL_TILE_SIZE - basez;
+		for (var tile : floor) {
+			int[] v = tile.vertices;
+			int[] c = tile.colors;
+			for (int i = 0; i < c.length; i += 3) {
+				int a = i * 3;
+				putTerrainTriangle(
+					c[i], c[i + 1], c[i + 2],
+					packedMaterial, terrainData,
+					x + v[a], v[a + 1], z + v[a + 2], 0, 0,
+					x + v[a + 3], v[a + 4], z + v[a + 5], 0, 0,
+					x + v[a + 6], v[a + 7], z + v[a + 8], 0, 0
+				);
+			}
+		}
+		writeCache.release();
 	}
 
 	private static int getStaticTestObjectUuid(TestObjectRendering.StaticObject object) {
@@ -555,6 +607,14 @@ public class SceneUploader implements AutoCloseable {
 			return;
 
 		boolean drawTile = renderCallbackManager.drawTile(ctx.scene, t);
+
+		// Developer tools: a recreated scene capture's plain floor replaces the real tile, even while it's hidden
+		var staticTestFloor = getStaticTestFloor(tileZ, tileExX, tileExY);
+		if (staticTestFloor != null) {
+			drawTile = false;
+			if (!onlyRenderables && !onlyWaterSurface)
+				uploadStaticTestFloor(ctx, staticTestFloor, tileExX, tileExY, tileZ, vertexBuffer, textureBuffer);
+		}
 
 		SceneTilePaint paint = t.getSceneTilePaint();
 		if (paint != null && drawTile && !onlyRenderables) {
