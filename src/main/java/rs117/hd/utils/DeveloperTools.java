@@ -185,7 +185,6 @@ public class DeveloperTools implements KeyListener {
 	private RuneliteColorPicker colorPicker;
 
 	private int testSpotanimId = -1;
-	private int testSpotanimHeight;
 	private boolean testSpotanimLoop;
 	private int testSpotanimRestartCycle = -1;
 	private List<int[]> testSpotanimFrameTimes;
@@ -193,9 +192,9 @@ public class DeveloperTools implements KeyListener {
 	// Frame start times recorded during the first play, used to map playback time to frames while controlling playback
 	private List<int[]> testSpotanimTimeline;
 	private boolean testSpotanimPaused;
-	private float testSpotanimSpeed = 1;
 	private float testSpotanimTimeMs;
 	private boolean testSpotanimIsPreview;
+	private volatile boolean postSpotanimFrameTimings;
 	private final AtomicInteger testSpotanimPreviewRequest = new AtomicInteger();
 
 	private NavigationButton objectSpawnerButton;
@@ -232,8 +231,6 @@ public class DeveloperTools implements KeyListener {
 	private final List<TestObjectRendering.StaticObject> recreatedStaticObjects = new ArrayList<>();
 	@Nullable
 	private SceneRecreation sceneRecreation;
-	// How far recreated objects are raised above their captured height, set from the sidebar
-	private int sceneHeightOffset;
 	private boolean onlyDrawingTestObjects;
 	// Stop drawing everything but test objects, the same way the Blindfold plugin hides things. It only affects drawing,
 	// leaving clickboxes, menus and everything else alone.
@@ -439,7 +436,6 @@ public class DeveloperTools implements KeyListener {
 		}
 
 		// Other commands are gated behind RuneLite's --developer-mode
-		// They must stay developer-mode only, since RuneLite's plugin rules reject user-entered IDs and spawned content for normal users
 		if (!developerMode)
 			return;
 
@@ -447,12 +443,6 @@ public class DeveloperTools implements KeyListener {
 			case "varbit":
 			case "varp":
 				handleVarCommand(action, args);
-				break;
-			case "spotanim":
-				handleSpotanimCommand(args);
-				break;
-			case "object":
-				handleObjectCommand(args);
 				break;
 		}
 	}
@@ -488,7 +478,8 @@ public class DeveloperTools implements KeyListener {
 
 		ActorSpotAnim spotanim = findTestSpotanim(player);
 
-		if (isTestSpotanimControlled()) {
+		// The client plays the spotanim, except while it's paused
+		if (testSpotanimPaused) {
 			updateControlledSpotanim(player, spotanim);
 			return;
 		}
@@ -505,7 +496,8 @@ public class DeveloperTools implements KeyListener {
 		}
 
 		if (testSpotanimFrameTimes != null) {
-			postSpotanimTimeline(testSpotanimFrameTimes);
+			if (postSpotanimFrameTimings)
+				postSpotanimTimeline(testSpotanimFrameTimes);
 			testSpotanimTimeline = testSpotanimFrameTimes;
 			testSpotanimFrameTimes = null;
 		}
@@ -532,10 +524,6 @@ public class DeveloperTools implements KeyListener {
 		return null;
 	}
 
-	private boolean isTestSpotanimControlled() {
-		return testSpotanimPaused || testSpotanimSpeed != 1;
-	}
-
 	private int getTestSpotanimEndMs() {
 		if (testSpotanimTimeline == null || testSpotanimTimeline.isEmpty())
 			return Integer.MAX_VALUE;
@@ -559,7 +547,7 @@ public class DeveloperTools implements KeyListener {
 	 * Take over playback of the test spotanim from the client, starting from wherever it currently is.
 	 */
 	private void beginControllingTestSpotanim() {
-		if (isTestSpotanimControlled())
+		if (testSpotanimPaused)
 			return;
 
 		Player player = client.getLocalPlayer();
@@ -573,7 +561,7 @@ public class DeveloperTools implements KeyListener {
 	private void updateControlledSpotanim(Player player, @Nullable ActorSpotAnim spotanim) {
 		int endMs = getTestSpotanimEndMs();
 		if (!testSpotanimPaused) {
-			testSpotanimTimeMs += testSpotanimSpeed * Constants.CLIENT_TICK_LENGTH;
+			testSpotanimTimeMs += Constants.CLIENT_TICK_LENGTH;
 			if (testSpotanimTimeMs >= endMs) {
 				if (testSpotanimLoop) {
 					testSpotanimTimeMs = 0;
@@ -607,11 +595,10 @@ public class DeveloperTools implements KeyListener {
 
 	private void postTestSpotanimPosition() {
 		postMessage(String.format(
-			"Spotanim %s at frame %d, %d ms (speed %sx)",
+			"Spotanim %s at frame %d, %d ms",
 			testSpotanimPaused ? "paused" : "playing",
 			getTestSpotanimFrameAt(testSpotanimTimeMs),
-			Math.round(testSpotanimTimeMs),
-			testSpotanimSpeed
+			Math.round(testSpotanimTimeMs)
 		));
 	}
 
@@ -620,7 +607,7 @@ public class DeveloperTools implements KeyListener {
 			return;
 		beginControllingTestSpotanim();
 		testSpotanimPaused = !testSpotanimPaused;
-		if (!isTestSpotanimControlled())
+		if (!testSpotanimPaused)
 			releaseTestSpotanimControl();
 		postTestSpotanimPosition();
 	}
@@ -634,96 +621,7 @@ public class DeveloperTools implements KeyListener {
 		postTestSpotanimPosition();
 	}
 
-	private void handleSpotanimCommand(String[] args) {
-		assert client.isClientThread();
-		String usage = "Usage: ::117hd spotanim <name|id> [height] [loop] / pause / speed <multiplier> / time <ms> / stop";
-		if (args.length < 2 || args.length > 4) {
-			postMessage(usage);
-			return;
-		}
-
-		switch (args[1].toLowerCase()) {
-			case "stop":
-			case "clear":
-				stopTestSpotanim();
-				postMessage("Stopped test spotanim");
-				return;
-			case "pause":
-			case "resume":
-				if (testSpotanimId == -1) {
-					postMessage("No test spotanim is playing");
-				} else {
-					toggleTestSpotanimPause();
-				}
-				return;
-			case "speed":
-			case "time":
-				if (testSpotanimId == -1) {
-					postMessage("No test spotanim is playing");
-					return;
-				}
-				float value;
-				try {
-					value = args.length == 3 ? Float.parseFloat(args[2]) : -1;
-				} catch (NumberFormatException e) {
-					value = -1;
-				}
-				if (value < 0 || args[1].equalsIgnoreCase("speed") && value == 0) {
-					postMessage(usage);
-					return;
-				}
-				beginControllingTestSpotanim();
-				if (args[1].equalsIgnoreCase("speed")) {
-					testSpotanimSpeed = value;
-				} else {
-					testSpotanimTimeMs = min(value, getTestSpotanimEndMs());
-					testSpotanimPaused = true;
-				}
-				if (!isTestSpotanimControlled())
-					releaseTestSpotanimControl();
-				postTestSpotanimPosition();
-				return;
-		}
-
-		String nameOrId = args[1].toUpperCase();
-		Integer id;
-		try {
-			id = Integer.parseInt(nameOrId);
-		} catch (NumberFormatException ignored) {
-			try (var gamevals = gamevalManager.obtainHandle()) {
-				id = gamevals.getSpotanims().get(nameOrId);
-			}
-		}
-		if (id == null) {
-			postMessage("Unknown spotanim: " + nameOrId);
-			return;
-		}
-
-		int height = 0;
-		boolean loop = false;
-		for (int i = 2; i < args.length; i++) {
-			if (args[i].equalsIgnoreCase("loop")) {
-				loop = true;
-				continue;
-			}
-			try {
-				height = Integer.parseInt(args[i]);
-			} catch (NumberFormatException e) {
-				postMessage(usage);
-				return;
-			}
-		}
-
-		if (client.getLocalPlayer() == null) {
-			postMessage("No local player to play the spotanim on");
-			return;
-		}
-
-		startTestSpotanim(id, height, loop, true);
-		postPlayingSpotanim(id, height, loop);
-	}
-
-	private void startTestSpotanim(int id, int height, boolean loop, boolean recordTimeline) {
+	private void startTestSpotanim(int id, boolean loop, boolean recordTimeline) {
 		if (!developerMode)
 			return;
 		// Start from the beginning, including the lights, even when replacing the same spotanim or its preview
@@ -734,7 +632,6 @@ public class DeveloperTools implements KeyListener {
 			lightManager.removeSpotanimLightsImmediately(player, previousId);
 
 		testSpotanimId = id;
-		testSpotanimHeight = height;
 		testSpotanimLoop = loop;
 		// Previews skip recording, so hovering doesn't post a timeline to the chat
 		testSpotanimFrameTimes = recordTimeline ? new ArrayList<>() : null;
@@ -742,16 +639,16 @@ public class DeveloperTools implements KeyListener {
 		playTestSpotanim();
 	}
 
-	private void postPlayingSpotanim(int id, int height, boolean loop) {
+	private void postPlayingSpotanim(int id, boolean loop) {
 		String name;
 		try (var gamevals = gamevalManager.obtainHandle()) {
 			name = gamevals.getSpotanimName(id);
 		}
-		postMessage("Playing spotanim " + (name == null ? id : name + " (" + id + ")") + " at height " + height + (loop ? ", looping" : ""));
+		postMessage("Playing spotanim " + (name == null ? id : name + " (" + id + ")") + (loop ? ", looping" : ""));
 	}
 
 	/**
-	 * Play a spotanim on the local player, as if using the spotanim command. Can be called from any thread.
+	 * Play a spotanim on the local player. Can be called from any thread.
 	 */
 	public void playSpotanim(int id, boolean loop) {
 		clientThread.invoke(() -> {
@@ -759,9 +656,14 @@ public class DeveloperTools implements KeyListener {
 				postMessage("No local player to play the spotanim on");
 				return;
 			}
-			startTestSpotanim(id, 0, loop, true);
-			postPlayingSpotanim(id, 0, loop);
+			startTestSpotanim(id, loop, true);
+			postPlayingSpotanim(id, loop);
 		});
+	}
+
+	// The frame timings are always recorded for pausing & stepping, but only posted to the chat when turned on
+	public void setPostSpotanimFrameTimings(boolean post) {
+		postSpotanimFrameTimings = post;
 	}
 
 	/**
@@ -783,7 +685,7 @@ public class DeveloperTools implements KeyListener {
 		clientThread.invoke(() -> {
 			if (request != testSpotanimPreviewRequest.get() || client.getLocalPlayer() == null)
 				return;
-			startTestSpotanim(id, 0, true, false);
+			startTestSpotanim(id, true, false);
 			testSpotanimIsPreview = true;
 		});
 	}
@@ -828,7 +730,7 @@ public class DeveloperTools implements KeyListener {
 
 		// Replays, such as loops, need fresh lights rather than the previous play's, which may still be fading out
 		lightManager.removeSpotanimLightsImmediately(player, testSpotanimId);
-		player.createSpotAnim(TEST_SPOTANIM_SLOT, testSpotanimId, testSpotanimHeight, 0);
+		player.createSpotAnim(TEST_SPOTANIM_SLOT, testSpotanimId, 0, 0);
 
 		// Client-side spotanims don't notify plugins, so let the LightManager know to attach lights. This goes to it
 		// directly rather than through the event bus, so other plugins never mistake the test spotanim for a real one.
@@ -852,31 +754,7 @@ public class DeveloperTools implements KeyListener {
 		testSpotanimFrameTimes = null;
 		testSpotanimTimeline = null;
 		testSpotanimPaused = false;
-		testSpotanimSpeed = 1;
 		releaseTestSpotanimControl();
-	}
-
-	private void handleObjectCommand(String[] args) {
-		assert client.isClientThread();
-		if (args.length != 2) {
-			postMessage("Usage: ::117hd object <name|id> / clear");
-			return;
-		}
-		if (args[1].equalsIgnoreCase("clear") || args[1].equalsIgnoreCase("stop")) {
-			clearTestObjectsAndNotify();
-			return;
-		}
-
-		Integer objectId;
-		try (var gamevals = gamevalManager.obtainHandle()) {
-			objectId = parseIdOrName(args[1], gamevals.getObjects());
-		}
-		if (objectId == null) {
-			postMessage("Unknown object: " + args[1]);
-			return;
-		}
-
-		spawnTestObject(objectId);
 	}
 
 	/**
@@ -904,7 +782,7 @@ public class DeveloperTools implements KeyListener {
 			WorldPoint location = player == null ? null : player.getWorldLocation();
 			int handle = nextTestObjectHandle++;
 			String label = def.name != null ? def.name : def.displayName != null ? def.displayName : "Object " + objectId;
-			spawnedTestObjects.put(handle, new SpawnedTestObject(handle, object, objectId, label, location));
+			spawnedTestObjects.put(handle, new SpawnedTestObject(handle, object, objectId, label));
 			notifySpawnedTestObjectsChanged();
 			postMessage("Spawned test object " + (name == null ? objectId : name + " (" + objectId + ")") +
 						(location == null ? "" : " at " + location));
@@ -946,7 +824,6 @@ public class DeveloperTools implements KeyListener {
 				spawned.handle,
 				spawned.objectId,
 				spawned.label,
-				spawned.location,
 				spawned.object.getOrientation() / 512 * 90
 			));
 		}
@@ -1434,8 +1311,6 @@ public class DeveloperTools implements KeyListener {
 				captured.y + (pending.part.offset ? captured.yOffset : 0),
 				captured.height
 			);
-			// Heights go up as they decrease
-			int height = pending.height - sceneHeightOffset;
 
 			// Upload objects like static scenery where possible, so they're not redrawn every frame. Animations need
 			// RuneLiteObjects though, as do objects without a tile to be uploaded with.
@@ -1462,9 +1337,9 @@ public class DeveloperTools implements KeyListener {
 					mod(1024 + pending.orientation, 2048),
 					pending.plane,
 					pending.location.getX(),
-					pending.location.getY()
+					pending.location.getY(),
+					pending.height
 				);
-				object.height = height;
 				addStaticSceneObject(tile, object);
 				recreation.addedStaticObjects = true;
 				continue;
@@ -1498,7 +1373,7 @@ public class DeveloperTools implements KeyListener {
 				recreation.skippedNoModel++;
 				continue;
 			}
-			var object = placeTestObject(captured.id, def, model, location, pending.plane, pending.orientation, height);
+			var object = placeTestObject(captured.id, def, model, location, pending.plane, pending.orientation, pending.height);
 			if (object != null)
 				recreatedSceneObjects.add(object);
 		}
@@ -1518,25 +1393,6 @@ public class DeveloperTools implements KeyListener {
 				message += ". Skipped " + recreation.skippedNoModel + " without a model for their shape";
 			postMessage(message);
 		}
-	}
-
-	/**
-	 * Raise every recreated object by the same amount, in local units where 128 is a tile's width, including those
-	 * still to be spawned. Their lights follow along.
-	 */
-	public void setSceneHeightOffset(int offset) {
-		clientThread.invoke(() -> {
-			if (!developerMode)
-				return;
-			int delta = offset - sceneHeightOffset;
-			sceneHeightOffset = offset;
-			for (var object : recreatedSceneObjects)
-				object.setZ(object.getZ() - delta);
-			for (var object : recreatedStaticObjects)
-				object.height -= delta;
-			if (!recreatedStaticObjects.isEmpty())
-				plugin.renderer.reloadScene();
-		});
 	}
 
 	/**
@@ -1772,15 +1628,6 @@ public class DeveloperTools implements KeyListener {
 		return modelOverrideManager.isTestObjectAt(location.getX(), location.getY());
 	}
 
-	@Nullable
-	private static Integer parseIdOrName(String nameOrId, Map<String, Integer> names) {
-		try {
-			return Integer.parseInt(nameOrId);
-		} catch (NumberFormatException ignored) {
-			return names.get(nameOrId.toUpperCase());
-		}
-	}
-
 	private void clearTestObjects() {
 		for (var object : modelOverrideManager.testObjects.keySet())
 			object.setActive(false);
@@ -1798,8 +1645,6 @@ public class DeveloperTools implements KeyListener {
 		final RuneLiteObject object;
 		final int objectId;
 		final String label;
-		@Nullable
-		final WorldPoint location;
 	}
 
 	/**
@@ -1810,8 +1655,6 @@ public class DeveloperTools implements KeyListener {
 		public final int handle;
 		public final int objectId;
 		public final String label;
-		@Nullable
-		public final WorldPoint location;
 		public final int rotationDegrees;
 	}
 

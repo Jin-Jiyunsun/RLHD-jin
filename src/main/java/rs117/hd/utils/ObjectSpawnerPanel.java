@@ -71,7 +71,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private static final int DEFAULT_PROJECTILE_START_HEIGHT = 150;
 	private static final int SPAWNED_ROW_HEIGHT = 32;
 	private static final int SPAWNED_VISIBLE_ROWS = 5;
-	private static final int SAVED_CAPTURES_VISIBLE_ROWS = 6;
+	private static final int SAVED_CAPTURES_VISIBLE_ROWS = 10;
 	// Room above and below the line dividing sections, the same in every tab
 	private static final int SECTION_GAP = 10;
 	private static final Color SIDEBAR_ICON_COLOR = new Color(0xDC8A00);
@@ -89,7 +89,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		OBJECTS("Objects", "spawn", "Clear spawned objects"),
 		SPOTANIMS("Spotanims", "play", "Stop spotanim"),
 		PROJECTILES("Projectiles", "fire", "Stop projectile"),
-		SCENES("Scenes", "recreate", "Remove recreated objects");
+		SCENES("Scenes", "recreate", "Remove recreated scene");
 
 		final String label;
 		final String action;
@@ -114,6 +114,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private final JToggleButton lightsFilterButton = new JToggleButton(new ImageIcon(createLightbulbIcon(FILTER_ICON_SIZE)));
 	private final JToggleButton overrideFilterButton = new JToggleButton(new ImageIcon(createCubeIcon(FILTER_ICON_SIZE, OVERRIDE_FLAG_COLOR)));
 	private final JButton loopButton = new JButton();
+	private final JButton frameTimingsButton = new JButton();
 	private final JSpinner distanceSpinner = new JSpinner(new SpinnerNumberModel(DEFAULT_PROJECTILE_DISTANCE, 1, 30, 1));
 	private final JPanel distanceRow = new JPanel(new BorderLayout(6, 0));
 	private final JSpinner startHeightSpinner = new JSpinner(new SpinnerNumberModel(DEFAULT_PROJECTILE_START_HEIGHT, 0, 2000, 10));
@@ -143,6 +144,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		}
 	};
 	private final JButton recreateButton = createButton("Recreate in my region");
+	private final JToggleButton onlyTestObjectsButton = new JToggleButton("Hide everything else");
 	private final ResultsModel results = new ResultsModel();
 	private final JList<Entry> resultList = new JList<>(results) {
 		// Always fit the sidebar's width, otherwise one long name widens every row and pushes the flags out of view
@@ -176,6 +178,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private boolean definitionsChecked;
 	private boolean spotanimsLoaded;
 	private boolean loop = true;
+	private boolean frameTimings;
 
 	public ObjectSpawnerPanel(DeveloperTools developerTools) {
 		super(false);
@@ -239,6 +242,15 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		});
 		updateLoopButton();
 
+		styleButton(frameTimingsButton);
+		frameTimingsButton.setToolTipText("Post a summary of each spotanim's frame timings in the chat after it first plays");
+		frameTimingsButton.addActionListener(e -> {
+			frameTimings = !frameTimings;
+			updateFrameTimingsButton();
+			developerTools.setPostSpotanimFrameTimings(frameTimings);
+		});
+		updateFrameTimingsButton();
+
 		JLabel distanceLabel = new JLabel("Tiles ahead");
 		distanceLabel.setFont(FontManager.getRunescapeSmallFont());
 		distanceLabel.setForeground(Color.WHITE);
@@ -274,6 +286,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 					break;
 				case SCENES:
 					developerTools.removeRecreatedSceneAndNotify();
+					// Show everything again, undoing what recreating did
+					setOnlyDrawTestObjects(false);
 					break;
 			}
 		});
@@ -455,31 +469,10 @@ public class ObjectSpawnerPanel extends PluginPanel {
 							".runelite/117hd/scene_captures.");
 
 
-		JLabel heightOffsetLabel = new JLabel("Height offset");
-		heightOffsetLabel.setFont(FontManager.getRunescapeSmallFont());
-		heightOffsetLabel.setForeground(Color.WHITE);
-		heightOffsetLabel.setToolTipText("Raise every recreated object, in 1/128ths of a tile. Negative values lower them.");
-		JSpinner heightOffsetSpinner = new JSpinner(new SpinnerNumberModel(0, -10000, 10000, 16));
-		heightOffsetSpinner.setPreferredSize(startHeightSpinner.getPreferredSize());
-		heightOffsetSpinner.addChangeListener(e -> developerTools.setSceneHeightOffset((Integer) heightOffsetSpinner.getValue()));
-		JToggleButton onlyTestObjectsButton = new JToggleButton("Hide everything else");
 		styleButton(onlyTestObjectsButton);
 		onlyTestObjectsButton.setToolTipText("Only draw spawned & recreated objects and your character, hiding the ground, objects, NPCs and other players");
-		onlyTestObjectsButton.addActionListener(e -> {
-			boolean only = onlyTestObjectsButton.isSelected();
-			onlyTestObjectsButton.setForeground(only ? ColorScheme.BRAND_ORANGE : Color.WHITE);
-			developerTools.setOnlyDrawTestObjects(only);
-		});
-
-		JPanel heightOffsetRow = new JPanel(new BorderLayout(6, 0));
-		heightOffsetRow.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		heightOffsetRow.add(heightOffsetLabel, BorderLayout.CENTER);
-		heightOffsetRow.add(heightOffsetSpinner, BorderLayout.EAST);
-		recreateButton.addActionListener(e -> {
-			String selected = sceneCaptureList.getSelectedValue();
-			if (selected != null)
-				developerTools.recreateSceneCapture(selected + ".json");
-		});
+		onlyTestObjectsButton.addActionListener(e -> setOnlyDrawTestObjects(onlyTestObjectsButton.isSelected()));
+		recreateButton.addActionListener(e -> recreateSelectedSceneCapture());
 
 		// A few rows of saved captures, scrolling once there are more, where double-clicking one recreates it
 		sceneCaptureList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -490,8 +483,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		sceneCaptureList.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e) && sceneCaptureList.getSelectedValue() != null)
-					developerTools.recreateSceneCapture(sceneCaptureList.getSelectedValue() + ".json");
+				if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e))
+					recreateSelectedSceneCapture();
 			}
 		});
 		JScrollPane sceneCaptureScroll = new JScrollPane(
@@ -516,7 +509,6 @@ public class ObjectSpawnerPanel extends PluginPanel {
 
 		recreatedSceneColumn.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		recreatedSceneColumn.add(createHeader("Recreated scene"));
-		recreatedSceneColumn.add(heightOffsetRow);
 		recreatedSceneColumn.add(onlyTestObjectsButton);
 		JTextArea recreateInfo = createWrappingText();
 		recreateInfo.setText("Recreated objects line up with your region's grid, keep their height relative to you, and stay " +
@@ -537,6 +529,23 @@ public class ObjectSpawnerPanel extends PluginPanel {
 		scenesSection.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		scenesSection.add(parts, BorderLayout.NORTH);
 		updateSceneCaptures(List.of(), null);
+	}
+
+	/**
+	 * Recreate the selected capture, hiding everything else to see it on its own, which saves a step
+	 */
+	private void recreateSelectedSceneCapture() {
+		String selected = sceneCaptureList.getSelectedValue();
+		if (selected == null)
+			return;
+		developerTools.recreateSceneCapture(selected + ".json");
+		setOnlyDrawTestObjects(true);
+	}
+
+	private void setOnlyDrawTestObjects(boolean only) {
+		onlyTestObjectsButton.setSelected(only);
+		onlyTestObjectsButton.setForeground(only ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+		developerTools.setOnlyDrawTestObjects(only);
 	}
 
 	/**
@@ -686,6 +695,8 @@ public class ObjectSpawnerPanel extends PluginPanel {
 			controls.add(filterRow);
 		if (mode == Mode.SPOTANIMS || mode == Mode.PROJECTILES)
 			controls.add(loopButton);
+		if (mode == Mode.SPOTANIMS)
+			controls.add(frameTimingsButton);
 		// Clearing objects belongs under the spawned objects or saved captures, while the other lists have no such box
 		if (mode == Mode.OBJECTS) {
 			spawnedSection.add(clearButton, BorderLayout.SOUTH);
@@ -730,6 +741,11 @@ public class ObjectSpawnerPanel extends PluginPanel {
 	private void updateLoopButton() {
 		loopButton.setText(loop ? "Looping: on" : "Looping: off");
 		loopButton.setForeground(loop ? ColorScheme.BRAND_ORANGE : Color.WHITE);
+	}
+
+	private void updateFrameTimingsButton() {
+		frameTimingsButton.setText(frameTimings ? "Frame timings: on" : "Frame timings: off");
+		frameTimingsButton.setForeground(frameTimings ? ColorScheme.BRAND_ORANGE : Color.WHITE);
 	}
 
 	private void setSpotanims(Map<String, Integer> spotanims) {

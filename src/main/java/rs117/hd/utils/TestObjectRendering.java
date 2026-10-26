@@ -35,16 +35,14 @@ public class TestObjectRendering {
 		// Local coordinates in the scene
 		public final int x;
 		public final int y;
-		// Changed by the height offset, after which the scene must be uploaded again
-		public volatile int height;
+		public final int height;
 		public volatile boolean removed;
 	}
 
 	/**
-	 * Whether a static recreated object's light should stay, keeping it at the object's current height
+	 * Whether a static recreated object's light should stay
 	 */
 	public static boolean updateLight(Light light, StaticObject object) {
-		light.origin[1] = object.height - light.def.height - 1;
 		if (object.removed) {
 			light.markedForRemoval = true;
 			return false;
@@ -57,8 +55,6 @@ public class TestObjectRendering {
 	 */
 	public static boolean updateLight(Light light, RuneLiteObject object) {
 		light.orientation = getLightOrientation(object);
-		// Follow the object up and down, such as when a recreated scene capture's height offset changes
-		light.origin[1] = object.getZ() - light.def.height - 1;
 		if (!object.isActive()) {
 			light.markedForRemoval = true;
 			return false;
