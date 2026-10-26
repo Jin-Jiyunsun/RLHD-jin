@@ -144,7 +144,7 @@ public class ObjectSpawnerPanel extends PluginPanel {
 			return true;
 		}
 	};
-	private final JButton recreateButton = createButton("Recreate in my region");
+	private final JButton recreateButton = createButton("Recreate scene");
 	private final JToggleButton onlyTestObjectsButton = new JToggleButton("Hide everything else");
 	private final ResultsModel results = new ResultsModel();
 	private final JList<Entry> resultList = new JList<>(results) {

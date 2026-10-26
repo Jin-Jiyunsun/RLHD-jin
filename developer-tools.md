@@ -58,7 +58,7 @@ logged in.
 
 **Recreating**
 
-- **Recreate in my region**, or double-clicking a capture, recreates it in your region, lined up with the region grid
+- **Recreate scene**, or double-clicking a capture, recreates it in your region, lined up with the region grid
   as it was captured, with its textures and lights. Objects keep their height relative to you.
 - The capture's environment is used while it's recreated. Edits to it in `environments.json` show up live.
 - Recreated objects are uploaded like real scenery, so whole scenes run at normal frame rates. They appear once the
