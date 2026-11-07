@@ -167,6 +167,8 @@ public class ZoneRenderer implements Renderer {
 
 	@Inject
 	public SceneShaderProgram.Discard sceneDiscardProgram;
+
+	@Inject
 	private SceneShaderProgram.Water waterProgram;
 
 	@Inject
