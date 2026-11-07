@@ -29,6 +29,7 @@ import rs117.hd.utils.collections.IntHashSet;
 import rs117.hd.utils.collections.PooledArrayType;
 
 import static net.runelite.api.Constants.*;
+import static net.runelite.api.Perspective.*;
 import static org.lwjgl.opengl.GL33C.*;
 import static rs117.hd.HdPlugin.SUPPORTS_INDIRECT_DRAW;
 import static rs117.hd.HdPlugin.SUPPORTS_MULTI_INDIRECT_DRAW;
@@ -92,10 +93,12 @@ public class Zone implements Destructible {
 	public static final int METADATA_NUM_INTS = METADATA_NUM_BYTES / Integer.BYTES;
 
 	public static int LEVEL_COUNT = MAX_Z;
+	public static final int LEVEL_TERRAIN = LEVEL_COUNT++;
 	public static final int LEVEL_WATER_SURFACE = LEVEL_COUNT++;
 	public static final int LEVEL_GAP_FILLER = LEVEL_COUNT++;
 
 	public int glVao;
+	int modelCount;
 	int bufLen;
 	int dist;
 
@@ -119,6 +122,11 @@ public class Zone implements Destructible {
 	public boolean inShadowFrustum; // whether the zone casts shadows into the visible scene
 	public boolean sceneCameraIntersects; // whether the scene camera intersects the zone with a radius of 2 tiles
 	public boolean isFirstLoadingAttempt = true;
+
+	// Zone-relative bounds
+	int minX, maxX = CHUNK_SIZE * LOCAL_TILE_SIZE;
+	int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+	int minZ, maxZ = CHUNK_SIZE * LOCAL_TILE_SIZE;
 
 	public IntHashSet animatedDynamicObjectIds = new IntHashSet();
 
@@ -222,9 +230,11 @@ public class Zone implements Destructible {
 		}
 
 		if (uploadJob != null) {
-			uploadJob.cancel();
-			DestructibleHandler.destroy(uploadJob.zoneBeingUploaded);
+			ZoneUploadJob job = uploadJob;
 			uploadJob = null;
+			job.cancel();
+			DestructibleHandler.destroy(job.zoneBeingUploaded);
+			job.release();
 		}
 
 		sortedAlphaFacesUpload.release();
@@ -466,7 +476,7 @@ public class Zone implements Destructible {
 
 		drawIdx = 0;
 
-		pushRange(this.levelOffsets[level - 1], this.levelOffsets[level]);
+		pushRange(level > 0 ? this.levelOffsets[level - 1] : 0, this.levelOffsets[level]);
 
 		if (drawIdx == 0)
 			return;
@@ -656,7 +666,8 @@ public class Zone implements Destructible {
 
 		Arrays.fill(doubleSidedBitSet, 0, bucketCapacity, 0);
 
-		final Material baseMaterial = modelOverride.baseMaterial;
+		final Material baseMaterial = modelOverride.material;
+		final ModelOverride[] faceOverrides = modelOverride.faceOverrides;
 		final Material textureMaterial = modelOverride.textureMaterial;
 
 		int radius = 0;
@@ -666,41 +677,48 @@ public class Zone implements Destructible {
 			if (color3[f] == -2)
 				continue;
 
-			// Hide fake shadows or lighting that is often baked into models by making the fake shadow transparent
-			if (plugin.configHideFakeShadows && modelOverride.hideVanillaShadows && HDUtils.isBakedGroundShading(model, f))
-				continue;
-
-			Material material = baseMaterial;
-			ModelOverride faceOverride = modelOverride;
-
 			int transparency = SceneUploader.readFaceTransparency(model.getTransparency(), transparencies, f);
 			if (transparency == 255)
 				continue;
 
+			Material material = baseMaterial;
+			ModelOverride faceOverride = modelOverride;
+			if (faceOverrides != null && f < faceOverrides.length) {
+				faceOverride = faceOverrides[f];
+				material = faceOverride.material;
+			}
 			int textureId = faceTextures != null ? faceTextures[f] : -1;
-			if (textureId != -1) {
-				if (modelOverride.textureMaterial != Material.NONE) {
-					material = textureMaterial;
-				} else {
-					material = materialManager.fromVanillaTexture(textureId);
-					if (modelOverride.materialOverrides != null) {
-						var override = modelOverride.materialOverrides.get(material);
-						if (override != null) {
-							faceOverride = override;
-							material = override.textureMaterial;
+			if (faceOverride == modelOverride) {
+				if (textureId != -1) {
+					if (modelOverride.textureMaterial != Material.NONE) {
+						material = textureMaterial;
+					} else {
+						material = materialManager.fromVanillaTexture(textureId);
+						if (modelOverride.materialOverrides != null) {
+							var override = modelOverride.materialOverrides.get(material);
+							if (override != null) {
+								faceOverride = override;
+								material = override.textureMaterial;
+							}
 						}
 					}
-				}
-			} else if (modelOverride.colorOverrides != null) {
-				final int ahsl = (0xFF - transparency) << 16 | (unlitColor != null ? unlitColor[f] & 0xFFFF : color1[f]);
-				final var override = modelOverride.testColorOverrides(ahsl);
-				if (override != null) {
-					faceOverride = override;
-					material = override.baseMaterial;
+				} else if (modelOverride.colorOverrides != null) {
+					final int ahsl = (0xFF - transparency) << 16 | (unlitColor != null ? unlitColor[f] & 0xFFFF : color1[f]);
+					final var override = modelOverride.testColorOverrides(ahsl);
+					if (override != null) {
+						faceOverride = override;
+						material = override.material;
+					}
 				}
 			}
 
 			if (faceOverride.hide)
+				continue;
+
+			if (textureId == -1 &&
+				plugin.configHideFakeShadows &&
+				faceOverride.hideVanillaShadows &&
+				HDUtils.isBakedGroundShading(model, f))
 				continue;
 
 			if (faceOverride.modifiesAlpha)
@@ -761,6 +779,7 @@ public class Zone implements Destructible {
 	synchronized void postAlphaPass() {
 		sortedAlphaFacesUpload.waitForCompletion();
 		alphaSortingJob.waitForCompletion();
+		alphaSortingJob.reset();
 
 		for (int i = alphaModels.size() - 1; i >= 0; --i) {
 			AlphaModel m = alphaModels.get(i);
