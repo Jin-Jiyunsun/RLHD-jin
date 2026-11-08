@@ -1,5 +1,12 @@
 [
   {
+    "name": "FIX_CASTLE_DRAKAN_WALL_ROOF_REMOVAL_TILE",
+    "area": "FIX_CASTLE_DRAKAN_WALL_ROOF_REMOVAL_TILE",
+    "groundMaterial": "TRANSPARENT",
+    "heightOffset": -99999,
+    "overlayIds": [ 37 ]
+  },
+  {
     "name": "DEFAULT_GRASS",
     "groundMaterial": "OVERWORLD_GRASS_1",
     "maxLightness": 55
