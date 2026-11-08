@@ -8006,7 +8006,7 @@
   },
   {
     "description": "Mount Karuulm - Rock - Walls",
-    "baseMaterial": "ROCK_3_SMOOTH",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
     "uvType": "BOX",
     "uvScale": 0.66,
     "objectIds": [
@@ -8032,7 +8032,7 @@
   },
   {
     "description": "Mount Karuulm - Rock - Walls",
-    "baseMaterial": "ROCK_3_SMOOTH",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
     "uvType": "BOX",
     "uvScale": 0.66,
     "depthBias": 1,
@@ -8048,7 +8048,7 @@
   },
   {
     "description": "Mount Karuulm - Rock - Walls - Sulphur",
-    "baseMaterial": "ROCK_3_SMOOTH",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
     "uvType": "BOX",
     "uvScale": 0.66,
     "depthBias": 1,
@@ -8064,7 +8064,7 @@
   },
   {
     "description": "Mount Karuulm - Rock - Building walls",
-    "baseMaterial": "ROCK_3_SMOOTH",
+    "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
     "uvType": "BOX",
     "uvOrientation": 256,
     "uvScale": 0.66,
@@ -8082,7 +8082,7 @@
       {
         "description": "Sulfur stone",
         "colors": "h == 8",
-        "baseMaterial": "ROCK_3_SMOOTH",
+        "baseMaterial": "ROCK_3_SMOOTH_LIGHT",
         "uvType": "BOX",
         "uvScale": 0.66
       }
@@ -82297,7 +82297,7 @@
       {
         "description": "Lava",
         "colors": "h >= 29",
-        "baseMaterial": "GRAY_75",
+        "baseMaterial": "GRAY_80",
         "receiveShadows": false
       },
       {
@@ -82325,7 +82325,7 @@
       {
         "description": "Lava",
         "colors": "h >= 29",
-        "baseMaterial": "GRAY_75",
+        "baseMaterial": "GRAY_80",
         "receiveShadows": false
       },
       {
@@ -82340,10 +82340,9 @@
   {
     "description": "Mount Karuulm - Rock - Lava edges",
     "baseMaterial": "ROCK_3_SEMI_SMOOTH",
+    "disableDetailCulling": true,
     "uvType": "BOX",
     "objectIds": [
-      "BRIMSTONE_LAVABUBBLES",
-      "BRIMSTONE_LAVAFIRE",
       "BRIMSTONE_FALLOFF_0",
       "BRIMSTONE_FALLOFF_1",
       "BRIMSTONE_FALLOFF_2",
@@ -82361,7 +82360,7 @@
       {
         "description": "Lava",
         "colors": "h >= 29",
-        "baseMaterial": "GRAY_75",
+        "baseMaterial": "GRAY_80",
         "receiveShadows": false
       },
       {
@@ -82370,6 +82369,42 @@
         "baseMaterial": "ROCK_6_LIGHT",
         "uvType": "BOX",
         "depthBias": 1
+      }
+    ]
+  },
+  {
+    "description": "Mount Karuulm - Rock - Lava Fire",
+    "baseMaterial": "GRAY_70",
+    "receiveShadows": false,
+    "upwardsNormals": true,
+    "disableDetailCulling": true,
+    "uvType": "BOX",
+    "objectIds": [
+      "BRIMSTONE_LAVAFIRE"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Lava",
+        "colors": "h >= 29 && a == 255",
+        "baseMaterial": "GRAY_80",
+        "receiveShadows": false,
+        "upwardsNormals": true
+      }
+    ]
+  },
+  {
+    "description": "Mount Karuulm - Rock - Lava Bubbles",
+    "disableDetailCulling": true,
+    "objectIds": [
+      "BRIMSTONE_LAVABUBBLES"
+    ],
+    "colorOverrides": [
+      {
+        "description": "Lava",
+        "colors": "h >= 29",
+        "baseMaterial": "GRAY_80",
+        "receiveShadows": false,
+        "upwardsNormals": true
       }
     ]
   },
@@ -97955,6 +97990,7 @@
     ],
     "colorOverrides": [
       {
+        "baseMaterial": "NONE",
         "description": "Baked in Shadow - Hide",
         "colors": [ "s == 0 && a < 255" ],
         "hide": true
