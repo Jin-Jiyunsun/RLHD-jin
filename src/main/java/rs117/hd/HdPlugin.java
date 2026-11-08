@@ -80,6 +80,7 @@ import rs117.hd.config.DefaultBoolean;
 import rs117.hd.config.DefaultSkyColor;
 import rs117.hd.config.DynamicLights;
 import rs117.hd.config.GroundBlending;
+import rs117.hd.config.PlayerDepthPrepass;
 import rs117.hd.config.SeasonalHemisphere;
 import rs117.hd.config.SeasonalTheme;
 import rs117.hd.config.ShadingMode;
@@ -455,6 +456,7 @@ public class HdPlugin extends Plugin {
 	public boolean configConservativeShadowCulling;
 	public boolean configZoneStreaming;
 	public boolean configSimpleBoatSilhouettes;
+	public PlayerDepthPrepass configPlayerDepthPrepass;
 	public boolean configPowerSaving;
 	public boolean configUnlitFaceColors;
 	public boolean configUndoVanillaShading;
@@ -1895,6 +1897,7 @@ public class HdPlugin extends Plugin {
 		configConservativeShadowCulling = config.conservativeShadowCulling();
 		configZoneStreaming = config.zoneStreaming();
 		configSimpleBoatSilhouettes = config.simpleBoatSilhouettes();
+		configPlayerDepthPrepass = config.playerDepthPrepass();
 		configPowerSaving = config.powerSaving();
 		configShadingMode = config.shadingMode();
 		configUnlitFaceColors = configShadingMode.unlitFaceColors;

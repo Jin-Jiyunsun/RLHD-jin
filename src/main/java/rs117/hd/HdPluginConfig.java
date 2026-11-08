@@ -45,6 +45,7 @@ import rs117.hd.config.GroundBlending;
 import rs117.hd.config.InfernalCape;
 import rs117.hd.config.MoonBehavior;
 import rs117.hd.config.MoonPhase;
+import rs117.hd.config.PlayerDepthPrepass;
 import rs117.hd.config.Saturation;
 import rs117.hd.config.SceneScalingMode;
 import rs117.hd.config.SeasonalHemisphere;
@@ -1448,6 +1449,18 @@ public interface HdPluginConfig extends Config
 	)
 	default boolean simpleBoatSilhouettes() {
 		return true;
+	}
+
+	@ConfigItem(
+		keyName = "experimentalPlayerDepthPrepass",
+		name = "Player depth pre-pass",
+		description =
+			"Order player capes, heads, arms, shields & weapons per-pixel, instead of only by vanilla's priorities.<br>" +
+			"Fixes capes being drawn over shields at certain angles.",
+		section = experimentalSettings
+	)
+	default PlayerDepthPrepass playerDepthPrepass() {
+		return PlayerDepthPrepass.OFF;
 	}
 
 	@ConfigItem(

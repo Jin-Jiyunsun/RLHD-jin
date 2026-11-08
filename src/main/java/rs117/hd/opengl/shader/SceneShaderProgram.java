@@ -35,7 +35,7 @@ public class SceneShaderProgram extends ShaderProgram {
 	public void compile(ShaderIncludes includes) throws ShaderException, IOException {
 		super.compile(includes.copy()
 			.define("ALLOW_DISCARD", this instanceof Discard || this instanceof Dynamic)
-				.define("DYNAMIC_MODEL", this instanceof Dynamic)
+				.define("DYNAMIC_MODEL", this instanceof Dynamic || this instanceof DepthOnly)
 			.define("WATER_PASS", this instanceof Water));
 	}
 
@@ -55,6 +55,14 @@ public class SceneShaderProgram extends ShaderProgram {
 	public static class Discard extends SceneShaderProgram {}
 
 	public static class Water extends SceneShaderProgram {}
+
+	public static class DepthOnly extends SceneShaderProgram {
+		DepthOnly() {
+			shaderTemplate.add(GL_FRAGMENT_SHADER, "stub_frag.glsl");
+			uniTextureArray.ignoreMissing = true;
+			uniShadowMap.ignoreMissing = true;
+		}
+	}
 
 	public static class Legacy extends SceneShaderProgram {
 		Legacy() {

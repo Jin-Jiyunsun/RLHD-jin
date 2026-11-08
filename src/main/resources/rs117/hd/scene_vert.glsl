@@ -62,6 +62,9 @@ layout (location = 0) in vec3 vPosition;
     #if DITHER_FADE
         layout (location = 8) in float vFade;
     #endif
+
+    // Depth-only player passes use a separate program, which must produce identical depths
+    invariant gl_Position;
 #else
     layout (location = 1) in vec3 vUv;
     layout (location = 2) in vec3 vNormal;

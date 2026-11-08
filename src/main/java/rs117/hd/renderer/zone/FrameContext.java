@@ -37,7 +37,8 @@ public class FrameContext {
 	public static final int VAO_PLAYER = 2;
 	public static final int VAO_SHADOW = 3;
 	public static final int VAO_PRESCENE = 4;
-	public static final int VAO_COUNT = 5;
+	public static final int VAO_PLAYER_DEPTH = 5;
+	public static final int VAO_COUNT = 6;
 
 	@Inject
 	private HdPlugin plugin;
@@ -51,7 +52,7 @@ public class FrameContext {
 
 	void initBuffers() {
 		for (int i = 0; i < VAO_COUNT; i++) {
-			dynamicModelVaos[i] = new DynamicModelVAO("DynamicModelVAO_" + i, i == VAO_OPAQUE || i == VAO_PLAYER || i == VAO_SHADOW);
+			dynamicModelVaos[i] = new DynamicModelVAO("DynamicModelVAO_" + i, i == VAO_OPAQUE || i == VAO_PLAYER || i == VAO_PLAYER_DEPTH || i == VAO_SHADOW);
 			if (dynamicModelVaos[i].getVao() == 0)
 				dynamicModelVaos[i].initialize();
 		}

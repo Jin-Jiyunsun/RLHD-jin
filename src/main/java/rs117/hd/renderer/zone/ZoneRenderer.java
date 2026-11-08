@@ -89,6 +89,7 @@ import static rs117.hd.HdPlugin.checkGLErrors;
 import static rs117.hd.HdPluginConfig.*;
 import static rs117.hd.renderer.zone.FrameContext.VAO_OPAQUE;
 import static rs117.hd.renderer.zone.FrameContext.VAO_PLAYER;
+import static rs117.hd.renderer.zone.FrameContext.VAO_PLAYER_DEPTH;
 import static rs117.hd.renderer.zone.FrameContext.VAO_PRESCENE;
 import static rs117.hd.renderer.zone.FrameContext.VAO_SHADOW;
 import static rs117.hd.utils.MathUtils.*;
@@ -170,6 +171,9 @@ public class ZoneRenderer implements Renderer {
 
 	@Inject
 	private SceneShaderProgram.Water waterProgram;
+
+	@Inject
+	private SceneShaderProgram.DepthOnly depthOnlyProgram;
 
 	@Inject
 	private ShadowShaderProgram.Fast fastShadowProgram;
@@ -309,6 +313,7 @@ public class ZoneRenderer implements Renderer {
 		sceneDiscardProgram.compile(includes);
 		sceneDynamicProgram.compile(includes);
 		waterProgram.compile(includes);
+		depthOnlyProgram.compile(includes);
 		fastShadowProgram.compile(includes);
 		detailedShadowProgram.compile(includes);
 		terrainShadowProgram.compile(includes);
@@ -321,6 +326,7 @@ public class ZoneRenderer implements Renderer {
 		sceneDiscardProgram.destroy();
 		sceneDynamicProgram.destroy();
 		waterProgram.destroy();
+		depthOnlyProgram.destroy();
 		fastShadowProgram.destroy();
 		detailedShadowProgram.destroy();
 		terrainShadowProgram.destroy();
@@ -1313,15 +1319,28 @@ public class ZoneRenderer implements Renderer {
 					// Draw opaque
 					ctx.drawAll(VAO_OPAQUE, ctx.vaoSceneCmd);
 
+					// Depth-only player passes use a stub fragment shader. This relies on gl_Position being invariant,
+					// so depths match the colour pass exactly
+
+					// Write depth for player capes, heads, arms, shields & weapons first, so the colour pass orders them
+					// per-pixel against each other, instead of by vanilla's priority approximation
+					ctx.vaoSceneCmd.SetShader(depthOnlyProgram);
+					ctx.vaoSceneCmd.ColorMask(false, false, false, false);
+					ctx.drawAll(VAO_PLAYER_DEPTH, ctx.vaoSceneCmd);
+					ctx.vaoSceneCmd.ColorMask(true, true, true, true);
+
 					// Draw players with sorted alpha, without writing depth
+					ctx.vaoSceneCmd.SetShader(sceneDynamicProgram);
 					ctx.vaoSceneCmd.DepthMask(false);
 					ctx.drawAll(VAO_PLAYER, ctx.vaoSceneCmd);
 					ctx.vaoSceneCmd.DepthMask(true);
 
 					// Redraw players, this time only writing depth, for correct ordering with the background
+					ctx.vaoSceneCmd.SetShader(depthOnlyProgram);
 					ctx.vaoSceneCmd.ColorMask(false, false, false, false);
 					ctx.drawAll(VAO_PLAYER, ctx.vaoSceneCmd);
 					ctx.vaoSceneCmd.ColorMask(true, true, true, true);
+					ctx.vaoSceneCmd.SetShader(sceneDynamicProgram);
 
 					if (sceneManager.isRoot(ctx)) {
 						frameTimer.begin(Timer.FRAME_CONTEXT_UNMAP);
