@@ -3582,22 +3582,6 @@
     ]
   },
   {
-    "description": "Sailing - Kelp and Seaweed - Displacement",
-    "baseMaterial": "PLANT_GRUNGE_1",
-    "castShadows": false,
-    "windDisplacementMode": "OBJECT",
-    "objectIds": [
-      "OCEAN_OUTCROP_SEAWEED01",
-      "OCEAN_OUTCROP_SEAWEED02",
-      "OCEAN_OUTCROP_SEAWEED03",
-      "OCEAN_PLANT_KELP01",
-      "OCEAN_PLANT_KELP02",
-      "OCEAN_PLANT_KELP03",
-      "OCEAN_PLANT_KELP04",
-      "OCEAN_PLANT_KELP05"
-    ]
-  },
-  {
     "description": "Sailing Wind Event that shouldn't cast any shadows and should have upwards normals",
     "castShadows": false,
     "upwardsNormals": true,
@@ -85834,6 +85818,9 @@
     "description": "Lower Sailing Kelp 1",
     "heightOffset": 450,
     "baseMaterial": "GRAY_45",
+    "windDisplacementMode": "OBJECT",
+    "windDisplacementModifier": 1,
+    "invertDisplacementStrength": true,
     "objectIds": [
       "OCEAN_PLANT_KELP01"
     ]
@@ -85842,6 +85829,9 @@
     "description": "Lower Sailing Kelp 2",
     "heightOffset": 450,
     "baseMaterial": "GRAY_45",
+    "windDisplacementMode": "OBJECT",
+    "windDisplacementModifier": 1,
+    "invertDisplacementStrength": true,
     "objectIds": [
       "OCEAN_PLANT_KELP02"
     ]
@@ -85850,6 +85840,9 @@
     "description": "Lower Sailing Kelp 3",
     "heightOffset": 200,
     "baseMaterial": "GRAY_45",
+    "windDisplacementMode": "OBJECT",
+    "windDisplacementModifier": 1,
+    "invertDisplacementStrength": true,
     "objectIds": [
       "OCEAN_PLANT_KELP03"
     ]
@@ -85858,6 +85851,9 @@
     "description": "Lower Sailing Kelp 4",
     "heightOffset": 300,
     "baseMaterial": "GRAY_45",
+    "windDisplacementMode": "OBJECT",
+    "windDisplacementModifier": 1,
+    "invertDisplacementStrength": true,
     "objectIds": [
       "OCEAN_PLANT_KELP04"
     ]
@@ -85866,6 +85862,9 @@
     "description": "Lower Sailing Kelp 5",
     "heightOffset": 600,
     "baseMaterial": "GRAY_45",
+    "windDisplacementMode": "OBJECT",
+    "windDisplacementModifier": 1,
+    "invertDisplacementStrength": true,
     "objectIds": [
       "OCEAN_PLANT_KELP05"
     ]
