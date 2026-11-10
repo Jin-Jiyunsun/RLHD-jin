@@ -6780,6 +6780,7 @@
   },
   {
     "description": "TZHAAR_FAIRY_RING",
+    "hdTzHaarReskin": true,
     "baseMaterial": "NONE",
     "hdTzHaarReskin": true,
     "shiftHue": 6,
