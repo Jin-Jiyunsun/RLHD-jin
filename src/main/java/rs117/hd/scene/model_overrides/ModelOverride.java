@@ -47,6 +47,7 @@ public class ModelOverride
 
 	// When, where or what the override should apply to
 	public SeasonalTheme seasonalTheme;
+	public boolean hdTzHaarReskin;
 	@JsonAdapter(AABB.ArrayAdapter.class)
 	public AABB[] areas = {};
 	@JsonAdapter(GamevalManager.NpcAdapter.class)
@@ -86,7 +87,6 @@ public class ModelOverride
 	public float terrainVertexSnapThreshold = 0.125f;
 	public float shadowOpacityThreshold = 0;
 	public boolean shadowNormalBias = false;
-	public TzHaarRecolorType tzHaarRecolorType = TzHaarRecolorType.NONE;
 	public InheritTileColorType inheritTileColorType = InheritTileColorType.NONE;
 	public WindDisplacement windDisplacementMode = WindDisplacement.DISABLED;
 	public int windDisplacementModifier = 0;
@@ -163,11 +163,6 @@ public class ModelOverride
 				throw new IllegalStateException("Invalid uvType");
 			uvType = ModelOverride.NONE.uvType;
 		}
-		if (tzHaarRecolorType == null) {
-			if (Props.DEVELOPMENT)
-				throw new IllegalStateException("Invalid tzHaarRecolorType");
-			tzHaarRecolorType = ModelOverride.NONE.tzHaarRecolorType;
-		}
 		if (inheritTileColorType == null) {
 			if (Props.DEVELOPMENT)
 				throw new IllegalStateException("Invalid inheritTileColorType");
@@ -231,8 +226,7 @@ public class ModelOverride
 		mightHaveTransparency =
 			material.hasTransparency ||
 			textureMaterial.hasTransparency ||
-			modifiesAlpha && minAlpha < 255 ||
-			tzHaarRecolorType != TzHaarRecolorType.NONE;
+			modifiesAlpha && minAlpha < 255;
 
 		mightBeDoubleSided =
 			doubleSidedFaces ||
@@ -346,6 +340,7 @@ public class ModelOverride
 		var copy = new ModelOverride(
 			description,
 			seasonalTheme,
+			hdTzHaarReskin,
 			areas,
 			npcIds,
 			objectIds,
@@ -378,7 +373,6 @@ public class ModelOverride
 			terrainVertexSnapThreshold,
 			shadowOpacityThreshold,
 			shadowNormalBias,
-			tzHaarRecolorType,
 			inheritTileColorType,
 			windDisplacementMode,
 			windDisplacementModifier,
