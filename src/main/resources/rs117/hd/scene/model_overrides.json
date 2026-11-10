@@ -6781,6 +6781,7 @@
   {
     "description": "TZHAAR_FAIRY_RING",
     "baseMaterial": "NONE",
+    "hdTzHaarReskin": true,
     "shiftHue": 6,
     "objectIds": [
       "TZHAAR_FAIRY_MUSHROOM_RING_CORNER",
