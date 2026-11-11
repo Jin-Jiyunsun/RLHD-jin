@@ -44,15 +44,6 @@ public class SceneShaderProgram extends ShaderProgram {
 
 	public static class Water extends SceneShaderProgram {}
 
-	public static class GapFiller extends SceneShaderProgram {
-		GapFiller() {
-			shaderTemplate.add(GL_FRAGMENT_SHADER, "gap_filler_frag.glsl");
-			uniTextureFaces.ignoreMissing = true;
-			uniTextureArray.ignoreMissing = true;
-			uniShadowMap.ignoreMissing = true;
-		}
-	}
-
 	public static class DepthOnly extends SceneShaderProgram {
 		DepthOnly() {
 			shaderTemplate.add(GL_FRAGMENT_SHADER, "stub_frag.glsl");

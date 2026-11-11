@@ -579,12 +579,24 @@ public interface HdPluginConfig extends Config
 		return true;
 	}
 
+	String KEY_THRALL_LIGHTS = "thrallLights";
+	@ConfigItem(
+		keyName = KEY_THRALL_LIGHTS,
+		name = "Thrall lights",
+		description = "Adds dynamic lights to thralls.",
+		position = 3,
+		section = lightingSettings
+	)
+	default boolean thrallLights() {
+		return true;
+	}
+
 	String KEY_SPOTANIM_LIGHTS = "spotanimLights";
 	@ConfigItem(
 		keyName = KEY_SPOTANIM_LIGHTS,
 		name = "Animation lights",
 		description = "Adds dynamic lights to spells and other graphical effects.",
-		position = 3,
+		position = 4,
 		section = lightingSettings
 	)
 	default boolean spotanimLights() {
@@ -596,7 +608,7 @@ public interface HdPluginConfig extends Config
 		keyName = KEY_PROJECTILE_LIGHTS,
 		name = "Projectile lights",
 		description = "Adds dynamic lights to some projectiles.",
-		position = 4,
+		position = 5,
 		section = lightingSettings
 	)
 	default boolean projectileLights() {
@@ -608,7 +620,7 @@ public interface HdPluginConfig extends Config
 		keyName = KEY_WATER_SPECULAR_REFLECTIONS,
 		name = "Water sun & moon reflections",
 		description = "Enables sun and moon highlights on water, including the fake sun when day & night is disabled.",
-		position = 5,
+		position = 6,
 		section = lightingSettings
 	)
 	default boolean waterSpecularReflections() {
@@ -619,7 +631,7 @@ public interface HdPluginConfig extends Config
 		keyName = "underwaterCaustics",
 		name = "Underwater caustics",
 		description = "Apply underwater lighting effects to imitate sunlight passing through waves on the surface.",
-		position = 6,
+		position = 7,
 		section = lightingSettings
 	)
 	default boolean underwaterCaustics() {
@@ -738,18 +750,6 @@ public interface HdPluginConfig extends Config
 		return MoonPhase.DYNAMIC;
 	}
 
-	String KEY_REPLACE_VANILLA_SKYBOXES = "replaceVanillaSkyboxes";
-	@ConfigItem(
-		keyName = KEY_REPLACE_VANILLA_SKYBOXES,
-		name = "Replace vanilla skyboxes",
-		description = "Replace the game's built-in skybox models with 117 HD's own implementation.",
-		position = 6,
-		section = daylightCycleSettings
-	)
-	default boolean replaceVanillaSkyboxes() {
-		return true;
-	}
-
 	String KEY_CUSTOM_CYCLE_DURATION = "customCycleDurationMinutes";
 	@Range(min = 1)
 	@Units(Units.MINUTES)
@@ -757,7 +757,7 @@ public interface HdPluginConfig extends Config
 		keyName = KEY_CUSTOM_CYCLE_DURATION,
 		name = "Custom cycle duration",
 		description = "Configures how long each Custom day & night cycle lasts.",
-		position = 7,
+		position = 6,
 		section = daylightCycleSettings
 	)
 	default int customCycleDurationMinutes() {
@@ -776,7 +776,7 @@ public interface HdPluginConfig extends Config
 			"For southern latitudes, use negative values. For more precise timing, you can provide<br>" +
 			"coordinates including decimals in the in-game chat with: <b>::117hd latlon &lt;latitude&gt; &lt;longitude&gt;</b><br>" +
 			"To return to using the values specified in the config panel, type: <b>::117hd latlon reset</b>",
-		position = 8,
+		position = 7,
 		section = daylightCycleSettings
 	)
 	default int latitudeDegrees() {
@@ -795,7 +795,7 @@ public interface HdPluginConfig extends Config
 			"For western longitudes, use negative values. For more precise timing, you can provide<br>" +
 			"coordinates including decimals in the in-game chat with: <b>::117hd latlon &lt;latitude&gt; &lt;longitude&gt;</b><br>" +
 			"To return to using the values specified in the config panel, type: <b>::117hd latlon reset</b>",
-		position = 9,
+		position = 8,
 		section = daylightCycleSettings
 	)
 	default int longitudeDegrees() {
@@ -1021,6 +1021,16 @@ public interface HdPluginConfig extends Config
 		section = environmentSettings
 	)
 	default boolean pohThemeEnvironments() { return true; }
+
+	String KEY_RECOLOR_GROUND_OBJECTS = "recolorGroundObjects";
+	@ConfigItem(
+		keyName = KEY_RECOLOR_GROUND_OBJECTS,
+		name = "Color-matched ground objects",
+		description = "Recolors grass and other small ground objects to match the tile's color.",
+		position = 18,
+		section = environmentSettings
+	)
+	default boolean recolorGroundObjects() { return true; }
 
 
 	/*====== Miscellaneous settings ======*/
@@ -1581,6 +1591,28 @@ public interface HdPluginConfig extends Config
 		section = technicalSettings
 	)
 	default DefaultBoolean frameSynchronization() {
+		return DefaultBoolean.DEFAULT;
+	}
+
+	String KEY_REPLACE_VANILLA_SKYBOXES = "replaceVanillaSkyboxes";
+	@ConfigItem(
+		keyName = KEY_REPLACE_VANILLA_SKYBOXES,
+		name = "Replace vanilla skyboxes",
+		description = "Replace the game's built-in skybox models with 117 HD's own implementation.",
+		section = technicalSettings
+	)
+	default boolean replaceVanillaSkyboxes() {
+		return true;
+	}
+
+	String KEY_VALIDATE_SHADERS = "validateShaders";
+	@ConfigItem(
+		keyName = KEY_VALIDATE_SHADERS,
+		name = "Validate shaders",
+		description = "Validate shaders after compilation. Useful for debugging.",
+		section = technicalSettings
+	)
+	default DefaultBoolean validateShaders() {
 		return DefaultBoolean.DEFAULT;
 	}
 

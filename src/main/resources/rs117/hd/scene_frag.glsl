@@ -91,6 +91,7 @@ vec2 worldUvs(float scale) {
 #include <utils/fog.glsl>
 #include <utils/wireframe.glsl>
 #include <utils/lights.glsl>
+#include <utils/void_shader.glsl>
 
 #if DAYLIGHT_CYCLE
     #include <utils/sky.glsl>
@@ -266,7 +267,7 @@ void main() {
         baseColor3.rgb = srgbToLinear(hslToSrgb(baseColor3.xyz));
 
         if (isSquashed)
-            baseColor1 = baseColor2 = baseColor3 = baseColor1 * .4;
+            baseColor1.rgb = baseColor2.rgb = baseColor3.rgb = baseColor1.rgb * .4;
 
         #if DISPLAY_BASE_COLOR
         if (DISPLAY_BASE_COLOR == 1) { // Redundant, used for syntax highlighting in IntelliJ
@@ -527,6 +528,14 @@ void main() {
         #endif
 
         outputColor.rgb *= mix(compositeLight, vec3(1), unlit);
+
+        if (uboGlobal.voidShader && getMaterialIsVoidShader(material1)) {
+            float density = material1.textureScale.x;
+            vec3 dPdx = dFdx(IN.position);
+            vec3 dPdy = dFdy(IN.position);
+            outputColor.rgb = sampleVoidShader(IN.position, N, viewDir, dPdx, dPdy, density);
+        }
+
         outputColor.rgb = linearToSrgb(outputColor.rgb);
 
         if (isUnderwater) {
