@@ -35,7 +35,6 @@ import static rs117.hd.HdPlugin.PROCESSOR_COUNT;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_ALPHA;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_OPAQUE;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_PLAYER;
-import static rs117.hd.renderer.zone.WorldViewContext.VAO_PLAYER_DEPTH;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_SHADOW;
 import static rs117.hd.utils.MathUtils.*;
 
@@ -46,10 +45,16 @@ public class ModelStreamingManager {
 
 	private static final ConcurrentPool<PrimitiveCharArray> FACE_INDICES = new ConcurrentPool<>(PrimitiveCharArray::new);
 
-	// Depth biases per player face render priority, pulling faces towards the camera by roughly bias / 12800 of their
-	// distance. A colour face of priority B is depth tested against the pre-pass face of priority A in front of it, with
-	// an offset of colour[B] - prepass[A]. Colour biases must be >= the pre-pass bias of the same priority, or faces
-	// would be hidden behind their own pre-pass depth.
+	// Opaque player faces of these render priorities are flagged during upload, and drawn depth-only before the player's
+	// colour pass, ordering them per-pixel against each other: feet, legs, waist & body (0 to 3), cape (5), arms, shields
+	// & weapons (10 & 11). All other faces keep their vanilla priority ordering, except where they're behind one of those
+	// faces. Vanilla only decides whether arms, shields & weapons go in front of the cape based on the head's average
+	// depth, which often draws long capes over shields that are closer to the camera.
+	private static final int PLAYER_DEPTH_PREPASS_PRIORITIES = 0b1100_0010_1111;
+
+	// Depth bias per player face render priority, pulling faces towards the camera by roughly bias / 12800 of their
+	// distance. Faces within that margin of a pre-pass face keep their vanilla order against it, while faces further
+	// apart are ordered per-pixel:
 	// - 0 to 2 (feet, legs & waist): rising in vanilla's draw order, below the body
 	// - 3 (body): above the waist
 	// - 4 (neck): above the body, so amulets lying on the chest still show, but not through the player's back
@@ -57,8 +62,7 @@ public class ModelStreamingManager {
 	// - 6 to 9 (head, helmet & helmet decals): well above the cape, including skillcape emblems which lie flat on it.
 	//   These aren't in the pre-pass, so they keep their vanilla order against each other
 	// - 10 & 11 (arms, shields & weapons): above the body, so torsos don't poke through sleeves
-	private static final int[] PLAYER_PREPASS_DEPTH_BIAS = { 0, 16, 32, 48, 0, 128, 0, 0, 0, 0, 80, 80 };
-	private static final int[] PLAYER_COLOUR_DEPTH_BIAS = { 0, 16, 32, 48, 80, 128, 176, 176, 176, 176, 80, 80 };
+	private static final int[] PLAYER_PRIORITY_DEPTH_BIAS = { 0, 16, 32, 48, 80, 128, 176, 176, 176, 176, 80, 80 };
 
 	@Inject
 	private Injector injector;
@@ -442,7 +446,8 @@ public class ModelStreamingManager {
 						prepassMode == PlayerDepthPrepass.ALL_PLAYERS ||
 						prepassMode == PlayerDepthPrepass.LOCAL_PLAYER && renderable == client.getLocalPlayer()
 					);
-				sceneUploader.playerPriorityDepthBias = depthPrepass ? PLAYER_COLOUR_DEPTH_BIAS : null;
+				sceneUploader.playerPriorityDepthBias = depthPrepass ? PLAYER_PRIORITY_DEPTH_BIAS : null;
+				sceneUploader.playerDepthPrepassPriorities = PLAYER_DEPTH_PREPASS_PRIORITIES;
 				sceneUploader.uploadTempModel(
 					visibleFaces,
 					m,
@@ -459,11 +464,6 @@ public class ModelStreamingManager {
 					alphaView.end();
 				}
 				opaqueView.end();
-
-				if (depthPrepass) {
-					sceneUploader.playerPriorityDepthBias = PLAYER_PREPASS_DEPTH_BIAS;
-					uploadPlayerDepthPrepass(ctx, sceneUploader, visibleFaces, m, modelOverride, preOrientation, orient);
-				}
 				sceneUploader.playerPriorityDepthBias = null;
 			}
 		} catch (Exception e) {
@@ -471,58 +471,6 @@ public class ModelStreamingManager {
 		} finally {
 			FACE_INDICES.recycle(visibleFaces);
 			FACE_INDICES.recycle(culledFaces);
-		}
-	}
-
-	/**
-	 * Uploads a player's opaque feet, legs, waist & body (0 to 3), cape (5), arm, shield & weapon (10 & 11) faces to a
-	 * separate VAO, which is drawn depth-only before the player's colour pass, ordering those faces per-pixel against
-	 * each other. All other faces keep their vanilla priority ordering, except where they're behind one of those faces.
-	 * <p>
-	 * Vanilla only decides whether arms, shields & weapons go in front of the cape based on the head's average depth,
-	 * which often draws long capes over shields that are closer to the camera.
-	 */
-	private void uploadPlayerDepthPrepass(
-		WorldViewContext ctx,
-		SceneUploader sceneUploader,
-		PrimitiveCharArray visibleFaces,
-		Model m,
-		ModelOverride modelOverride,
-		int preOrientation,
-		int orient
-	) {
-		final byte[] priorities = m.getFaceRenderPriorities();
-		if (priorities == null)
-			return;
-
-		final PrimitiveCharArray depthFaces = FACE_INDICES.acquire();
-		try {
-			depthFaces.reset();
-			depthFaces.ensureCapacity(visibleFaces.length);
-			for (int i = 0; i < visibleFaces.length; i++) {
-				final char face = visibleFaces.array[i];
-				final int pri = priorities[face];
-				if ((pri <= 3 || pri == 5 || pri >= 10) && !sceneUploader.isTempModelFaceAlpha(m, face))
-					depthFaces.put(face);
-			}
-
-			if (depthFaces.length == 0)
-				return;
-
-			final DynamicModelVAO.View depthView = ctx.beginDraw(VAO_PLAYER_DEPTH, depthFaces.length);
-			sceneUploader.uploadTempModel(
-				depthFaces,
-				m,
-				modelOverride,
-				preOrientation,
-				orient,
-				true,
-				depthView,
-				depthView
-			);
-			depthView.end();
-		} finally {
-			FACE_INDICES.recycle(depthFaces);
 		}
 	}
 

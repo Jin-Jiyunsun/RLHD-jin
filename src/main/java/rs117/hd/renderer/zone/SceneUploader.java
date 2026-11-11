@@ -139,6 +139,10 @@ public class SceneUploader implements AutoCloseable {
 	// Extra depth bias per face render priority in uploadTempModel, for ordering player faces per-pixel
 	@Nullable
 	public int[] playerPriorityDepthBias;
+	// Bitmask of face render priorities whose opaque faces are flagged for the player depth pre-pass
+	public int playerDepthPrepassPriorities;
+	// Marks faces drawn by the player depth pre-pass. Must match depth_prepass_frag.glsl
+	private static final int TERRAIN_FLAG_PLAYER_DEPTH_PREPASS = 1 << 30;
 
 	private final PooledObjectArray<ModelOverride> faceOverrides = new PooledObjectArray<>();
 	private final PooledObjectArray<Material> faceMaterials = new PooledObjectArray<>();
@@ -2163,17 +2167,6 @@ public class SceneUploader implements AutoCloseable {
 		return shouldSort;
 	}
 
-	/**
-	 * Whether a face will be uploaded to the alpha VAO. Only valid for faces kept by the last call to preprocessTempModel.
-	 */
-	public boolean isTempModelFaceAlpha(Model model, int face) {
-		int transparency = readFaceTransparency(model.getTransparency(), model.getFaceTransparencies(), face);
-		final ModelOverride faceOverride = faceOverrides.get(face);
-		if (faceOverride.modifiesAlpha)
-			transparency = 255 - faceOverride.modifyAlpha(255 - transparency);
-		return faceMaterials.get(face).hasTransparency || transparency != 0;
-	}
-
 	// temp draw
 	public void uploadTempModel(
 		PrimitiveCharArray faces,
@@ -2333,10 +2326,16 @@ public class SceneUploader implements AutoCloseable {
 
 			int depthBias = faceOverride.depthBias != -1 ? faceOverride.depthBias :
 				hasBias ? bias[face] & 0xFF : 0;
-			if (priorities != null)
-				depthBias = min(255, depthBias + priorityDepthBias[clamp(priorities[face], 0, priorityDepthBias.length - 1)]);
-			final int packedAlphaBiasHsl = transparency << 24 | depthBias << 16;
 			final boolean hasAlpha = material.hasTransparency || transparency != 0;
+			// Dynamic models have no terrain data, so it's free to flag faces for the player depth pre-pass
+			int terrainData = 0;
+			if (priorities != null) {
+				final int priority = clamp(priorities[face], 0, priorityDepthBias.length - 1);
+				depthBias = min(255, depthBias + priorityDepthBias[priority]);
+				if (!hasAlpha && (playerDepthPrepassPriorities >> priority & 1) != 0)
+					terrainData = TERRAIN_FLAG_PLAYER_DEPTH_PREPASS;
+			}
+			final int packedAlphaBiasHsl = transparency << 24 | depthBias << 16;
 
 			color1 |= packedAlphaBiasHsl;
 			color2 |= packedAlphaBiasHsl;
@@ -2348,7 +2347,7 @@ public class SceneUploader implements AutoCloseable {
 			final int texturedFaceIdx = tb.putFace(
 				color1, color2, color3,
 				materialData, materialData, materialData,
-				0, 0, 0
+				terrainData, terrainData, terrainData
 			);
 
 			vb.putDynamicVertex(

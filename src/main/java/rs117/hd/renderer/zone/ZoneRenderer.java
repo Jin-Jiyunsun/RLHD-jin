@@ -42,6 +42,7 @@ import rs117.hd.HdPlugin;
 import rs117.hd.HdPluginConfig;
 import rs117.hd.config.ColorFilter;
 import rs117.hd.config.DynamicLights;
+import rs117.hd.config.PlayerDepthPrepass;
 import rs117.hd.config.ShadowMode;
 import rs117.hd.opengl.shader.SceneShaderProgram;
 import rs117.hd.opengl.shader.ShaderException;
@@ -88,7 +89,6 @@ import static rs117.hd.HdPlugin.checkGLErrors;
 import static rs117.hd.HdPluginConfig.*;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_OPAQUE;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_PLAYER;
-import static rs117.hd.renderer.zone.WorldViewContext.VAO_PLAYER_DEPTH;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_PRESCENE;
 import static rs117.hd.renderer.zone.WorldViewContext.VAO_SHADOW;
 import static rs117.hd.utils.MathUtils.*;
@@ -155,6 +155,9 @@ public class ZoneRenderer implements Renderer {
 
 	@Inject
 	private SceneShaderProgram.DepthOnly depthOnlyProgram;
+
+	@Inject
+	private SceneShaderProgram.DepthPrepass depthPrepassProgram;
 
 	@Inject
 	private ShadowShaderProgram.Fast fastShadowProgram;
@@ -341,6 +344,7 @@ public class ZoneRenderer implements Renderer {
 		waterProgram.compile(includes);
 		gapFillerProgram.compile(includes);
 		depthOnlyProgram.compile(includes);
+		depthPrepassProgram.compile(includes);
 		fastShadowProgram.compile(includes);
 		detailedShadowProgram.compile(includes);
 		terrainShadowProgram.compile(includes);
@@ -353,6 +357,7 @@ public class ZoneRenderer implements Renderer {
 		waterProgram.destroy();
 		gapFillerProgram.destroy();
 		depthOnlyProgram.destroy();
+		depthPrepassProgram.destroy();
 		fastShadowProgram.destroy();
 		detailedShadowProgram.destroy();
 		terrainShadowProgram.destroy();
@@ -1226,15 +1231,17 @@ public class ZoneRenderer implements Renderer {
 						ctx.drawAll(VAO_SHADOW, ctx.vaoDirectionalCmd);
 					}
 
-					// Depth-only player passes use a stub fragment shader. This relies on gl_Position being invariant,
-					// so depths match the colour pass exactly
+					// Depth-only player passes use separate fragment shaders. This relies on gl_Position being
+					// invariant, so depths match the colour pass exactly
 
-					// Write depth for player capes, heads, arms, shields & weapons first, so the colour pass orders them
+					// Write depth for player faces flagged for the pre-pass first, so the colour pass orders them
 					// per-pixel against each other, instead of by vanilla's priority approximation
-					ctx.vaoSceneCmd.SetShader(depthOnlyProgram);
-					ctx.vaoSceneCmd.ColorMask(false, false, false, false);
-					ctx.drawAll(VAO_PLAYER_DEPTH, ctx.vaoSceneCmd);
-					ctx.vaoSceneCmd.ColorMask(true, true, true, true);
+					if (plugin.configPlayerDepthPrepass != PlayerDepthPrepass.OFF) {
+						ctx.vaoSceneCmd.SetShader(depthPrepassProgram);
+						ctx.vaoSceneCmd.ColorMask(false, false, false, false);
+						ctx.drawAll(VAO_PLAYER, ctx.vaoSceneCmd);
+						ctx.vaoSceneCmd.ColorMask(true, true, true, true);
+					}
 
 					// Draw players with sorted alpha, without writing depth
 					ctx.vaoSceneCmd.SetShader(sceneProgram);
