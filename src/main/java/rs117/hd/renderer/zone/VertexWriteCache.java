@@ -210,7 +210,7 @@ public final class VertexWriteCache {
 
 	@SuppressWarnings("PointlessArithmeticExpression")
 	public void putDynamicTriangle(
-		int[] positions, int offsetA, int offsetB, int offsetC,
+		short[] positions, int offsetA, int offsetB, int offsetC,
 		float[] uvs, int[] normals, int textureFaceIdx, int modelIdx
 	) {
 		if (stagingPosition + 18 > stagingBuffer.length)
@@ -219,25 +219,66 @@ public final class VertexWriteCache {
 		final int[] stagingBuffer = this.stagingBuffer;
 		final int p = stagingPosition;
 
-		stagingBuffer[p]     = (positions[offsetA + 1] & 0xFFFF) << 16 | (positions[offsetA] & 0xFFFF);
-		stagingBuffer[p + 1] = (normals[0] & 0xFFFF) << 16 | (positions[offsetA + 2] & 0xFFFF);
-		stagingBuffer[p + 2] = (normals[2] & 0xFFFF) << 16 | (normals[1] & 0xFFFF);
-		stagingBuffer[p + 3] = (float16(uvs[0]) & 0xFFFF) << 16 | (modelIdx & 0xFFFF);
-		stagingBuffer[p + 4] = (float16(uvs[2]) & 0xFFFF) << 16 | (float16(uvs[1]) & 0xFFFF);
+		// Vertex A
+		short v0 = positions[offsetA];
+		short v1 = positions[offsetA + 1];
+		short v2 = positions[offsetA + 2];
+
+		short n0 = (short) normals[0];
+		short n1 = (short) normals[1];
+		short n2 = (short) normals[2];
+
+		short uv0 = float16(uvs[0]);
+		short uv1 = float16(uvs[1]);
+		short uv2 = float16(uvs[2]);
+
+		modelIdx &= 0xFFFF;
+
+		stagingBuffer[p]     = v1 << 16  | (v0 & 0xFFFF);
+		stagingBuffer[p + 1] = n0 << 16  | (v2 & 0xFFFF);
+		stagingBuffer[p + 2] = n2 << 16  | (n1 & 0xFFFF);
+		stagingBuffer[p + 3] = uv0 << 16 | modelIdx;
+		stagingBuffer[p + 4] = uv2 << 16 | (uv1 & 0xFFFF);
 		stagingBuffer[p + 5] = textureFaceIdx;
 
-		stagingBuffer[p + 6]  = (positions[offsetB + 1] & 0xFFFF) << 16 | (positions[offsetB] & 0xFFFF);
-		stagingBuffer[p + 7]  = (normals[3] & 0xFFFF) << 16 | (positions[offsetB + 2] & 0xFFFF);
-		stagingBuffer[p + 8] = (normals[5] & 0xFFFF) << 16 | (normals[4] & 0xFFFF);
-		stagingBuffer[p + 9] = (float16(uvs[4]) & 0xFFFF) << 16 | (modelIdx & 0xFFFF);
-		stagingBuffer[p + 10] = (float16(uvs[6]) & 0xFFFF) << 16 | (float16(uvs[5]) & 0xFFFF);
+		// Vertex B
+		v0 = positions[offsetB];
+		v1 = positions[offsetB + 1];
+		v2 = positions[offsetB + 2];
+
+		n0 = (short) normals[3];
+		n1 = (short) normals[4];
+		n2 = (short) normals[5];
+
+		uv0 = float16(uvs[4]);
+		uv1 = float16(uvs[5]);
+		uv2 = float16(uvs[6]);
+
+		stagingBuffer[p + 6]  = v1 << 16  | (v0 & 0xFFFF);
+		stagingBuffer[p + 7]  = n0 << 16  | (v2 & 0xFFFF);
+		stagingBuffer[p + 8]  = n2 << 16  | (n1 & 0xFFFF);
+		stagingBuffer[p + 9]  = uv0 << 16 | modelIdx;
+		stagingBuffer[p + 10] = uv2 << 16 | (uv1 & 0xFFFF);
 		stagingBuffer[p + 11] = textureFaceIdx;
 
-		stagingBuffer[p + 12]  = (positions[offsetC + 1] & 0xFFFF) << 16 | (positions[offsetC] & 0xFFFF);
-		stagingBuffer[p + 13]  = (normals[6] & 0xFFFF) << 16 | (positions[offsetC + 2] & 0xFFFF);
-		stagingBuffer[p + 14] = (normals[8] & 0xFFFF) << 16 | (normals[7] & 0xFFFF);
-		stagingBuffer[p + 15] = (float16(uvs[8]) & 0xFFFF) << 16 | (modelIdx & 0xFFFF);
-		stagingBuffer[p + 16] = (float16(uvs[10]) & 0xFFFF) << 16 | (float16(uvs[9]) & 0xFFFF);
+		// Vertex C
+		v0 = positions[offsetC];
+		v1 = positions[offsetC + 1];
+		v2 = positions[offsetC + 2];
+
+		n0 = (short) normals[6];
+		n1 = (short) normals[7];
+		n2 = (short) normals[8];
+
+		uv0 = float16(uvs[8]);
+		uv1 = float16(uvs[9]);
+		uv2 = float16(uvs[10]);
+
+		stagingBuffer[p + 12] = v1 << 16  | (v0 & 0xFFFF);
+		stagingBuffer[p + 13] = n0 << 16  | (v2 & 0xFFFF);
+		stagingBuffer[p + 14] = n2 << 16  | (n1 & 0xFFFF);
+		stagingBuffer[p + 15] = uv0 << 16 | modelIdx;
+		stagingBuffer[p + 16] = uv2 << 16 | (uv1 & 0xFFFF);
 		stagingBuffer[p + 17] = textureFaceIdx;
 
 		stagingPosition = p + 18;

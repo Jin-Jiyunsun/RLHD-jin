@@ -43,7 +43,6 @@ public class Zone implements Destructible {
 	private static final IntHashSet EMPTY_ROOF = new IntHashSet();
 	private static final ConcurrentPool<AlphaModel> ALPHA_MODEL_POOL = new ConcurrentPool<>(AlphaModel::new);
 
-	public static final int DRAW_FADING_ONLY = 1;
 	public static final int DRAW_INCLUDE_ROOFS = 2;
 	public static final int DRAW_DEPTH_ONLY = 4;
 
@@ -132,7 +131,7 @@ public class Zone implements Destructible {
 	final StaticAlphaSortingJob alphaSortingJob = new StaticAlphaSortingJob();
 	ZoneUploadJob uploadJob;
 	float fadingAlpha;
-	ZoneRoofFades.State fade; // owned by ZoneRoofFades while the zone is being drawn
+	ZoneRoofRemoval.State fade; // owned by ZoneRoofRemoval while the zone is being drawn
 
 	void setUploadJob(ZoneUploadJob uploadJob) {
 		this.uploadJob = uploadJob;
@@ -256,6 +255,8 @@ public class Zone implements Destructible {
 		rids = null;
 		roofStart = null;
 		roofEnd = null;
+		if (fade != null)
+			fade.initialized = false; // Roof ids are about to change, so don't fade between the old and new ones
 
 		// don't add permanent alphamodels to the cache as permanent alphamodels are always allocated
 		// to avoid having to synchronize the cache
@@ -363,6 +364,10 @@ public class Zone implements Destructible {
 
 		for (AlphaModel m : alphaModels)
 			m.rid = (short) updates.getOrDefault(m.rid, m.rid);
+
+		// Fades are keyed on roof ids, so they'd otherwise treat the renumbered roofs as having been hidden or revealed
+		if (fade != null)
+			fade.initialized = false;
 	}
 
 	private static final int NUM_DRAW_RANGES = 512;
@@ -388,43 +393,28 @@ public class Zone implements Destructible {
 		copyTo(glDrawLength, drawEnd, 0, drawIdx);
 	}
 
-	void renderOpaque(CommandBuffer cmd, WorldViewContext ctx, @Nullable ZoneRoofFades.Fade fade, int flags) {
+	void renderOpaque(CommandBuffer cmd, WorldViewContext ctx, int flags) {
 		if (fadingAlpha > 1.0)
 			return;
+
 		drawIdx = 0;
 
-		final boolean fadingOnly = (flags & DRAW_FADING_ONLY) != 0;
-
 		int currentLevel = ctx.level;
+		int minLevel = ctx.minLevel;
 		int maxLevel = ctx.maxLevel;
-		int fadedLevels = fade != null ? fade.levels : 0;
-		var hidden = fade != null && fade.roofs != null ? fade.roofs : ctx.hideRoofIds;
+		IntHashSet hiddenRoofIds = ctx.hideRoofIds;
 		if ((flags & DRAW_INCLUDE_ROOFS) != 0) {
+			minLevel = ctx.baseMinLevel;
 			maxLevel = 3;
-			hidden = EMPTY_ROOF;
+			hiddenRoofIds = EMPTY_ROOF;
 		}
 
-		// Fading levels can sit outside the visible range, so the fading pass checks all of them
-		int firstLevel = fadingOnly ? 0 : ctx.minLevel;
-		int lastLevel = fadingOnly ? 3 : maxLevel;
-
-		for (int level = firstLevel; level <= lastLevel; ++level) {
+		for (int level = minLevel; level <= maxLevel; ++level) {
 			int[] rids = this.rids[level];
 			int[] roofStart = this.roofStart[level];
 			int[] roofEnd = this.roofEnd[level];
 
-			boolean levelFading = (fadedLevels & (1 << level)) != 0;
-
-			if (levelFading) {
-				if (fadingOnly) {
-					int start = level == 0 ? 0 : this.levelOffsets[level - 1];
-					pushRange(start, this.levelOffsets[level]);
-				}
-				// The main pass leaves it to the fading pass, otherwise it would be drawn twice
-				continue;
-			}
-
-			if (!fadingOnly && (rids.length == 0 || hidden.isEmpty() || level <= currentLevel)) {
+			if (rids.length == 0 || hiddenRoofIds.isEmpty() || level <= currentLevel) {
 				// draw the whole level
 				int start = level == 0 ? 0 : this.levelOffsets[level - 1];
 				int end = this.levelOffsets[level];
@@ -434,7 +424,7 @@ public class Zone implements Destructible {
 
 			for (int roofIdx = 0; roofIdx < rids.length; ++roofIdx) {
 				int rid = rids[roofIdx];
-				if (rid > 0 && hidden.contains(rid) == fadingOnly) {
+				if (rid > 0 && !hiddenRoofIds.contains(rid)) {
 					// draw the roof
 					assert roofEnd[roofIdx] >= roofStart[roofIdx];
 					if (roofEnd[roofIdx] > roofStart[roofIdx]) {
@@ -442,9 +432,6 @@ public class Zone implements Destructible {
 					}
 				}
 			}
-
-			if (fadingOnly)
-				continue;
 
 			// push from the end of the last roof to the end of the level
 			int endpos = level == 0 ? 0 : this.levelOffsets[level - 1];
@@ -476,6 +463,39 @@ public class Zone implements Destructible {
 		drawIdx = 0;
 
 		pushRange(level > 0 ? this.levelOffsets[level - 1] : 0, this.levelOffsets[level]);
+
+		if (drawIdx == 0)
+			return;
+
+		lastDrawMode = STATIC_UNSORTED;
+		lastVao = glVao;
+		lastTboF = tboF;
+		lastTboM = tboM;
+		flush(cmd);
+	}
+
+	void renderOpaqueRoofs(CommandBuffer cmd, int level, IntHashSet rids) {
+		if (fadingAlpha > 1.0 || this.rids == null || level < 0 || level >= MAX_Z)
+			return;
+
+		int[] levelRids = this.rids[level];
+		int[] roofStart = this.roofStart[level];
+		int[] roofEnd = this.roofEnd[level];
+		if (levelRids.length == 0)
+			return;
+
+		drawIdx = 0;
+
+		for (int roofIdx = 0; roofIdx < levelRids.length; ++roofIdx) {
+			int rid = levelRids[roofIdx];
+			if (rid <= 0 || !rids.contains(rid))
+				continue;
+
+			assert roofEnd[roofIdx] >= roofStart[roofIdx];
+			if (roofEnd[roofIdx] > roofStart[roofIdx]) {
+				pushRange(roofStart[roofIdx], roofEnd[roofIdx]);
+			}
+		}
 
 		if (drawIdx == 0)
 			return;
@@ -860,24 +880,46 @@ public class Zone implements Destructible {
 		int zz,
 		int level,
 		WorldViewContext ctx,
-		@Nullable ZoneRoofFades.Fade fade,
 		int flags
 	) {
 		if (alphaModels.isEmpty() || fadingAlpha > 1.0)
 			return;
 
-		final boolean fadingOnly = (flags & DRAW_FADING_ONLY) != 0;
 		final boolean depthOnly = (flags & DRAW_DEPTH_ONLY) != 0;
-
 		int minLevel = ctx.minLevel;
-		int currentLevel = ctx.level;
 		int maxLevel = ctx.maxLevel;
-		int fadedLevels = fade != null ? fade.levels : 0;
-		var hidden = fade != null && fade.roofs != null ? fade.roofs : ctx.hideRoofIds;
+		IntHashSet hidden = ctx.hideRoofIds;
 		if ((flags & DRAW_INCLUDE_ROOFS) != 0) {
+			minLevel = ctx.baseMinLevel;
 			maxLevel = 3;
 			hidden = EMPTY_ROOF;
 		}
+
+		renderAlphaModels(cmd, zx, zz, level, minLevel, maxLevel, ctx.level, hidden, null, depthOnly);
+	}
+
+	void renderAlphaLevel(CommandBuffer cmd, int zx, int zz, int level) {
+		renderAlphaModels(cmd, zx, zz, level, 0, MAX_Z - 1, -1, EMPTY_ROOF, null, false);
+	}
+
+	void renderAlphaRoofs(CommandBuffer cmd, int zx, int zz, int level, IntHashSet rids) {
+		renderAlphaModels(cmd, zx, zz, level, 0, MAX_Z - 1, -1, EMPTY_ROOF, rids, false);
+	}
+
+	private void renderAlphaModels(
+		CommandBuffer cmd,
+		int zx,
+		int zz,
+		int level,
+		int minLevel,
+		int maxLevel,
+		int currentLevel,
+		IntHashSet hidden,
+		@Nullable IntHashSet rids,
+		boolean depthOnly
+	) {
+		if (alphaModels.isEmpty() || fadingAlpha > 1.0 || level < minLevel || level > maxLevel)
+			return;
 
 		drawIdx = 0;
 
@@ -890,23 +932,11 @@ public class Zone implements Destructible {
 			if ((m.flags & AlphaModel.SKIP) != 0 || m.level != level || m.vao == -1)
 				continue;
 
-			boolean levelFading = (fadedLevels & (1 << m.level)) != 0;
+			if (rids != null && !rids.contains(m.rid))
+				continue;
 
-			if (levelFading) {
-				// The level is drawn in full by the fading pass, so the main pass leaves it alone
-				if (!fadingOnly)
-					continue;
-			} else if (fadingOnly) {
-				// Fading roofs are drawn separately, and may sit outside the visible level range, e.g. right after
-				// maxLevel was lowered, so the range is only enforced for the main pass
-				if (!hidden.contains(m.rid))
-					continue;
-			} else if (level < minLevel || level > maxLevel) {
+			if (level > currentLevel && hidden.contains(m.rid))
 				continue;
-			} else if (level > currentLevel && hidden.contains(m.rid)) {
-				// Above the player's level, roofs being faded are excluded so they can be drawn separately
-				continue;
-			}
 
 			int drawMode = STATIC;
 			if (m.isTemp()) {

@@ -58,6 +58,9 @@ public class WorldViewContext {
 
 	Zone[][] zones;
 
+	// The scene's unmodified level range, before any fading levels are trimmed away
+	int baseMinLevel, baseMaxLevel;
+	// The effective level range and hidden roof ids, after fading levels/roofs have been culled
 	int minLevel, level, maxLevel;
 	final IntHashSet hideRoofIds = new IntHashSet();
 
@@ -251,6 +254,11 @@ public class WorldViewContext {
 				if (prevZone != curZone) {
 					curZone.inSceneFrustum = prevZone.inSceneFrustum;
 					curZone.inShadowFrustum = prevZone.inShadowFrustum;
+					if(prevZone.fade != null) {
+						curZone.fade = prevZone.fade;
+						curZone.fade.zone = curZone;
+					}
+
 					DestructibleHandler.queueDestruction(prevZone);
 				}
 
