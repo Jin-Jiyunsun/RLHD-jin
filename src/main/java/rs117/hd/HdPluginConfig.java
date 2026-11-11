@@ -1442,7 +1442,7 @@ public interface HdPluginConfig extends Config
 		keyName = "experimentalPlayerDepthPrepass",
 		name = "Player depth pre-pass",
 		description =
-			"Order player capes, heads, arms, shields & weapons per-pixel, instead of only by vanilla's priorities.<br>" +
+			"Order player bodies, capes, arms, shields & weapons per-pixel, instead of only by vanilla's priorities.<br>" +
 			"Fixes capes being drawn over shields at certain angles.",
 		section = experimentalSettings
 	)

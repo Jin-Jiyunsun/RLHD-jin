@@ -45,23 +45,17 @@ public class ModelStreamingManager {
 
 	private static final ConcurrentPool<PrimitiveCharArray> FACE_INDICES = new ConcurrentPool<>(PrimitiveCharArray::new);
 
-	// Opaque player faces of these render priorities are flagged during upload, and drawn depth-only before the player's
-	// colour pass, ordering them per-pixel against each other: feet, legs, waist & body (0 to 3), cape (5), arms, shields
-	// & weapons (10 & 11). All other faces keep their vanilla priority ordering, except where they're behind one of those
-	// faces. Vanilla only decides whether arms, shields & weapons go in front of the cape based on the head's average
-	// depth, which often draws long capes over shields that are closer to the camera.
+	// Render priorities of opaque player faces drawn in the depth pre-pass: feet, legs, waist & body (0-3), cape (5),
+	// arms, shields & weapons (10, 11). Other faces keep their vanilla order, but are hidden behind pre-pass faces
 	private static final int PLAYER_DEPTH_PREPASS_PRIORITIES = 0b1100_0010_1111;
 
-	// Depth bias per player face render priority, pulling faces towards the camera by roughly bias / 12800 of their
-	// distance. Faces within that margin of a pre-pass face keep their vanilla order against it, while faces further
-	// apart are ordered per-pixel:
-	// - 0 to 2 (feet, legs & waist): rising in vanilla's draw order, below the body
-	// - 3 (body): above the waist
-	// - 4 (neck): above the body, so amulets lying on the chest still show, but not through the player's back
+	// Depth bias per player face render priority, in roughly 1/12800ths of the camera distance. A face still draws over a
+	// pre-pass face it's behind, if it's closer than the difference in their biases:
+	// - 0-3 (feet to body): rising in draw order
+	// - 4 (neck): above the body, so amulets show on the chest, but not through the back
 	// - 5 (cape): above arms, so elbows don't poke through
-	// - 6 to 9 (head, helmet & helmet decals): well above the cape, including skillcape emblems which lie flat on it.
-	//   These aren't in the pre-pass, so they keep their vanilla order against each other
-	// - 10 & 11 (arms, shields & weapons): above the body, so torsos don't poke through sleeves
+	// - 6-9 (head, helmets & skillcape emblems): above the cape
+	// - 10, 11 (arms, shields & weapons): above the body, so torsos don't poke through sleeves
 	private static final int[] PLAYER_PRIORITY_DEPTH_BIAS = { 0, 16, 32, 48, 80, 128, 176, 176, 176, 176, 80, 80 };
 
 	@Inject
@@ -383,7 +377,7 @@ public class ModelStreamingManager {
 			SceneUploader sceneUploader = SceneUploader.POOL.acquire();
 			FacePrioritySorter facePrioritySorter = shouldSort ? FacePrioritySorter.POOL.acquire() : null
 		) {
-			sceneUploader.playerPriorityDepthBias = null; // Pooled, so it may be left over from an upload which threw
+			sceneUploader.playerPriorityDepthBias = null; // Pooled, so reset in case the last upload threw
 			final int[] faceDistances = shouldSort ? PooledArrayType.INT.borrow(m.getFaceCount()) : null;
 			shouldSort &= sceneUploader.preprocessTempModel(
 				projection,

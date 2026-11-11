@@ -1274,11 +1274,9 @@ public class ZoneRenderer implements Renderer {
 						ctx.drawAll(VAO_SHADOW, ctx.vaoDirectionalCmd);
 					}
 
-					// Depth-only player passes use separate fragment shaders. This relies on gl_Position being
-					// invariant, so depths match the colour pass exactly
+					// Depth-only player passes rely on gl_Position being invariant, to match the colour pass's depths
 
-					// Write depth for player faces flagged for the pre-pass first, so the colour pass orders them
-					// per-pixel against each other, instead of by vanilla's priority approximation
+					// Depth pre-pass, so flagged player faces are ordered per-pixel
 					if (plugin.configPlayerDepthPrepass != PlayerDepthPrepass.OFF) {
 						ctx.vaoSceneCmd.SetShader(depthPrepassProgram);
 						ctx.vaoSceneCmd.ColorMask(false, false, false, false);

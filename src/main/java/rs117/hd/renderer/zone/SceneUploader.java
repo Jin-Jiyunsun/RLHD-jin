@@ -136,12 +136,12 @@ public class SceneUploader implements AutoCloseable {
 	private int[] modelVertices;
 	private float[] modelProjected;
 	public int tempModelAlphaFaces = 0;
-	// Extra depth bias per face render priority in uploadTempModel, for ordering player faces per-pixel
+	// Extra depth bias per player face render priority
 	@Nullable
 	public int[] playerPriorityDepthBias;
-	// Bitmask of face render priorities whose opaque faces are flagged for the player depth pre-pass
+	// Render priorities whose opaque faces are flagged for the player depth pre-pass
 	public int playerDepthPrepassPriorities;
-	// Marks faces drawn by the player depth pre-pass. Must match depth_prepass_frag.glsl
+	// Must match depth_prepass_frag.glsl
 	private static final int TERRAIN_FLAG_PLAYER_DEPTH_PREPASS = 1 << 30;
 
 	private final PooledObjectArray<ModelOverride> faceOverrides = new PooledObjectArray<>();
@@ -2391,7 +2391,7 @@ public class SceneUploader implements AutoCloseable {
 			int depthBias = faceOverride.depthBias != -1 ? faceOverride.depthBias :
 				hasBias ? bias[face] & 0xFF : 0;
 			final boolean hasAlpha = material.hasTransparency || transparency != 0;
-			// Dynamic models have no terrain data, so it's free to flag faces for the player depth pre-pass
+			// Dynamic models don't use terrain data, so it holds the player depth pre-pass flag
 			int terrainData = 0;
 			if (priorities != null) {
 				final int priority = clamp(priorities[face], 0, priorityDepthBias.length - 1);
