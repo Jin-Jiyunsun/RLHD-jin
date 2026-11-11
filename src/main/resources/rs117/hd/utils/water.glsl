@@ -38,7 +38,7 @@
 #define SHORE_FOAM_EDGE_NOISE 0.35 // how far the foam line wanders, in tiles
 #define SHORE_FOAM_REACH 0.8       // how far the solid shore foam fades out to between waves, in tiles
 #define SHORE_HAZE_STRENGTH 0.25   // strength of the cloudy layer beneath the foam patches, relative to full foam
-#define SHORE_HAZE_REACH 1.5       // how far the cloudy layer fades out from the shore, in tiles
+#define SHORE_HAZE_REACH 0.3       // how far the cloudy layer fades out from the shore, in tiles
 // How far the foam pattern is warped, in texture repeats. Much above 0.1 visibly stretches it.
 #define SHORE_FOAM_CHURN 0.08
 #define SHORE_FOAM_SCALE 1.0       // tiles per foam texture repeat; lower packs the foam patches more densely
