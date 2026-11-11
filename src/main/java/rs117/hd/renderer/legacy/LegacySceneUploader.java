@@ -56,7 +56,6 @@ import static net.runelite.api.Constants.SCENE_SIZE;
 import static net.runelite.api.Perspective.*;
 import static rs117.hd.scene.SceneContext.TILE_SKIP_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_WATER_FLAG;
-import static rs117.hd.scene.SceneContext.WATER_SQUARE_TILE_BIT;
 import static rs117.hd.scene.tile_overrides.TileOverride.NONE;
 import static rs117.hd.scene.tile_overrides.TileOverride.OVERLAY_FLAG;
 import static rs117.hd.utils.HDUtils.HIDDEN_HSL;
@@ -711,12 +710,11 @@ public class LegacySceneUploader {
 			}
 			else
 			{
-				// Pass each vertex's distance and direction to the shore in its color, for the water shader's foam
-				int shoreSides = sceneContext.getWaterTileShoreSides(tileZ, tileExX, tileExY);
-				swColor = sceneContext.getVertexShoreData(swVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
-				seColor = sceneContext.getVertexShoreData(seVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
-				nwColor = sceneContext.getVertexShoreData(nwVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
-				neColor = sceneContext.getVertexShoreData(neVertexKey) | shoreSides;
+				// Shore data for the water shader's foam
+				swColor = sceneContext.getSquareWaterTileShoreData(swVertexKey, tileZ, tileExX, tileExY, false);
+				seColor = sceneContext.getSquareWaterTileShoreData(seVertexKey, tileZ, tileExX, tileExY, false);
+				nwColor = sceneContext.getSquareWaterTileShoreData(nwVertexKey, tileZ, tileExX, tileExY, false);
+				neColor = sceneContext.getSquareWaterTileShoreData(neVertexKey, tileZ, tileExX, tileExY, true);
 			}
 
 			if (sceneContext.isVertexOverlay(neVertexKey) && sceneContext.isVertexUnderlay(neVertexKey))
@@ -1073,7 +1071,7 @@ public class LegacySceneUploader {
 						}
 					}
 				} else {
-					// Pass each vertex's distance and direction to the shore in its color, for the water shader's foam
+					// Shore data for the water shader's foam
 					colorA = sceneContext.getVertexShoreData(vertexKeyA);
 					colorB = sceneContext.getVertexShoreData(vertexKeyB);
 					colorC = sceneContext.getVertexShoreData(vertexKeyC);

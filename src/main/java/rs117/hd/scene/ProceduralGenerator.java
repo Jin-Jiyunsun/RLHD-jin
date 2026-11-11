@@ -44,6 +44,7 @@ import rs117.hd.utils.collections.PooledArrayType;
 import static net.runelite.api.Constants.*;
 import static net.runelite.api.Perspective.*;
 import static rs117.hd.scene.SceneContext.SHORE_DISTANCE_MAX;
+import static rs117.hd.scene.SceneContext.TILE_HAS_LAND_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_LAND_EAST_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_LAND_NORTH_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_LAND_SOUTH_FLAG;
@@ -793,14 +794,11 @@ public class ProceduralGenerator {
 		private final int[] hashes = new int[4];
 
 		private final byte[][][] underwaterDepthLevels = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		// Distance from each vertex on the tile grid to the nearest land vertex, capped at SHORE_DISTANCE_MAX tiles.
-		// It's measured in fifths of a tile, using the standard integer chamfer weights of 5 for a straight step and 7
-		// for a diagonal one (approximating 5 * sqrt(2)), which keeps it small enough to store in bytes.
+		// Distance from each grid vertex to the nearest land vertex, capped at SHORE_DISTANCE_MAX tiles.
+		// Measured in fifths of a tile, with chamfer weights of 5 per straight step and 7 per diagonal (about 5 * sqrt(2)).
 		private static final int SHORE_GRID_STEP = 5;
 		private static final int SHORE_GRID_DIAGONAL = 7;
 		private final byte[][][] shoreDistances = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		// Tiles with visible land, so water tiles can tell which of their sides border land
-		private final boolean[][][] landTiles = new boolean[MAX_Z][EXTENDED_SCENE_SIZE][EXTENDED_SCENE_SIZE];
 
 		// Defines ranges of water tiles
 		private final int[] minX = new int[MAX_Z];
@@ -834,11 +832,9 @@ public class ProceduralGenerator {
 					// we will set non-water vertices to 0 in the next loop
 					Arrays.fill(underwaterDepthLevels[z][x], (byte) 1);
 				}
-				// Every vertex starts out far from land, until land vertices are marked in the next loop
+				// Start far from land. Land vertices are set to 0 below.
 				for (byte[] column : shoreDistances[z])
 					Arrays.fill(column, (byte) (SHORE_DISTANCE_MAX * SHORE_GRID_STEP));
-				for (boolean[] column : landTiles[z])
-					Arrays.fill(column, false);
 			}
 
 			int minZ = MAX_Z, maxZ = 0;
@@ -879,7 +875,7 @@ public class ProceduralGenerator {
 									for (int i = 0; i < hashes.length; i++)
 										sceneContext.setVertexIsLand(hashes[i]);
 
-									landTiles[z][x][y] = true;
+									sceneContext.setTileFlag(z, x, y, TILE_HAS_LAND_FLAG);
 									byte[][] zShoreDistances = shoreDistances[z];
 									zShoreDistances[x][y] = 0;
 									zShoreDistances[x + 1][y] = 0;
@@ -981,7 +977,7 @@ public class ProceduralGenerator {
 										boolean isLand = tileModel.getTriangleColorA()[face] != HIDDEN_HSL || override.forced;
 										if (isLand) {
 											sceneContext.setVertexIsLand(hashes[vertex]);
-											landTiles[z][x][y] = true;
+											sceneContext.setTileFlag(z, x, y, TILE_HAS_LAND_FLAG);
 										}
 
 										if (vertices[vertex][0] % LOCAL_TILE_SIZE == 0 && vertices[vertex][2] % LOCAL_TILE_SIZE == 0) {
@@ -989,7 +985,7 @@ public class ProceduralGenerator {
 											int vY = (vertices[vertex][2] >> LOCAL_COORD_BITS) + sceneContext.sceneOffset;
 
 											zUnderwaterDepthLevels[vX][vY] = 0;
-											// Land vertices inside a tile aren't counted, so distances are measured to the tile grid
+											// Only vertices on the tile grid are tracked
 											if (isLand)
 												shoreDistances[z][vX][vY] = 0;
 										}
@@ -1050,9 +1046,7 @@ public class ProceduralGenerator {
 				}
 			}
 
-			// Spread the distance from land out across the tile grid, for the water shader's shore foam.
-			// A two-pass chamfer distance transform with diagonal steps is close enough to the true distance
-			// that the foam's outer edge follows the shoreline rather than the tile grid.
+			// Two-pass chamfer distance transform, spreading the distance to land across the grid
 			for (int z = minZ; z <= maxZ; ++z) {
 				final byte[][] d = shoreDistances[z];
 				for (int x = 0; x <= sizeX; x++) {
@@ -1117,12 +1111,11 @@ public class ProceduralGenerator {
 							sceneContext.setVertexUnderwaterDepth(hashes[2], nwVertex);
 							sceneContext.setVertexUnderwaterDepth(hashes[3], neVertex);
 
-							setShoreData(sceneContext, hashes[0], z, x, y, 0, 0);
-							setShoreData(sceneContext, hashes[1], z, x, y, 1, 0);
-							setShoreData(sceneContext, hashes[2], z, x, y, 0, 1);
-							setShoreData(sceneContext, hashes[3], z, x, y, 1, 1);
+							// Corners are ordered sw, se, nw, ne
+							for (int corner = 0; corner < 4; corner++)
+								setShoreData(sceneContext, hashes[corner], z, x, y, corner & 1, corner >> 1);
 
-							// Partial tiles containing water count as water, so only fully land tiles border the shore
+							// Only tiles without any water count as land
 							if (x > 0 && isLandTile(sceneContext, z, x - 1, y))
 								sceneContext.setTileFlag(z, x, y, TILE_LAND_WEST_FLAG);
 							if (x < sizeX - 1 && isLandTile(sceneContext, z, x + 1, y))
@@ -1171,7 +1164,7 @@ public class ProceduralGenerator {
 										if (!sceneContext.isVertexLand(hashes[vertex]))
 											sceneContext.setVertexUnderwaterDepth(hashes[vertex], heightOffset);
 
-										// Land vertices on the water's edge read as 0 distance regardless, so no need to check here
+										// Shore vertices read as 0 distance regardless
 										setShoreData(sceneContext, hashes[vertex], z, x, y, lerpX, lerpY);
 									}
 								}
@@ -1190,12 +1183,14 @@ public class ProceduralGenerator {
 		}
 
 		private boolean isLandTile(SceneContext sceneContext, int z, int x, int y) {
-			return landTiles[z][x][y] && !sceneContext.isTileFlagSet(z, x, y, TILE_WATER_FLAG);
+			return
+				sceneContext.isTileFlagSet(z, x, y, TILE_HAS_LAND_FLAG) &&
+				!sceneContext.isTileFlagSet(z, x, y, TILE_WATER_FLAG);
 		}
 
 		/**
-		 * Store the distance and direction to the nearest land for a vertex inside tile (x, y), at a fraction
-		 * (fx, fy) across it, interpolated from the tile's corners on the shore distance grid.
+		 * Store the distance and direction to land for a vertex at (fx, fy) within tile (x, y),
+		 * interpolated from the tile's corners
 		 */
 		private void setShoreData(SceneContext sceneContext, int hash, int z, int x, int y, float fx, float fy) {
 			final byte[][] d = shoreDistances[z];
@@ -1204,6 +1199,7 @@ public class ProceduralGenerator {
 				int cx = x + (corner & 1);
 				int cy = y + (corner >> 1);
 				float weight = ((corner & 1) == 1 ? fx : 1 - fx) * ((corner >> 1) == 1 ? fy : 1 - fy);
+				// Also avoids reading past the far edge of the grid
 				if (weight == 0)
 					continue;
 				distance += d[cx][cy] * weight;

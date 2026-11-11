@@ -39,8 +39,7 @@
 #define SHORE_FOAM_REACH 0.8       // how far the solid shore foam fades out to between waves, in tiles
 #define SHORE_HAZE_STRENGTH 0.25   // strength of the cloudy layer beneath the foam patches, relative to full foam
 #define SHORE_HAZE_REACH 1.5       // how far the cloudy layer fades out from the shore, in tiles
-// How far the foam pattern gets pushed around, in foam texture repeats. The warp noise cells are about one texture
-// repeat wide, so this is also roughly how much the foam stretches; much above 0.1 visibly distorts its shapes.
+// How far the foam pattern is warped, in texture repeats. Much above 0.1 visibly stretches it.
 #define SHORE_FOAM_CHURN 0.08
 #define SHORE_FOAM_SCALE 1.0       // tiles per foam texture repeat; lower packs the foam patches more densely
 #define SHORE_FOAM_EVOLVE_PERIOD 2.2 // seconds for each foam pattern to fade in and back out
@@ -50,8 +49,7 @@
 #define SHORE_WAVE_REACH 2.0       // how far out from the shore foam waves start forming, in tiles
 #define SHORE_SURGE_REACH 0.2      // how far the shore foam pushes out when a wave arrives, in tiles
 #define SHORE_FOAM_SWAY 0.08       // how far the foam sways in and out from its resting place, in tiles
-// Seconds for the foam to sway in and back out, including the lull after it. A sway takes between
-// (1 - SHORE_FOAM_SWAY_MAX_LULL) and 1 times this, so the quickest sway here lasts 7.2 seconds.
+// Seconds per sway cycle, including the lull after it
 #define SHORE_FOAM_SWAY_PERIOD 12.0
 #define SHORE_FOAM_SWAY_MAX_LULL 0.4 // longest lull between sways, as a fraction of the period
 #define SHORE_FOAM_LULL_DRIFT 0.25 // how far the foam drifts during the longest lull, relative to a full sway
@@ -60,7 +58,7 @@
     #include <utils/sky_sampling.glsl>
 #endif
 
-// Two independent channels of smooth value noise for the cost of one, by hashing each lattice corner to a vec2
+// Two channels of value noise for the cost of one
 vec2 noise2(vec2 st) {
     vec2 i = floor(st);
     vec2 f = fract(st);
@@ -81,7 +79,6 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     vec2 uv1 = anchorUv1 - animationFrame(28 * waterType.duration);
     vec2 uv2 = anchorUv2 + animationFrame(24 * waterType.duration);
     vec2 uv3 = anchorUv3 + animationFrame(21 * waterType.duration);
-    vec2 uvFoam = IN.uv;
 
     vec2 flowMapUv = worldUvs(15) + animationFrame(50 * waterType.duration);
     float flowMapStrength = 0.025;
@@ -90,7 +87,6 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     uv1 += uvFlow * flowMapStrength;
     uv2 += uvFlow * flowMapStrength;
     uv3 += uvFlow * flowMapStrength;
-    uvFoam += uvFlow * flowMapStrength;
 
     // get diffuse textures
     vec3 n1 = linearToSrgb(texture(textureArray, vec3(uv1, waterType.normalMap)).xyz);
@@ -99,6 +95,7 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     #if IMPROVED_SHORE_FOAM
         float foamMask = 0;
     #else
+        vec2 uvFoam = IN.uv + uvFlow * flowMapStrength;
         float foamMask = texture(textureArray, vec3(uvFoam, MAT_WATER_FOAM.colorMap)).r;
     #endif
 
@@ -265,150 +262,129 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     #endif
 
     vec4 water;
-    // Each water surface vertex stores its distance to the nearest land in its lightness,
-    // from 0 on the shore to 127 at SHORE_DISTANCE_MAX tiles or further
-    ivec3 shoreDistances = fAlphaBiasHsl & 127;
+    // Distance to land per vertex. See SceneContext for the shore data layout.
+    ivec3 shoreDistances = fAlphaBiasHsl & SHORE_DISTANCE_STEPS;
     #if IMPROVED_SHORE_FOAM
     float foamAmount = 0;
-    // Only faces with a vertex within reach of the furthest foam effect, allowing for the edge noise, can have foam.
-    // Faces further out skip all of it. The check uses flat per-face data, so the branch is uniform across each face
-    // and the texture derivatives inside remain valid.
+    // Skip faces beyond the furthest foam effect. The check is uniform per face, so texture derivatives stay valid.
     float foamReach = max(max(SHORE_WAVE_REACH, SHORE_HAZE_REACH), SHORE_FOAM_REACH + SHORE_SURGE_REACH);
-    int foamReachSteps = int(ceil((foamReach + SHORE_FOAM_EDGE_NOISE) / SHORE_DISTANCE_MAX * 127.0));
+    int foamReachSteps = int(ceil((foamReach + SHORE_FOAM_EDGE_NOISE) / SHORE_DISTANCE_MAX * SHORE_DISTANCE_STEPS));
     if (waterType.hasFoam != 0 && any(lessThan(shoreDistances, ivec3(foamReachSteps)))) {
-        // Distance from the shore in tiles, warped by slowly drifting noise to hide the tile & triangle edges
-        float shoreDist = dot(fTexBlend, vec3(shoreDistances)) / 127.0 * SHORE_DISTANCE_MAX;
-        // Distances are only known at the corners, so between two shores, such as in a channel one tile wide, every
-        // corner is on the shore and blending them gives 0 across the whole tile. For square tiles with a corner on
-        // the shore, work out the distance within the tile instead, to its land corners and the sides bordering land.
-        // Bit 15 (SceneContext.WATER_SQUARE_TILE_BIT) on the second vertex marks a square tile, and on the first vertex
-        // marks the south-west triangle (sw, se, nw) rather than the north-east one (ne, nw, se).
-        if ((fAlphaBiasHsl[1] & 1 << 15) != 0 && any(equal(shoreDistances, ivec3(0)))) {
-            bool swTriangle = (fAlphaBiasHsl[0] & 1 << 15) != 0;
-            // Position within the tile, from 0 at its south-west corner to 1 at its north-east corner
+        // Distance to the shore in tiles
+        float shoreDist = dot(fTexBlend, vec3(shoreDistances)) / SHORE_DISTANCE_STEPS * SHORE_DISTANCE_MAX;
+        // Blending corners gives 0 everywhere between two shores, like in a one tile wide channel. On square tiles
+        // touching land, measure to the land corners and sides within the tile instead. WATER_SQUARE_TILE_BIT on the
+        // second vertex marks a square tile, and on the first the sw triangle (sw, se, nw) rather than (ne, nw, se).
+        if ((fAlphaBiasHsl[1] & WATER_SQUARE_TILE_BIT) != 0 && any(equal(shoreDistances, ivec3(0)))) {
+            bool swTriangle = (fAlphaBiasHsl[0] & WATER_SQUARE_TILE_BIT) != 0;
+            // Position within the tile, from (0, 0) at sw to (1, 1) at ne
             vec2 local = swTriangle ?
                 vec2(fTexBlend.y, fTexBlend.z) :
                 vec2(fTexBlend.x + fTexBlend.z, fTexBlend.x + fTexBlend.y);
-            vec2 corner0 = swTriangle ? vec2(0, 0) : vec2(1, 1);
-            vec2 corner1 = swTriangle ? vec2(1, 0) : vec2(0, 1);
-            vec2 corner2 = swTriangle ? vec2(0, 1) : vec2(1, 0);
-            float dist = SHORE_DISTANCE_MAX;
-            if (shoreDistances.x == 0)
-                dist = min(dist, distance(local, corner0));
-            if (shoreDistances.y == 0)
-                dist = min(dist, distance(local, corner1));
-            if (shoreDistances.z == 0)
-                dist = min(dist, distance(local, corner2));
-            // Bits 11 to 14 hold the sides bordering land: west, east, south, north
-            int landSides = fAlphaBiasHsl[0] >> 11 & 15;
+            vec2 corners[3] = vec2[](vec2(0, 0), vec2(1, 0), vec2(0, 1));
+            if (!swTriangle)
+                corners = vec2[](vec2(1, 1), vec2(0, 1), vec2(1, 0));
+            shoreDist = SHORE_DISTANCE_MAX;
+            for (int i = 0; i < 3; i++)
+                if (shoreDistances[i] == 0)
+                    shoreDist = min(shoreDist, distance(local, corners[i]));
+            // Sides bordering land: west, east, south, north
+            int landSides = fAlphaBiasHsl[0] >> SHORE_SIDES_SHIFT & 15;
             if ((landSides & 1) != 0)
-                dist = min(dist, local.x);
+                shoreDist = min(shoreDist, local.x);
             if ((landSides & 2) != 0)
-                dist = min(dist, 1.0 - local.x);
+                shoreDist = min(shoreDist, 1.0 - local.x);
             if ((landSides & 4) != 0)
-                dist = min(dist, local.y);
+                shoreDist = min(shoreDist, local.y);
             if ((landSides & 8) != 0)
-                dist = min(dist, 1.0 - local.y);
-            shoreDist = dist;
+                shoreDist = min(shoreDist, 1.0 - local.y);
         }
+        // Warp the distance with drifting noise to hide tile and triangle edges
         float edgeNoise = noise(worldUvs(0.4) + uboGlobal.elapsedTime * vec2(0.03, -0.02));
         shoreDist += (edgeNoise - 0.5) * SHORE_FOAM_EDGE_NOISE;
 
-        // Direction towards land along the local X & Z axes, stored as an angle in the 4 bits above the distance.
-        // Each vertex's direction is blended here rather than its angle, which would wrap around. Where the vertices
-        // disagree, such as midway across a narrow river, the blend shrinks, which also slows the scrolling there.
-        vec3 shoreAngles = vec3(fAlphaBiasHsl >> 7 & 15) * (TAU / SHORE_DIRECTION_STEPS);
+        // Direction towards land. Blending vectors rather than angles avoids wrapping, and weakens it where
+        // vertices disagree, like midway across a river.
+        vec3 shoreAngles = vec3(fAlphaBiasHsl >> SHORE_DIRECTION_SHIFT & SHORE_DIRECTION_STEPS - 1) *
+            (TAU / SHORE_DIRECTION_STEPS);
         vec2 shoreDir = vec2(dot(fTexBlend, cos(shoreAngles)), dot(fTexBlend, sin(shoreAngles)));
 
-        // Timing of each wave reaching the shore. fract(shorePhase) is 0 as a wave arrives.
+        // fract(shorePhase) is 0 as each wave reaches the shore
         float shorePhase = uboGlobal.elapsedTime / SHORE_WAVE_PERIOD + edgeNoise * 0.4;
         float shoreT = fract(shorePhase);
         float shoreWaveStrength = mix(0.5, 1.0, hash11(floor(shorePhase)));
 
-        // World-space foam, so the pattern doesn't repeat per tile. Rather than scrolling layers, which read as
-        // textures sliding past each other, the foam stays in place and is warped by a slowly drifting noise field,
-        // so it churns and deforms as if pushed around by the water.
+        // World-space foam, warped by drifting noise so it churns in place
         vec2 foamWarp = noise2(worldUvs(1.5) + uboGlobal.elapsedTime * vec2(0.07, 0.03)) - 0.5;
         foamWarp = foamWarp * SHORE_FOAM_CHURN + uvFlow * flowMapStrength;
-        // Make the pattern itself change constantly, like the caustics, by blending three copies of the foam texture
-        // a third of a period apart. Each copy fades in and out with a sin² weight over one period, and jumps to a
-        // new random offset at the instant its weight is zero, so foam forms and dissolves in place without anything
-        // visibly sliding. Three sin² weights a third of a period apart always sum to 1.5, and their squares to 9/8,
-        // so the blend's brightness and contrast never change: there's no cycle to see, only continuous change.
-        // The random offsets also hide the texture repeating.
         vec2 foamUv = worldUvs(SHORE_FOAM_SCALE) + foamWarp;
-        // Gently sway the foam in towards the shore and back out. The timing is the same everywhere,
-        // so the whole pattern moves together instead of stretching, and the sway is small enough that the curving
-        // shore direction barely bends it.
-        // Moving the pattern by a world offset means sampling it that far behind, which is +offset in world UVs.
-        // Each cycle is a sway of random strength, followed by a lull of random length, so it's less predictable.
-        // The lull squeezes the sway into the rest of the cycle, so the sway's speed varies along with it.
+
+        // Sway the foam towards the shore and back, with the same timing everywhere so it doesn't stretch.
+        // Each cycle is a sway of random strength, then a lull of random length.
         float swayCycle = uboGlobal.elapsedTime / SHORE_FOAM_SWAY_PERIOD;
         float swayIndex = floor(swayCycle);
         float swayT = fract(swayCycle);
         float lull = hash11(swayIndex) * SHORE_FOAM_SWAY_MAX_LULL;
-        float sway;
+        float swayStrength;
         if (swayT < 1.0 - lull) {
-            // In, then out, starting and stopping smoothly
-            float t = swayT / (1.0 - lull);
-            sway = sin(t * TAU) * sin(t * PI) * mix(0.6, 1.0, hash11(swayIndex + 500.0));
+            swayT /= 1.0 - lull;
+            swayStrength = mix(0.6, 1.0, hash11(swayIndex + 500.0));
         } else {
-            // During the lull, keep drifting in and out very slowly rather than stopping. Its size scales with the
-            // lull's length, so the drift keeps roughly the same slow speed however long the lull lasts.
-            float t = (swayT - (1.0 - lull)) / lull;
-            sway = sin(t * TAU) * sin(t * PI) * (lull / SHORE_FOAM_SWAY_MAX_LULL) * SHORE_FOAM_LULL_DRIFT;
+            // Drift slowly during the lull, sized to keep about the same speed whatever its length
+            swayT = (swayT - (1.0 - lull)) / lull;
+            swayStrength = lull / SHORE_FOAM_SWAY_MAX_LULL * SHORE_FOAM_LULL_DRIFT;
         }
+        // In, then out, starting and stopping smoothly
+        float sway = sin(swayT * TAU) * sin(swayT * PI) * swayStrength;
+        // World UVs are negated, so adding the offset moves the pattern towards the shore
         foamUv += shoreDir * (sway * SHORE_FOAM_SWAY / SHORE_FOAM_SCALE);
+
+        // Blend three copies of the texture a third of a period apart, so the pattern keeps changing in place.
+        // Each fades in and out with a sin² weight, jumping to a random offset while invisible. The weights always
+        // sum to 1.5 and their squares to 9/8, so brightness and contrast stay constant.
         float evolveCycle = uboGlobal.elapsedTime / SHORE_FOAM_EVOLVE_PERIOD;
         float foamSum = 0;
         for (int i = 0; i < 3; i++) {
             float copyCycle = evolveCycle + i / 3.0;
-            float copyPhase = fract(copyCycle);
-            float weight = sin(copyPhase * PI);
-            weight *= weight;
-            vec2 seed = hash21(floor(copyCycle) + i * 1000.0);
-            vec2 offset = seed * 4.0;
-            foamSum += weight * texture(textureArray, vec3(foamUv + offset, MAT_WATER_FOAM.colorMap)).r;
+            float weight = sin(fract(copyCycle) * PI);
+            vec2 offset = hash21(floor(copyCycle) + i * 1000.0) * 4.0;
+            foamSum += weight * weight * texture(textureArray, vec3(foamUv + offset, MAT_WATER_FOAM.colorMap)).r;
         }
-        // Averaging unrelated patterns flattens their contrast by the normalized weights' length, sqrt(9/8) / 1.5,
-        // which is constant. Undo it around the texture's average brightness (0.58) to keep the original contrast.
+        // Blending flattens contrast by sqrt(9/8) / 1.5, so restore it around the texture's average brightness
         const float foamAverage = 0.58;
         float foamTex = (foamSum / 1.5 - foamAverage) * (1.5 / sqrt(9.0 / 8.0)) + foamAverage;
-        // The texture mostly ranges from 0.4 to 0.7, so a low start keeps its darkest blotches from emptying out
+        // The texture mostly ranges from 0.4 to 0.7
         foamMask = smoothstep(0.1, 0.65, foamTex);
 
-        // Waves rolling in toward the shore. The phase increases with time and with distance from the shore,
-        // so each crest moves shoreward. Within one cycle, fract(phase) is 0 at the crest's shoreward front and
-        // grows behind it. Time isn't wrapped here, so each wave keeps its integer phase as it travels.
-        float wavePhase = shoreDist * SHORE_WAVE_DENSITY + uboGlobal.elapsedTime / SHORE_WAVE_PERIOD + edgeNoise * 0.4;
+        // Waves travelling towards the shore. fract(wavePhase) is 0 at each crest's front, and floor(wavePhase)
+        // identifies the wave.
+        float wavePhase = shorePhase + shoreDist * SHORE_WAVE_DENSITY;
         float waveT = fract(wavePhase);
-        // Sharp leading edge, then a long trail of foam left behind the crest, which the erosion below breaks up
+        // Sharp front with a fading trail behind it
         float waveTrail = 1.0 - waveT;
         float wave = smoothstep(0.0, 0.06, waveT) * waveTrail * waveTrail * waveTrail;
-        // Give each wave its own strength, so they arrive in uneven sets instead of identical pulses
+        // Vary the strength per wave
         wave *= mix(0.5, 1.0, hash11(floor(wavePhase)));
         wave *= 1.0 - smoothstep(0.3, SHORE_WAVE_REACH, shoreDist);
 
-        // Solid foam hugging the shore, which surges outward as each wave arrives, then slowly draws back
+        // Solid foam along the shore, surging outward as each wave arrives
         float surgeTrail = 1.0 - shoreT;
         float surge = smoothstep(0.0, 0.1, shoreT) * surgeTrail * surgeTrail * shoreWaveStrength;
         float shoreBand = 1.0 - smoothstep(0.05, SHORE_FOAM_REACH + SHORE_SURGE_REACH * surge, shoreDist);
 
         float foamCoverage = saturate(max(shoreBand, wave * SHORE_WAVE_STRENGTH));
 
-        // Erode the foam texture by the coverage, so thin foam breaks up into patches instead of fading uniformly
+        // Erode the texture by the coverage, so thin foam breaks into patches
         foamAmount = smoothstep(1.0 - foamCoverage, 1.0 - foamCoverage + SHORE_FOAM_SOFTNESS, foamMask);
-        // A mostly solid, cloudy layer beneath the patches, fading out from the shore. This keeps the overall milky
-        // look of the original foam, so gaps between patches are cloudy water rather than bare.
+        // Faint cloudy layer under the patches, fading out from the shore
         float haze = 1.0 - smoothstep(0.0, SHORE_HAZE_REACH, shoreDist);
         haze *= mix(0.8, 1.0, foamMask) * SHORE_HAZE_STRENGTH;
-        // Layer the patches over the haze rather than taking the larger of the two, so even faint patch edges
-        // still add to the haze and stay visible against it
+        // Layer the patches over the haze, so their faint edges stay visible
         foamAmount = foamAmount + haze * (1.0 - foamAmount);
         foamAmount *= SHORE_FOAM_STRENGTH;
     }
     #else
-        // The original foam only knew whether each vertex was on the shore
+        // The original foam only checks whether each vertex is on the shore
         float shoreLineMask = 1 - dot(fTexBlend, vec3(notEqual(shoreDistances, ivec3(0))));
         float foamAmount = min(shoreLineMask, 0.8);
         foamAmount = clamp(pow(1.0 - ((1.0 - foamAmount) / 0.7), 3), 0.0, 1.0) * waterType.hasFoam;
@@ -457,9 +433,10 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
 
         #if IMPROVED_SHORE_FOAM
             vec3 foamColor = waterType.foamColor * mix(0.5, 0.7, foamMask) * compositeLight;
-            // The original weighted foam by its sRGB-encoded red channel, which hides green and blue foam.
-            // Use luminance instead, re-encoded to sRGB so it matches the red channel for neutral foam colors.
-            float litFoamAmount = foamAmount * linearToSrgb(linearSrgbLuminance(srgbToLinear(saturate(foamColor))));
+            // Weight by luminance rather than red, re-encoded to sRGB so neutral colors match. Skipped without foam.
+            float litFoamAmount = 0;
+            if (foamAmount > 0)
+                litFoamAmount = foamAmount * linearToSrgb(linearSrgbLuminance(srgbToLinear(saturate(foamColor))));
         #else
             vec3 foamColor = waterType.foamColor * foamMask * compositeLight;
             float litFoamAmount = foamAmount * foamColor.r;

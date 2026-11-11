@@ -57,7 +57,6 @@ import static net.runelite.api.Perspective.*;
 import static rs117.hd.scene.SceneContext.TILE_OVERRIDE_MAIN;
 import static rs117.hd.scene.SceneContext.TILE_OVERRIDE_OVERLAY;
 import static rs117.hd.scene.SceneContext.TILE_OVERRIDE_UNDERLAY;
-import static rs117.hd.scene.SceneContext.WATER_SQUARE_TILE_BIT;
 import static rs117.hd.scene.tile_overrides.TileOverride.NONE;
 import static rs117.hd.utils.HDUtils.HIDDEN_HSL;
 import static rs117.hd.utils.HDUtils.UNDERWATER_HSL;
@@ -1036,17 +1035,15 @@ public class SceneUploader implements AutoCloseable {
 			if (ctx.isVertexOverlay(swVertexKey) && ctx.isVertexUnderlay(swVertexKey))
 				swVertexIsOverlay = true;
 		} else if (onlyWaterSurface) {
-			// Pass each vertex's distance and direction to the shore in its color, for the water shader's foam
-			int shoreSides = ctx.getWaterTileShoreSides(tileZ, tileExX, tileExY);
-			swColor = ctx.getVertexShoreData(swVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
-			seColor = ctx.getVertexShoreData(seVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
-			nwColor = ctx.getVertexShoreData(nwVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
-			neColor = ctx.getVertexShoreData(neVertexKey) | shoreSides;
+			// Shore data for the water shader's foam
+			swColor = ctx.getSquareWaterTileShoreData(swVertexKey, tileZ, tileExX, tileExY, false);
+			seColor = ctx.getSquareWaterTileShoreData(seVertexKey, tileZ, tileExX, tileExY, false);
+			nwColor = ctx.getSquareWaterTileShoreData(nwVertexKey, tileZ, tileExX, tileExY, false);
+			neColor = ctx.getSquareWaterTileShoreData(neVertexKey, tileZ, tileExX, tileExY, true);
 
-			// The lightness is 0 only for vertices on the shore
-			if ((seColor & 0x7F) == 0 && (nwColor & 0x7F) == 0 && ((neColor & 0x7F) == 0 || (swColor & 0x7F) == 0)) {
-				// Bias depth a bit if it's flush with underwater geometry. Keep each corner's shoreline value,
-				// since a corner which isn't on the shore would otherwise turn the whole tile into a square of foam.
+			if (ctx.isVertexShore(seVertexKey) && ctx.isVertexShore(nwVertexKey) &&
+				(ctx.isVertexShore(neVertexKey) || ctx.isVertexShore(swVertexKey))) {
+				// Bias depth if flush with underwater geometry, keeping each corner's shore data
 				swColor |= 1 << 16;
 				seColor |= 1 << 16;
 				nwColor |= 1 << 16;
@@ -1393,12 +1390,11 @@ public class SceneUploader implements AutoCloseable {
 					}
 				}
 			} else if (onlyWaterSurface) {
-				// Pass each vertex's distance and direction to the shore in its color, for the water shader's foam
+				// Shore data for the water shader's foam
 				colorA = ctx.getVertexShoreData(vertexKeyA);
 				colorB = ctx.getVertexShoreData(vertexKeyB);
 				colorC = ctx.getVertexShoreData(vertexKeyC);
-				// The lightness is 0 only for vertices on the shore
-				if ((colorA & 0x7F) == 0 && (colorB & 0x7F) == 0 && (colorC & 0x7F) == 0) {
+				if (ctx.isVertexShore(vertexKeyA) && ctx.isVertexShore(vertexKeyB) && ctx.isVertexShore(vertexKeyC)) {
 					// Bias depth a bit if it's flush with underwater geometry
 					colorA |= 1 << 16;
 					colorB |= 1 << 16;
