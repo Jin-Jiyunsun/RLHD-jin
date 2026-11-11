@@ -981,6 +981,9 @@ public class HdPlugin extends Plugin {
 			.define("WATER_TYPE_COUNT", waterTypeManager.uboWaterTypes.getCount())
 			.define("WATER_SPECULAR_REFLECTIONS", config.waterSpecularReflections())
 			.define("DECOUPLE_WATER_FROM_SKY_COLOR", config.decoupleSkyAndWaterColor())
+			.define("IMPROVED_SHORE_FOAM", config.improvedShoreFoam())
+			.define("SHORE_DISTANCE_MAX", SceneContext.SHORE_DISTANCE_MAX)
+			.define("SHORE_DIRECTION_STEPS", SceneContext.SHORE_DIRECTION_STEPS)
 			.define("DYNAMIC_LIGHTS", configDynamicLights != DynamicLights.NONE)
 			.define("TILED_LIGHTING", configTiledLighting)
 			.define("TILED_LIGHTING_LAYER_COUNT", configDynamicLights.getTiledLightingLayers())
@@ -2004,6 +2007,7 @@ public class HdPlugin extends Plugin {
 							case KEY_LEGACY_BOAT_SILHOUETTES:
 							case KEY_WATER_SPECULAR_REFLECTIONS:
 							case KEY_DECOUPLE_WATER_FROM_SKY_COLOR:
+							case KEY_IMPROVED_SHORE_FOAM:
 							case KEY_CENTROID_QUALIFIER:
 							case KEY_VALIDATE_SHADERS:
 								recompilePrograms = true;

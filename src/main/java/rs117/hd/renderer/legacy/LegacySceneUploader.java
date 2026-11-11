@@ -56,6 +56,7 @@ import static net.runelite.api.Constants.SCENE_SIZE;
 import static net.runelite.api.Perspective.*;
 import static rs117.hd.scene.SceneContext.TILE_SKIP_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_WATER_FLAG;
+import static rs117.hd.scene.SceneContext.WATER_SQUARE_TILE_BIT;
 import static rs117.hd.scene.tile_overrides.TileOverride.NONE;
 import static rs117.hd.scene.tile_overrides.TileOverride.OVERLAY_FLAG;
 import static rs117.hd.utils.HDUtils.HIDDEN_HSL;
@@ -710,17 +711,12 @@ public class LegacySceneUploader {
 			}
 			else
 			{
-				// set colors for the shoreline to create a foam effect in the water shader
-				swColor = seColor = nwColor = neColor = 127;
-
-				if (sceneContext.isVertexWater(swVertexKey) && sceneContext.isVertexLand(swVertexKey))
-					swColor = 0;
-				if (sceneContext.isVertexWater(seVertexKey) && sceneContext.isVertexLand(seVertexKey))
-					seColor = 0;
-				if (sceneContext.isVertexWater(nwVertexKey) && sceneContext.isVertexLand(nwVertexKey))
-					nwColor = 0;
-				if (sceneContext.isVertexWater(neVertexKey) && sceneContext.isVertexLand(neVertexKey))
-					neColor = 0;
+				// Pass each vertex's distance and direction to the shore in its color, for the water shader's foam
+				int shoreSides = sceneContext.getWaterTileShoreSides(tileZ, tileExX, tileExY);
+				swColor = sceneContext.getVertexShoreData(swVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
+				seColor = sceneContext.getVertexShoreData(seVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
+				nwColor = sceneContext.getVertexShoreData(nwVertexKey) | shoreSides | WATER_SQUARE_TILE_BIT;
+				neColor = sceneContext.getVertexShoreData(neVertexKey) | shoreSides;
 			}
 
 			if (sceneContext.isVertexOverlay(neVertexKey) && sceneContext.isVertexUnderlay(neVertexKey))
@@ -1077,14 +1073,10 @@ public class LegacySceneUploader {
 						}
 					}
 				} else {
-					// set colors for the shoreline to create a foam effect in the water shader
-					colorA = colorB = colorC = 127;
-					if (sceneContext.isVertexWater(vertexKeyA) && sceneContext.isVertexLand(vertexKeyA))
-						colorA = 0;
-					if (sceneContext.isVertexWater(vertexKeyB) && sceneContext.isVertexLand(vertexKeyB))
-						colorB = 0;
-					if (sceneContext.isVertexWater(vertexKeyC) && sceneContext.isVertexLand(vertexKeyC))
-						colorC = 0;
+					// Pass each vertex's distance and direction to the shore in its color, for the water shader's foam
+					colorA = sceneContext.getVertexShoreData(vertexKeyA);
+					colorB = sceneContext.getVertexShoreData(vertexKeyB);
+					colorC = sceneContext.getVertexShoreData(vertexKeyC);
 				}
 
 				if (sceneContext.isVertexOverlay(vertexKeyA) && sceneContext.isVertexUnderlay(vertexKeyA))

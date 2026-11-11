@@ -27,6 +27,11 @@ import static rs117.hd.utils.MathUtils.*;
 public class SceneContext {
 	public static final byte TILE_WATER_FLAG = 1;
 	public static final byte TILE_SKIP_FLAG = 1 << 1;
+	// Which sides of a water tile border a land tile, for the water shader's shore foam
+	public static final byte TILE_LAND_WEST_FLAG = 1 << 2;
+	public static final byte TILE_LAND_EAST_FLAG = 1 << 3;
+	public static final byte TILE_LAND_SOUTH_FLAG = 1 << 4;
+	public static final byte TILE_LAND_NORTH_FLAG = 1 << 5;
 
 	public static final int TILE_OVERRIDE_MAIN = 0;
 	public static final int TILE_OVERRIDE_UNDERLAY = 1;
@@ -41,6 +46,16 @@ public class SceneContext {
 	public static final int VERTEX_UNDER_WATER_DEPTH_SHIFT = 5;
 	// This only needs 10 bits, since depth slope 1380 * .55 = 9.6 bits, but reserve 16 to be safe
 	public static final int VERTEX_UNDER_WATER_DEPTH_MASK = 0xFFFF;
+	// Distance from a water vertex to the nearest land, quantized from 0 to SHORE_DISTANCE_STEPS over
+	// SHORE_DISTANCE_MAX tiles. It's stored inverted, so vertices without a calculated distance read as far from land.
+	public static final int VERTEX_SHORE_DISTANCE_SHIFT = 21;
+	public static final int VERTEX_SHORE_DISTANCE_MASK = 0x7F;
+	public static final int SHORE_DISTANCE_STEPS = 127;
+	public static final int SHORE_DISTANCE_MAX = 4;
+	// Direction from a water vertex towards the nearest land, as an angle quantized into SHORE_DIRECTION_STEPS
+	public static final int VERTEX_SHORE_DIRECTION_SHIFT = 28;
+	public static final int VERTEX_SHORE_DIRECTION_MASK = 0xF;
+	public static final int SHORE_DIRECTION_STEPS = 16;
 
 	// Thread safe tile override variables
 	public final static ThreadLocal<TileOverrideVariables> TILE_OVERRIDE_VARIABLES = ThreadLocal.withInitial(TileOverrideVariables::new);
@@ -111,6 +126,56 @@ public class SceneContext {
 		int value = (depth << VERTEX_UNDER_WATER_DEPTH_SHIFT);
 		int mask = VERTEX_UNDER_WATER_DEPTH_MASK << VERTEX_UNDER_WATER_DEPTH_SHIFT;
 		vertexTerrainData.setBits(hash, value, mask, 0);
+	}
+
+	/**
+	 * @param distance   distance to the nearest land, in tiles
+	 * @param directionX direction towards the nearest land along the local X axis
+	 * @param directionZ direction towards the nearest land along the local Z axis
+	 */
+	public void setVertexShoreData(int hash, float distance, float directionX, float directionZ) {
+		int distanceSteps = round(clamp(distance / SHORE_DISTANCE_MAX, 0, 1) * SHORE_DISTANCE_STEPS);
+		int directionSteps = round((float) Math.atan2(directionZ, directionX) / TWO_PI * SHORE_DIRECTION_STEPS);
+		int value =
+			(SHORE_DISTANCE_STEPS - distanceSteps) << VERTEX_SHORE_DISTANCE_SHIFT |
+			(directionSteps & VERTEX_SHORE_DIRECTION_MASK) << VERTEX_SHORE_DIRECTION_SHIFT;
+		int mask =
+			VERTEX_SHORE_DISTANCE_MASK << VERTEX_SHORE_DISTANCE_SHIFT |
+			VERTEX_SHORE_DIRECTION_MASK << VERTEX_SHORE_DIRECTION_SHIFT;
+		vertexTerrainData.setBits(hash, value, mask, 0);
+	}
+
+	/**
+	 * Shore data for the water shader's foam, packed into a water surface vertex's HSL color.
+	 * The lightness holds the distance to the nearest land, from 0 on the shore to SHORE_DISTANCE_STEPS at
+	 * SHORE_DISTANCE_MAX tiles or further. Only vertices on the shore itself are 0, which the original foam and the
+	 * depth bias rely on. The 4 bits above it hold the direction towards land, in SHORE_DIRECTION_STEPS.
+	 */
+	public int getVertexShoreData(int hash) {
+		int direction = vertexTerrainData.getBits(hash, VERTEX_SHORE_DIRECTION_MASK, VERTEX_SHORE_DIRECTION_SHIFT, 0);
+		int distance = 0;
+		if (!isVertexWater(hash) || !isVertexLand(hash)) {
+			int stored = vertexTerrainData.getBits(hash, VERTEX_SHORE_DISTANCE_MASK, VERTEX_SHORE_DISTANCE_SHIFT, 0);
+			distance = max(1, SHORE_DISTANCE_STEPS - stored);
+		}
+		return direction << 7 | distance;
+	}
+
+	/**
+	 * Marks a square water tile's vertex colors, so the water shader can work out the distance to land within the tile.
+	 * A square tile is split into the triangles (ne, nw, se) and (sw, se, nw). Setting this on the se, nw and sw corners
+	 * marks the second and third vertex of either triangle, meaning the face is part of a square tile, and the first
+	 * vertex only in the south-west triangle, telling the two apart.
+	 */
+	public static final int WATER_SQUARE_TILE_BIT = 1 << 15;
+
+	/**
+	 * Which sides of a square water tile border land, for its vertex colors: bits 11 to 14 in the order west, east,
+	 * south, north. Together with the corners on the shore, this lets the water shader work out the distance to land
+	 * within the tile, rather than only blending its corners.
+	 */
+	public int getWaterTileShoreSides(int plane, int x, int y) {
+		return (tileFlags[getTileIdx(plane, x, y)] >> 2 & 0xF) << 11;
 	}
 
 	public boolean isVertexHighPriorityColor(int hash) {

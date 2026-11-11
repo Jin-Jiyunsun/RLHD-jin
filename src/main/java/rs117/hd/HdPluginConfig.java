@@ -1426,6 +1426,17 @@ public interface HdPluginConfig extends Config
 		return false;
 	}
 
+	String KEY_IMPROVED_SHORE_FOAM = "experimentalImprovedShoreFoam";
+	@ConfigItem(
+		keyName = KEY_IMPROVED_SHORE_FOAM,
+		name = "Improved shore foam",
+		description = "Animated foam along shorelines which breaks up into patches, instead of a fade along tile edges.",
+		section = experimentalSettings
+	)
+	default boolean improvedShoreFoam() {
+		return true;
+	}
+
 	String KEY_SIMPLE_BOAT_SILHOUETTES = "experimentalSimpleBoatSilhouettes";
 	@ConfigItem(
 		keyName = KEY_SIMPLE_BOAT_SILHOUETTES,
