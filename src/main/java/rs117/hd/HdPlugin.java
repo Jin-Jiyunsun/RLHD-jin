@@ -515,6 +515,9 @@ public class HdPlugin extends Plugin {
 	private long lastFrameTimeMillis;
 	private double lastFrameClientTime;
 	public float windOffset;
+	// How far the wind has carried the water's surface, along local X and Z, for the open water foam. Measured in
+	// seconds of the default wind speed, so stronger winds carry it further.
+	public final float[] windDrift = new float[2];
 	public long colorFilterChangedAt;
 
 	public float clientUnfocusedTime;
@@ -2207,7 +2210,11 @@ public class HdPlugin extends Plugin {
 			deltaClientTime = (float) (elapsedClientTime - lastFrameClientTime);
 
 			elapsedTime += deltaTime;
-			windOffset += deltaTime * environmentManager.getCurrentEnvironment().windSpeed;
+			var env = environmentManager.getCurrentEnvironment();
+			windOffset += deltaTime * env.windSpeed;
+			float windDriftStep = deltaTime * env.windSpeed / 15f;
+			windDrift[0] = (float) ((windDrift[0] + windDriftStep * Math.cos(env.windAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
+			windDrift[1] = (float) ((windDrift[1] + windDriftStep * Math.sin(env.windAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
 		}
 		lastFrameTimeMillis = System.currentTimeMillis();
 		lastFrameClientTime = elapsedClientTime;

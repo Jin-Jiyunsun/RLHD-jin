@@ -720,6 +720,8 @@ public class ZoneRenderer implements Renderer {
 
 		// Lights & lightning
 		plugin.uboGlobal.lightningBrightness.set(environmentManager.getLightningBrightness());
+		plugin.uboGlobal.windDirection.set((float) Math.cos(env.windAngle), (float) Math.sin(env.windAngle));
+		plugin.uboGlobal.windDrift.set(plugin.windDrift);
 
 		plugin.uboGlobal.saturation.set(config.saturation() / 100f);
 		plugin.uboGlobal.contrast.set(config.contrast() / 100f);

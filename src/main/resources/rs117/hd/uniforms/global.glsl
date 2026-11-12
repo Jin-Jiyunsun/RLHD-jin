@@ -72,4 +72,6 @@ layout(std140) uniform UBOGlobal {
 
     float lightningBrightness;
     float elapsedTime;
+    vec2 windDirection; // the way the wind blows, along local X and Z
+    vec2 windDrift; // how far the wind has blown in total, along each axis, in seconds of the default wind speed
 } uboGlobal;

@@ -62,7 +62,8 @@ public class SceneContext {
 	// - Bit 15: WATER_SQUARE_TILE_BIT
 	// - Bits 24-29: how enclosed the water is, from WATER_ENCLOSURE_SHIFT, in the alpha bits water surfaces don't use
 	// The step counts double as bit masks.
-	public static final int SHORE_DISTANCE_MAX = 4;
+	// As far as the distance field is measured, WATER_ROOM_MAX, so whitecaps can keep clear of the shore
+	public static final int SHORE_DISTANCE_MAX = 12;
 	public static final int SHORE_DISTANCE_STEPS = 0x7F;
 	public static final int SHORE_DIRECTION_SHIFT = 7;
 	public static final int SHORE_DIRECTION_STEPS = 16;

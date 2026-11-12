@@ -79,4 +79,6 @@ public class UBOGlobal extends UniformBuffer<GLBuffer> {
 
 	public final Property lightningBrightness = addProperty(PropertyType.Float, "lightningBrightness");
 	public final Property elapsedTime = addProperty(PropertyType.Float, "elapsedTime");
+	public final Property windDirection = addProperty(PropertyType.FVec2, "windDirection");
+	public final Property windDrift = addProperty(PropertyType.FVec2, "windDrift");
 }
