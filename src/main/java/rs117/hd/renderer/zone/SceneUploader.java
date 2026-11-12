@@ -1040,10 +1040,6 @@ public class SceneUploader implements AutoCloseable {
 			seColor = ctx.getSquareWaterTileShoreData(seVertexKey, tileZ, tileExX, tileExY, false);
 			nwColor = ctx.getSquareWaterTileShoreData(nwVertexKey, tileZ, tileExX, tileExY, false);
 			neColor = ctx.getSquareWaterTileShoreData(neVertexKey, tileZ, tileExX, tileExY, true);
-			swColor |= ctx.getVertexWaterEnclosure(swVertexKey);
-			seColor |= ctx.getVertexWaterEnclosure(seVertexKey);
-			nwColor |= ctx.getVertexWaterEnclosure(nwVertexKey);
-			neColor |= ctx.getVertexWaterEnclosure(neVertexKey);
 
 			if (ctx.isVertexShore(seVertexKey) && ctx.isVertexShore(nwVertexKey) &&
 				(ctx.isVertexShore(neVertexKey) || ctx.isVertexShore(swVertexKey))) {
@@ -1398,9 +1394,6 @@ public class SceneUploader implements AutoCloseable {
 				colorA = ctx.getVertexShoreData(vertexKeyA);
 				colorB = ctx.getVertexShoreData(vertexKeyB);
 				colorC = ctx.getVertexShoreData(vertexKeyC);
-				colorA |= ctx.getVertexWaterEnclosure(vertexKeyA);
-				colorB |= ctx.getVertexWaterEnclosure(vertexKeyB);
-				colorC |= ctx.getVertexWaterEnclosure(vertexKeyC);
 				if (ctx.isVertexShore(vertexKeyA) && ctx.isVertexShore(vertexKeyB) && ctx.isVertexShore(vertexKeyC)) {
 					// Bias depth a bit if it's flush with underwater geometry
 					colorA |= 1 << 16;

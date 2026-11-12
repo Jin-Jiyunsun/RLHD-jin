@@ -76,7 +76,7 @@ public class SceneContext {
 	public static final int WATER_ROOM_MAX = 12;
 	/**
 	 * How enclosed the water around a vertex is. 0 is open water, where the furthest point from land nearby is at least
-	 * WATER_ROOM_MAX tiles away, up to WATER_ENCLOSURE_STEPS for fully enclosed. Left at 0 by the legacy renderer.
+	 * WATER_ROOM_MAX tiles away, up to WATER_ENCLOSURE_STEPS for fully enclosed.
 	 */
 	public static final int WATER_ENCLOSURE_SHIFT = 24;
 	public static final int WATER_ENCLOSURE_STEPS = 0x3F;
@@ -181,24 +181,18 @@ public class SceneContext {
 	}
 
 	/**
-	 * The vertex's distance and direction to the nearest land, packed for a water surface vertex color
+	 * The vertex's distance and direction to the nearest land, and how enclosed the water is, packed for a water
+	 * surface vertex color
 	 */
 	public int getVertexShoreData(int hash) {
 		int data = vertexTerrainData.getOrDefault(hash, 0);
 		int direction = data >>> VERTEX_SHORE_DIRECTION_SHIFT & SHORE_DIRECTION_STEPS - 1;
+		int enclosure = data >>> VERTEX_WATER_ENCLOSURE_SHIFT & WATER_ENCLOSURE_STEPS;
 		int distance = 0;
 		int shoreFlags = VERTEX_IS_WATER | VERTEX_IS_LAND;
 		if ((data & shoreFlags) != shoreFlags)
 			distance = max(1, SHORE_DISTANCE_STEPS - (data >>> VERTEX_SHORE_DISTANCE_SHIFT & SHORE_DISTANCE_STEPS));
-		return direction << SHORE_DIRECTION_SHIFT | distance;
-	}
-
-	/**
-	 * How enclosed the water around the vertex is, packed for a water surface vertex color
-	 */
-	public int getVertexWaterEnclosure(int hash) {
-		int data = vertexTerrainData.getOrDefault(hash, 0);
-		return (data >>> VERTEX_WATER_ENCLOSURE_SHIFT & WATER_ENCLOSURE_STEPS) << WATER_ENCLOSURE_SHIFT;
+		return enclosure << WATER_ENCLOSURE_SHIFT | direction << SHORE_DIRECTION_SHIFT | distance;
 	}
 
 	/**

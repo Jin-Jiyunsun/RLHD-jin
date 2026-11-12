@@ -43,7 +43,6 @@ import rs117.hd.utils.collections.PooledArrayType;
 
 import static net.runelite.api.Constants.*;
 import static net.runelite.api.Perspective.*;
-import static rs117.hd.scene.SceneContext.SHORE_DISTANCE_MAX;
 import static rs117.hd.scene.SceneContext.TILE_HAS_LAND_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_LAND_EAST_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_LAND_NORTH_FLAG;
@@ -795,16 +794,15 @@ public class ProceduralGenerator {
 		private final int[] hashes = new int[4];
 
 		private final byte[][][] underwaterDepthLevels = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		// Distance from each grid vertex to the nearest land vertex, capped at SHORE_DISTANCE_MAX tiles.
+		// Distance from each grid vertex to the nearest land vertex, capped at WATER_ROOM_MAX tiles.
 		// Measured in fifths of a tile, with chamfer weights of 5 per straight step and 7 per diagonal (about 5 * sqrt(2)).
 		private static final int SHORE_GRID_STEP = 5;
 		private static final int SHORE_GRID_DIAGONAL = 7;
 		private final byte[][][] shoreDistances = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		// The largest distance from land within WATER_ROOM_RADIUS tiles, measured up to WATER_ROOM_MAX tiles, in the same
-		// units as shoreDistances. Waves only form where there's enough room.
+		// The largest distance from land within WATER_ROOM_RADIUS tiles, in the same units as shoreDistances.
+		// Waves only form where there's enough room.
 		private static final int WATER_ROOM_RADIUS = 8;
 		private final byte[][][] waterRoom = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		private final byte[][] farDistances = new byte[EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
 		private final byte[] filterRow = new byte[EXTENDED_SCENE_SIZE + 1];
 
 		// Defines ranges of water tiles
@@ -841,7 +839,7 @@ public class ProceduralGenerator {
 				}
 				// Start far from land. Land vertices are set to 0 below.
 				for (byte[] column : shoreDistances[z])
-					Arrays.fill(column, (byte) (SHORE_DISTANCE_MAX * SHORE_GRID_STEP));
+					Arrays.fill(column, (byte) (WATER_ROOM_MAX * SHORE_GRID_STEP));
 			}
 
 			int minZ = MAX_Z, maxZ = 0;
@@ -1054,17 +1052,9 @@ public class ProceduralGenerator {
 			}
 
 			for (int z = minZ; z <= maxZ; ++z) {
-				final byte[][] d = shoreDistances[z];
-				chamferDistanceTransform(d, sizeX, sizeY);
-
-				// For the room around the water, measure further from land than the shore data does, then take the largest
-				// distance nearby. Land is wherever the shore distance is 0.
-				final byte[][] far = farDistances;
-				for (int x = 0; x <= sizeX; x++)
-					for (int y = 0; y <= sizeY; y++)
-						far[x][y] = (byte) (d[x][y] == 0 ? 0 : WATER_ROOM_MAX * SHORE_GRID_STEP);
-				chamferDistanceTransform(far, sizeX, sizeY);
-				maxFilter(far, waterRoom[z], sizeX, sizeY, WATER_ROOM_RADIUS);
+				chamferDistanceTransform(shoreDistances[z], sizeX, sizeY);
+				// The room around the water is the largest distance from land nearby
+				maxFilter(shoreDistances[z], waterRoom[z], sizeX, sizeY, WATER_ROOM_RADIUS);
 			}
 
 			// Store the height offsets in a hashmap and calculate interpolated

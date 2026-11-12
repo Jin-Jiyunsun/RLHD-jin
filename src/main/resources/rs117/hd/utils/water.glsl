@@ -55,14 +55,15 @@
 #define SHORE_WAVE_MIN_LENGTH 1.5          // range of each wave's length along the shore, in tiles
 #define SHORE_WAVE_MAX_LENGTH 4.0
 #define SHORE_WAVE_END_TAPER 0.3           // how much of each wave's length fades out towards its ends
-#define SHORE_WAVE_THICKNESS 0.45          // average depth of each wave from front to back, in tiles
+#define SHORE_WAVE_START_THICKNESS 0.3     // average depth of each wave from front to back where it forms, in tiles
+#define SHORE_WAVE_END_THICKNESS 0.6      // and at the shore, growing evenly in between
 #define SHORE_WAVE_THICKNESS_RANDOMNESS 0.3 // how much each wave's thickness varies, as a fraction either way
 #define SHORE_WAVE_FRONT 0.25              // how gradually each wave's front rises, as a fraction of its thickness
 #define SHORE_WAVE_TAIL 0.6                // how gradually each wave fades out behind its crest, as a fraction of its thickness
 #define SHORE_WAVE_FRONT_BREAKUP 0.12      // how far the foam texture breaks up each wave's front, in tiles
 #define SHORE_WAVE_MIN_STRENGTH 0.6        // weakest wave's coverage, relative to the strongest
 #define SHORE_WAVE_COVERAGE 1.5            // boosts each wave's coverage before capping it, so most waves are solid
-#define SHORE_WAVE_REACH 2.0               // how far from the shore waves form, in tiles. At most about 3.6.
+#define SHORE_WAVE_REACH 2.25               // how far from the shore waves form, in tiles. At most about 3.6.
 #define SHORE_WAVE_SPEED 0.32              // tiles per second as waves form, slowing evenly as they come in
 #define SHORE_WAVE_END_SPEED 0.7           // waves' speed at the shore, as a fraction of their starting speed
 #define SHORE_WAVE_SPEED_RANDOMNESS 0.12   // how much each wave's speed varies, as a fraction either way
@@ -70,7 +71,6 @@
 #define SHORE_WAVE_OPACITY_CURVE 1.5       // how late waves fade in, from 1 for steady; higher stays fainter for longer
 #define SHORE_WAVE_MIN_ROOM 5.0            // waves only form with this much open water nearby, in tiles
 #define SHORE_WAVE_FULL_ROOM 6.0           // and reach full strength with this much, up to WATER_ROOM_MAX
-#define SHORE_WAVES_PER_STRETCH 5          // waves checked per stretch. Raise it if slow waves vanish before landing.
 
 #if DAYLIGHT_CYCLE
     #include <utils/sky_sampling.glsl>
@@ -113,25 +113,67 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
     // Positions are in travel distance, which waves cover at a steady rate
     float travel = waveTravelDistance(shoreDist) + (foamMask - 0.5) * SHORE_WAVE_FRONT_BREAKUP;
     float startTravel = waveTravelDistance(float(SHORE_WAVE_REACH));
+    // Waves thicken as they come in
+    float baseThickness = mix(float(SHORE_WAVE_END_THICKNESS), float(SHORE_WAVE_START_THICKNESS), saturate(shoreDist / SHORE_WAVE_REACH));
 
-    vec2 stretch = floor(shorePoint / SHORE_WAVE_SPACING);
     // Each stretch has a chance to spawn a wave once per slot, averaging one per interval, with room for sets to spawn
     // more. Each spawns early enough in its slot that waves from the same stretch are at least SHORE_WAVE_MIN_GAP apart.
     const float slot = max(SHORE_WAVE_INTERVAL * 0.75, float(SHORE_WAVE_MIN_GAP));
     const float baseChance = min(1.0, slot / SHORE_WAVE_INTERVAL);
     const float spawnWindow = 1.0 - SHORE_WAVE_MIN_GAP / slot;
+    const float minSpeed = SHORE_WAVE_SPEED * max(1.0 - SHORE_WAVE_SPEED_RANDOMNESS, 0.01);
+    const float maxSpeed = SHORE_WAVE_SPEED * (1.0 + SHORE_WAVE_SPEED_RANDOMNESS);
+    const float maxThickness =
+        max(float(SHORE_WAVE_START_THICKNESS), float(SHORE_WAVE_END_THICKNESS)) * (1.0 + SHORE_WAVE_THICKNESS_RANDOMNESS);
+    const float maxHalfLength = SHORE_WAVE_MAX_LENGTH * 0.5;
+    const int cellRadius = int(ceil(maxHalfLength / SHORE_WAVE_SPACING));
+
+    // Only waves of an age between these can be covering this point, so only check the slots they could spawn in
+    float minAge = max((startTravel - travel) / maxSpeed, 0.0);
+    float maxAge = (startTravel - travel + maxThickness) / minSpeed;
+    if (maxAge <= 0.0)
+        return 0.0;
+    float newestSlot = (time - minAge) / slot;
+    float oldestSlot = (time - maxAge) / slot - spawnWindow;
+
+    vec2 stretch = floor(shorePoint / SHORE_WAVE_SPACING);
     float wave = 0;
-    for (int sy = -1; sy <= 1; sy++) {
-        for (int sx = -1; sx <= 1; sx++) {
+    for (int sy = -cellRadius; sy <= cellRadius; sy++) {
+        for (int sx = -cellRadius; sx <= cellRadius; sx++) {
             vec2 cell = stretch + vec2(sx, sy);
+            // Skip stretches too far away for any of their waves to reach this point
+            vec2 toCell = abs(shorePoint - (cell + 0.5) * SHORE_WAVE_SPACING) - 0.5 * SHORE_WAVE_SPACING;
+            if (length(max(toCell, 0.0)) >= maxHalfLength)
+                continue;
+
             // Offset each stretch's slots at random, so neighbouring stretches don't spawn together and line up
             float slotOffset = hash12(cell + 0.73);
-            float newest = floor(time / slot - slotOffset);
-            for (int k = 0; k < SHORE_WAVES_PER_STRETCH; k++) {
-                float n = newest - float(k);
+            float lastN = floor(newestSlot - slotOffset);
+            for (float n = floor(oldestSlot - slotOffset); n <= lastN; n++) {
+                // Cheapest checks first. Spawned early in its slot, travelling in at its own speed.
                 vec2 r1 = hash22(cell + n * vec2(17.31, 5.13));
                 vec2 r2 = hash22(cell * 3.71 + n * vec2(2.27, 11.9) + 0.5);
+                float age = time - (n + slotOffset + r1.x * spawnWindow) * slot;
+                if (age < 0.0)
+                    continue;
+                float speed = SHORE_WAVE_SPEED * (1.0 + (r2.x - 0.5) * 2.0 * SHORE_WAVE_SPEED_RANDOMNESS);
+                float front = startTravel - age * speed;
+
+                // The wave's body, from 0 at its front to 1 at its back
+                float thickness = baseThickness *
+                    (1.0 + (hash12(cell * 5.17 + n * vec2(3.31, 9.13) + 2.5) - 0.5) * 2.0 * SHORE_WAVE_THICKNESS_RANDOMNESS);
+                float across = (travel - front) / thickness;
+                if (across <= 0.0 || across >= 1.0)
+                    continue;
+
+                // How far along the wave this point is, from 0 in its middle to 1 at its ends
                 vec2 r3 = hash22(cell * 1.93 - n * vec2(7.13, 3.37) + 1.5);
+                vec2 center = (cell + r2) * SHORE_WAVE_SPACING;
+                float halfLength = mix(SHORE_WAVE_MIN_LENGTH, SHORE_WAVE_MAX_LENGTH, r3.y) * 0.5;
+                float along = length(shorePoint - center) / halfLength;
+                if (along >= 1.0)
+                    continue;
+
                 // The chance rises and falls slowly, giving sets and lulls. Nearby stretches have similar chances,
                 // so a set rolls along the coast together.
                 float sets = noise(vec2(n * slot / SHORE_WAVE_SET_PERIOD, dot(cell, vec2(0.37, 0.21))));
@@ -139,27 +181,7 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
                 if (r3.x >= spawnChance)
                     continue;
 
-                // How far along the wave this point is, from 0 in its middle to 1 at its ends
-                vec2 center = (cell + r2) * SHORE_WAVE_SPACING;
-                float halfLength = mix(SHORE_WAVE_MIN_LENGTH, SHORE_WAVE_MAX_LENGTH, r3.y) * 0.5;
-                float along = length(shorePoint - center) / halfLength;
-                if (along >= 1.0)
-                    continue;
                 float strength = mix(SHORE_WAVE_MIN_STRENGTH, 1.0, r1.y) * (1.0 - smoothstep(1.0 - SHORE_WAVE_END_TAPER, 1.0, along));
-
-                // Spawned early in its slot, travelling in at its own speed
-                float age = time - (n + slotOffset + r1.x * spawnWindow) * slot;
-                float speed = SHORE_WAVE_SPEED * (1.0 + (r2.x - 0.5) * 2.0 * SHORE_WAVE_SPEED_RANDOMNESS);
-                if (age < 0.0)
-                    continue;
-                float front = startTravel - age * speed;
-
-                // The wave's body, from 0 at its front to 1 at its back
-                float thickness = SHORE_WAVE_THICKNESS *
-                    (1.0 + (hash12(cell * 5.17 + n * vec2(3.31, 9.13) + 2.5) - 0.5) * 2.0 * SHORE_WAVE_THICKNESS_RANDOMNESS);
-                float across = (travel - front) / thickness;
-                if (across <= 0.0 || across >= 1.0)
-                    continue;
                 float body = smoothstep(0.0, SHORE_WAVE_FRONT, across) * (1.0 - smoothstep(1.0 - SHORE_WAVE_TAIL, 1.0, across));
                 // Capped after the boost, so strong waves are solid and weaker ones and the tapered ends thin out
                 wave = max(wave, body * saturate(strength * room * SHORE_WAVE_COVERAGE));
@@ -460,18 +482,18 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         // The texture mostly ranges from 0.4 to 0.7
         foamMask = smoothstep(0.1, 0.65, foamTex);
 
-        // Waves travelling towards the shore, over solid foam along it
-        float wave = shoreWaves(shoreDist, shorePoint, foamMask, roomForWaves);
-        float shoreBand = 1.0 - smoothstep(0.05, SHORE_FOAM_REACH, shoreDist);
-
-        float foamCoverage = max(shoreBand, wave);
-
-        // Erode the texture by the coverage, so thin foam breaks into patches
-        foamAmount = smoothstep(1.0 - foamCoverage, 1.0 - foamCoverage + SHORE_FOAM_SOFTNESS, foamMask);
-        // Faint cloudy layer under the patches, fading out from the shore
-        // Waves fade in from nothing as they come in
+        // Waves travelling towards the shore, fading in from nothing as they come in, over solid foam along it.
+        // Skipped where they'd be invisible.
         float waveOpacity = saturate((SHORE_WAVE_REACH - shoreDist) / max(SHORE_WAVE_REACH - SHORE_WAVE_FULL_OPACITY, 0.01));
         waveOpacity = pow(waveOpacity, SHORE_WAVE_OPACITY_CURVE);
+        float wave = 0.0;
+        if (roomForWaves > 0.0 && waveOpacity > 0.0)
+            wave = shoreWaves(shoreDist, shorePoint, foamMask, roomForWaves);
+        float shoreBand = 1.0 - smoothstep(0.05, SHORE_FOAM_REACH, shoreDist);
+
+        // Erode the texture by the coverage, so thin foam breaks into patches
+        float foamCoverage = max(shoreBand, wave);
+        foamAmount = smoothstep(1.0 - foamCoverage, 1.0 - foamCoverage + SHORE_FOAM_SOFTNESS, foamMask);
         // The shore foam keeps its own strength, but only where it's the stronger foam, so waves crossing it keep fading
         float bandDominance = smoothstep(-0.15, 0.15, shoreBand - wave);
         foamAmount *= SHORE_FOAM_STRENGTH * mix(waveOpacity, max(waveOpacity, shoreBand), bandDominance);
