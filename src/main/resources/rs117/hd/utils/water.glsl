@@ -53,7 +53,7 @@
 #define SHORE_WAVE_SET_PERIOD 10.0         // seconds over which waves come in sets and lulls
 #define SHORE_WAVE_SET_CONTRAST 0.8        // how busy sets and how quiet lulls are, from 0 for steady to 1
 #define SHORE_WAVE_MIN_LENGTH 1.5          // range of each wave's length along the shore, in tiles
-#define SHORE_WAVE_MAX_LENGTH 4.0
+#define SHORE_WAVE_MAX_LENGTH 4.0          // at most twice the spacing, since only the neighbouring stretches are checked
 #define SHORE_WAVE_END_TAPER 0.3           // how much of each wave's length fades out towards its ends
 #define SHORE_WAVE_START_THICKNESS 0.3     // average depth of each wave from front to back where it forms, in tiles
 #define SHORE_WAVE_END_THICKNESS 0.6      // and at the shore, growing evenly in between
@@ -163,7 +163,6 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
     const float maxThickness =
         max(float(SHORE_WAVE_START_THICKNESS), float(SHORE_WAVE_END_THICKNESS)) * (1.0 + SHORE_WAVE_THICKNESS_RANDOMNESS);
     const float maxHalfLength = SHORE_WAVE_MAX_LENGTH * 0.5;
-    const int cellRadius = int(ceil(maxHalfLength / SHORE_WAVE_SPACING));
 
     // Only waves of an age between these can be covering this point, so only check the slots they could spawn in
     float minAge = max((startTravel - travel) / maxSpeed, 0.0);
@@ -175,8 +174,8 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
 
     vec2 stretch = floor(shorePoint / SHORE_WAVE_SPACING);
     float wave = 0;
-    for (int sy = -cellRadius; sy <= cellRadius; sy++) {
-        for (int sx = -cellRadius; sx <= cellRadius; sx++) {
+    for (int sy = -1; sy <= 1; sy++) {
+        for (int sx = -1; sx <= 1; sx++) {
             vec2 cell = stretch + vec2(sx, sy);
             // Skip stretches too far away for any of their waves to reach this point
             vec2 toCell = abs(shorePoint - (cell + 0.5) * SHORE_WAVE_SPACING) - 0.5 * SHORE_WAVE_SPACING;
@@ -675,7 +674,7 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         // Blending corners gives 0 everywhere between two shores, like in a one tile wide channel. On square tiles
         // touching land, measure to the land corners and sides within the tile instead. WATER_SQUARE_TILE_BIT on the
         // second vertex marks a square tile, and on the first the sw triangle (sw, se, nw) rather than (ne, nw, se).
-        if ((fAlphaBiasHsl[1] & WATER_SQUARE_TILE_BIT) != 0 && any(equal(shoreDistances, ivec3(0)))) {
+        if (nearShore && (fAlphaBiasHsl[1] & WATER_SQUARE_TILE_BIT) != 0 && any(equal(shoreDistances, ivec3(0)))) {
             bool swTriangle = (fAlphaBiasHsl[0] & WATER_SQUARE_TILE_BIT) != 0;
             // Position within the tile, from (0, 0) at sw to (1, 1) at ne
             vec2 local = swTriangle ?
@@ -705,14 +704,18 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             shoreDist += (edgeNoise - 0.5) * SHORE_FOAM_EDGE_NOISE;
         }
 
-        // Direction towards land. Blending vectors rather than angles avoids wrapping, and weakens it where
-        // vertices disagree, like midway across a river.
-        vec3 shoreAngles = vec3(fAlphaBiasHsl >> SHORE_DIRECTION_SHIFT & SHORE_DIRECTION_STEPS - 1) *
-            (TAU / SHORE_DIRECTION_STEPS);
-        vec2 shoreDir = vec2(dot(fTexBlend, cos(shoreAngles)), dot(fTexBlend, sin(shoreAngles)));
+        // Direction towards land, only where a corner is within range of it. Blending vectors rather than angles avoids
+        // wrapping, and weakens it where vertices disagree, like midway across a river.
+        vec2 shoreDir = vec2(0);
+        vec2 towardsShore = vec2(0);
+        if (any(lessThan(shoreDistances, ivec3(SHORE_DISTANCE_STEPS)))) {
+            vec3 shoreAngles = vec3(fAlphaBiasHsl >> SHORE_DIRECTION_SHIFT & SHORE_DIRECTION_STEPS - 1) *
+                (TAU / SHORE_DIRECTION_STEPS);
+            shoreDir = vec2(dot(fTexBlend, cos(shoreAngles)), dot(fTexBlend, sin(shoreAngles)));
+            towardsShore = length(shoreDir) > 0.1 ? normalize(shoreDir) : vec2(0);
+        }
         // The nearest point on the shore, in world tiles. It stays the same as a wave travels in towards it, so patterns
         // based on it vary along the shore without shifting as the waves move.
-        vec2 towardsShore = length(shoreDir) > 0.1 ? normalize(shoreDir) : vec2(0);
         vec2 shorePoint = -worldUvs(1.0) + towardsShore * shoreDist;
 
         // Only form waves where there's room, so not in small ponds or narrow channels
