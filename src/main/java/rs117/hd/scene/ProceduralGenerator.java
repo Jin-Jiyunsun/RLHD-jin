@@ -55,6 +55,7 @@ import static rs117.hd.scene.SceneContext.TILE_OVERRIDE_OVERLAY;
 import static rs117.hd.scene.SceneContext.TILE_OVERRIDE_UNDERLAY;
 import static rs117.hd.scene.SceneContext.TILE_SKIP_FLAG;
 import static rs117.hd.scene.SceneContext.TILE_WATER_FLAG;
+import static rs117.hd.scene.SceneContext.WATER_ROOM_MAX;
 import static rs117.hd.scene.tile_overrides.TileOverride.OVERLAY_FLAG;
 import static rs117.hd.utils.HDUtils.HIDDEN_HSL;
 import static rs117.hd.utils.HDUtils.calculateSurfaceNormals;
@@ -799,6 +800,12 @@ public class ProceduralGenerator {
 		private static final int SHORE_GRID_STEP = 5;
 		private static final int SHORE_GRID_DIAGONAL = 7;
 		private final byte[][][] shoreDistances = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
+		// The largest distance from land within WATER_ROOM_RADIUS tiles, measured up to WATER_ROOM_MAX tiles, in the same
+		// units as shoreDistances. Waves only form where there's enough room.
+		private static final int WATER_ROOM_RADIUS = 8;
+		private final byte[][][] waterRoom = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
+		private final byte[][] farDistances = new byte[EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
+		private final byte[] filterRow = new byte[EXTENDED_SCENE_SIZE + 1];
 
 		// Defines ranges of water tiles
 		private final int[] minX = new int[MAX_Z];
@@ -1046,39 +1053,18 @@ public class ProceduralGenerator {
 				}
 			}
 
-			// Two-pass chamfer distance transform, spreading the distance to land across the grid
 			for (int z = minZ; z <= maxZ; ++z) {
 				final byte[][] d = shoreDistances[z];
-				for (int x = 0; x <= sizeX; x++) {
-					for (int y = 0; y <= sizeY; y++) {
-						int dist = d[x][y];
-						if (x > 0) {
-							dist = min(dist, d[x - 1][y] + SHORE_GRID_STEP);
-							if (y > 0)
-								dist = min(dist, d[x - 1][y - 1] + SHORE_GRID_DIAGONAL);
-							if (y < sizeY)
-								dist = min(dist, d[x - 1][y + 1] + SHORE_GRID_DIAGONAL);
-						}
-						if (y > 0)
-							dist = min(dist, d[x][y - 1] + SHORE_GRID_STEP);
-						d[x][y] = (byte) dist;
-					}
-				}
-				for (int x = sizeX; x >= 0; x--) {
-					for (int y = sizeY; y >= 0; y--) {
-						int dist = d[x][y];
-						if (x < sizeX) {
-							dist = min(dist, d[x + 1][y] + SHORE_GRID_STEP);
-							if (y > 0)
-								dist = min(dist, d[x + 1][y - 1] + SHORE_GRID_DIAGONAL);
-							if (y < sizeY)
-								dist = min(dist, d[x + 1][y + 1] + SHORE_GRID_DIAGONAL);
-						}
-						if (y < sizeY)
-							dist = min(dist, d[x][y + 1] + SHORE_GRID_STEP);
-						d[x][y] = (byte) dist;
-					}
-				}
+				chamferDistanceTransform(d, sizeX, sizeY);
+
+				// For the room around the water, measure further from land than the shore data does, then take the largest
+				// distance nearby. Land is wherever the shore distance is 0.
+				final byte[][] far = farDistances;
+				for (int x = 0; x <= sizeX; x++)
+					for (int y = 0; y <= sizeY; y++)
+						far[x][y] = (byte) (d[x][y] == 0 ? 0 : WATER_ROOM_MAX * SHORE_GRID_STEP);
+				chamferDistanceTransform(far, sizeX, sizeY);
+				maxFilter(far, waterRoom[z], sizeX, sizeY, WATER_ROOM_RADIUS);
 			}
 
 			// Store the height offsets in a hashmap and calculate interpolated
@@ -1182,6 +1168,65 @@ public class ProceduralGenerator {
 			}
 		}
 
+		/**
+		 * Two-pass chamfer distance transform, spreading the distance from the zeros across the grid
+		 */
+		private void chamferDistanceTransform(byte[][] d, int sizeX, int sizeY) {
+			for (int x = 0; x <= sizeX; x++) {
+				for (int y = 0; y <= sizeY; y++) {
+					int dist = d[x][y];
+					if (x > 0) {
+						dist = min(dist, d[x - 1][y] + SHORE_GRID_STEP);
+						if (y > 0)
+							dist = min(dist, d[x - 1][y - 1] + SHORE_GRID_DIAGONAL);
+						if (y < sizeY)
+							dist = min(dist, d[x - 1][y + 1] + SHORE_GRID_DIAGONAL);
+					}
+					if (y > 0)
+						dist = min(dist, d[x][y - 1] + SHORE_GRID_STEP);
+					d[x][y] = (byte) dist;
+				}
+			}
+			for (int x = sizeX; x >= 0; x--) {
+				for (int y = sizeY; y >= 0; y--) {
+					int dist = d[x][y];
+					if (x < sizeX) {
+						dist = min(dist, d[x + 1][y] + SHORE_GRID_STEP);
+						if (y > 0)
+							dist = min(dist, d[x + 1][y - 1] + SHORE_GRID_DIAGONAL);
+						if (y < sizeY)
+							dist = min(dist, d[x + 1][y + 1] + SHORE_GRID_DIAGONAL);
+					}
+					if (y < sizeY)
+						dist = min(dist, d[x][y + 1] + SHORE_GRID_STEP);
+					d[x][y] = (byte) dist;
+				}
+			}
+		}
+
+		/**
+		 * The largest value within a square of the given radius around each grid vertex, as a separable filter
+		 */
+		private void maxFilter(byte[][] in, byte[][] out, int sizeX, int sizeY, int radius) {
+			for (int x = 0; x <= sizeX; x++) {
+				for (int y = 0; y <= sizeY; y++) {
+					int best = 0;
+					for (int dx = max(0, x - radius); dx <= min(sizeX, x + radius); dx++)
+						best = max(best, in[dx][y]);
+					out[x][y] = (byte) best;
+				}
+			}
+			for (int x = 0; x <= sizeX; x++) {
+				System.arraycopy(out[x], 0, filterRow, 0, sizeY + 1);
+				for (int y = 0; y <= sizeY; y++) {
+					int best = 0;
+					for (int dy = max(0, y - radius); dy <= min(sizeY, y + radius); dy++)
+						best = max(best, filterRow[dy]);
+					out[x][y] = (byte) best;
+				}
+			}
+		}
+
 		private boolean isLandTile(SceneContext sceneContext, int z, int x, int y) {
 			return
 				sceneContext.isTileFlagSet(z, x, y, TILE_HAS_LAND_FLAG) &&
@@ -1194,7 +1239,8 @@ public class ProceduralGenerator {
 		 */
 		private void setShoreData(SceneContext sceneContext, int hash, int z, int x, int y, float fx, float fy) {
 			final byte[][] d = shoreDistances[z];
-			float distance = 0, directionX = 0, directionZ = 0;
+			final byte[][] room = waterRoom[z];
+			float distance = 0, directionX = 0, directionZ = 0, roomDistance = 0;
 			for (int corner = 0; corner < 4; corner++) {
 				int cx = x + (corner & 1);
 				int cy = y + (corner >> 1);
@@ -1203,11 +1249,12 @@ public class ProceduralGenerator {
 				if (weight == 0)
 					continue;
 				distance += d[cx][cy] * weight;
+				roomDistance += room[cx][cy] * weight;
 				// Land lies down the slope of the distance field
 				directionX -= (d[min(cx + 1, EXTENDED_SCENE_SIZE)][cy] - d[max(cx - 1, 0)][cy]) * weight;
 				directionZ -= (d[cx][min(cy + 1, EXTENDED_SCENE_SIZE)] - d[cx][max(cy - 1, 0)]) * weight;
 			}
-			sceneContext.setVertexShoreData(hash, distance / SHORE_GRID_STEP, directionX, directionZ);
+			sceneContext.setVertexShoreData(hash, distance / SHORE_GRID_STEP, directionX, directionZ, roomDistance / SHORE_GRID_STEP);
 		}
 
 		private int getHeightOffset(int z, int x, int y) {
