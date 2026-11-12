@@ -83,4 +83,7 @@ public class UBOGlobal extends UniformBuffer<GLBuffer> {
 	public final Property windDirection = addProperty(PropertyType.FVec2, "windDirection");
 	public final Property windDrift = addProperty(PropertyType.FVec2, "windDrift");
 	public final Property[] windHistory = addPropertyArray(PropertyType.FVec4, "windHistory", WIND_HISTORY_LENGTH / 4);
+	public final Property[] roughnessHistory = addPropertyArray(PropertyType.FVec4, "roughnessHistory", WIND_HISTORY_LENGTH / 4);
+	public final Property waterRoughness = addProperty(PropertyType.Float, "waterRoughness");
+	public final Property waterChurnTime = addProperty(PropertyType.Float, "waterChurnTime");
 }

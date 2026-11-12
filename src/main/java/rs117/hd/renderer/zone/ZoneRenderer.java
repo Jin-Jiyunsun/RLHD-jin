@@ -722,8 +722,12 @@ public class ZoneRenderer implements Renderer {
 		plugin.uboGlobal.lightningBrightness.set(environmentManager.getLightningBrightness());
 		plugin.uboGlobal.windDirection.set((float) Math.cos(plugin.waterWindAngle), (float) Math.sin(plugin.waterWindAngle));
 		plugin.uboGlobal.windDrift.set(plugin.windDrift);
-		for (int i = 0; i < plugin.uboGlobal.windHistory.length; i++)
+		plugin.uboGlobal.waterRoughness.set(plugin.waterRoughness);
+		plugin.uboGlobal.waterChurnTime.set(plugin.waterChurnTime);
+		for (int i = 0; i < plugin.uboGlobal.windHistory.length; i++) {
 			plugin.uboGlobal.windHistory[i].set(plugin.windHistory[i * 4], plugin.windHistory[i * 4 + 1], plugin.windHistory[i * 4 + 2], plugin.windHistory[i * 4 + 3]);
+			plugin.uboGlobal.roughnessHistory[i].set(plugin.roughnessHistory[i * 4], plugin.roughnessHistory[i * 4 + 1], plugin.roughnessHistory[i * 4 + 2], plugin.roughnessHistory[i * 4 + 3]);
+		}
 
 		plugin.uboGlobal.saturation.set(config.saturation() / 100f);
 		plugin.uboGlobal.contrast.set(config.contrast() / 100f);

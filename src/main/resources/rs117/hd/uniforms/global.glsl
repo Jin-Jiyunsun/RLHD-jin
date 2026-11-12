@@ -74,5 +74,8 @@ layout(std140) uniform UBOGlobal {
     float elapsedTime;
     vec2 windDirection; // along local X and Z
     vec2 windDrift; // total drift along local X and Z, in seconds at the default wind speed
-    vec4 windHistory[8]; // wind angle at the start of each of the last 32 seconds, indexed by the second
+    vec4 windHistory[WIND_HISTORY_LENGTH / 4]; // wind angle at the start of each recent second, indexed by the second
+    vec4 roughnessHistory[WIND_HISTORY_LENGTH / 4]; // and the water's roughness
+    float waterRoughness; // 1 for normal open water
+    float waterChurnTime; // seconds, running faster the rougher the water
 } uboGlobal;

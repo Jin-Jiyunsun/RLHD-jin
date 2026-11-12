@@ -237,6 +237,10 @@
         "type": "number",
         "description": "The height where the `windStrength` will be reached. The closer objects are to this height, the stronger the wind will be. Defaults to 1280 (10 tiles in height)."
       },
+      "waterRoughness": {
+        "type": "number",
+        "description": "Multiplies how rough open water looks on top of what `windStrength` gives it, with more ocean waves, more visible lace and faster churn. Below 1 is calmer. Defaults to 1."
+      },
       "sky": {
         "description": "Cycle-driven sky configuration, specified either as a preset, or as an object inheriting from a preset as its parent. Defaults to GIELINOR.",
         "oneOf": [

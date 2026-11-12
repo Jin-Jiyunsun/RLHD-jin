@@ -99,6 +99,7 @@
 #define OCEAN_LACE_DENSE_AMOUNT 0.5        // how much of the water they cover, from 0 to 1
 #define OCEAN_LACE_DENSE_COVERAGE 0.9      // speck density there, from 0 to 1
 #define OCEAN_LACE_DENSE_SPEED 0.04        // how fast they come and go
+#define OCEAN_LACE_ROUGHNESS 1.0           // how much rougher water strengthens the lace, as a power of the roughness
 
 // Ocean waves, breaking out at sea
 #define OCEAN_WAVE_STRENGTH 0.13           // opacity before lighting. 0 turns them off.
@@ -106,13 +107,16 @@
 #define OCEAN_WAVE_SOFTNESS 0.45           // speck softness, in texture space
 #define OCEAN_WAVE_STRETCH 1.5             // along the wind, 1 for none
 #define OCEAN_WAVE_SIZE 7.0                // spacing, in tiles
-#define OCEAN_WAVE_AMOUNT 0.55             // how often each spot has a wave, from 0 to 1
+#define OCEAN_WAVE_AMOUNT 0.55             // chance of each spot having a wave each lifetime, from 0 to 1
 #define OCEAN_WAVE_LIFETIME 14.0           // longest life, in seconds
 #define OCEAN_WAVE_RATE_RANDOMNESS 0.4     // how much faster some waves live, from 0 to 1
 #define OCEAN_WAVE_WIGGLE 1.0              // how wiggly the fronts are
 #define OCEAN_WAVE_RAGGEDNESS 1.5          // how ragged the edges and breakup are
 #define OCEAN_WAVE_COVERAGE 0.85           // speck density, from 0 to 1
 #define OCEAN_WAVE_TAIL_NOISE 0.8          // how much the trails break into streaks, from 0 to 1
+#define OCEAN_WAVE_ROUGHNESS_AMOUNT 1.0    // how much rougher water adds waves, as a power of the roughness
+#define OCEAN_WAVE_ROUGHNESS_STRENGTH 1.0  // how much rougher water strengthens them, as a power of the roughness
+#define OCEAN_WAVE_ROUGHNESS_SIZE 0.5      // how much rougher water enlarges them, as a power of the roughness
 
 #if DAYLIGHT_CYCLE
     #include <utils/sky_sampling.glsl>
@@ -266,7 +270,6 @@ vec2 oceanWind() {
 //  shoreDist:    distance to the shore, in tiles
 //  towardsShore: direction to the shore, or 0 where unknown
 vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
-    const float amount = clamp(float(OCEAN_WAVE_AMOUNT), 0.01, 1.0);
     // In wave radii
     const float maxSweep = 1.7;
     // In wave cells
@@ -286,11 +289,19 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
             if (dot(toCenters, toCenters) > maxReach * maxReach)
                 continue;
             vec2 h = hash22(cell + 0.31);
-            // A wave for the first part of each cycle
-            float cycle = time * amount / OCEAN_WAVE_LIFETIME + h.x;
+            // Each cell may spawn a wave once per lifetime, with a chance set by the roughness when it spawns, so
+            // waves already going don't appear or vanish as the roughness changes
+            float cycle = time / OCEAN_WAVE_LIFETIME + h.x;
             float n = floor(cycle);
+            float spawnTime = (n - h.x) * OCEAN_WAVE_LIFETIME;
+            int historySecond = int(mod(floor(spawnTime), float(WIND_HISTORY_LENGTH)));
+            float spawnRoughness = uboGlobal.roughnessHistory[historySecond >> 2][historySecond & 3];
+            spawnRoughness = spawnRoughness > 0.0 ? spawnRoughness : 1.0;
+            float chance = saturate(OCEAN_WAVE_AMOUNT * pow(spawnRoughness, OCEAN_WAVE_ROUGHNESS_AMOUNT));
+            if (hash12(cell * 5.3 + n * vec2(2.71, 6.13)) >= chance)
+                continue;
             vec4 r = hash42(cell * 2.9 + n * vec2(1.73, 9.21));
-            float life = fract(cycle) / amount * (1.0 + r.x * OCEAN_WAVE_RATE_RANDOMNESS * 1.5);
+            float life = fract(cycle) * (1.0 + r.x * OCEAN_WAVE_RATE_RANDOMNESS * 1.5);
             if (life >= 1.0)
                 continue;
             vec2 center = cell + 0.25 + 0.5 * hash22(cell * 1.7 + n * vec2(7.31, 3.17));
@@ -298,8 +309,6 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
             if (dot(offset, offset) > maxReach * maxReach)
                 continue;
             // Each wave keeps the wind from when it spawned, so a change in the wind only affects new waves
-            float spawnTime = (n - h.x) * OCEAN_WAVE_LIFETIME / amount;
-            int historySecond = int(mod(floor(spawnTime), 32.0));
             float windAngle = uboGlobal.windHistory[historySecond >> 2][historySecond & 3];
             vec2 wind = vec2(cos(windAngle), sin(windAngle));
             // Stretched along that wind around its own centre
@@ -311,7 +320,8 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
             float sweep = maxSweep * mix(0.6, 1.0, shape.x);
             // Long crests are slimmer, to fit the neighbouring cells
             float crestLength = mix(2.4, 4.0, r.z);
-            radius = min(radius, 0.9 / crestLength);
+            // Bigger in rougher water, from when it spawned, still fitting the neighbouring cells
+            radius = min(radius * pow(spawnRoughness, OCEAN_WAVE_ROUGHNESS_SIZE), 0.9 / crestLength);
             // Downwind in radii, and along the crest from -1 to 1, one side longer
             float u = dot(offset, downwind) / radius;
             float v = dot(offset, vec2(-downwind.y, downwind.x)) / (radius * crestLength);
@@ -390,7 +400,7 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
 
 // Lace coverage, from 0 to 1
 //  drifted: position in world tiles, drifted with the wind
-float oceanLace(vec2 drifted, vec2 wind) {
+float oceanLace(vec2 drifted, vec2 wind, float churnTime) {
     float time = uboGlobal.elapsedTime;
     vec2 p = drifted / OCEAN_LACE_SCALE;
 
@@ -405,7 +415,7 @@ float oceanLace(vec2 drifted, vec2 wind) {
     float detail = 1.0 - smoothstep(OCEAN_LACE_DETAIL_DISTANCE * 0.7, OCEAN_LACE_DETAIL_DISTANCE, laceDistance);
 
     // Bend and curl the straight cell edges
-    float swirlTime = time * OCEAN_LACE_SWIRL_SPEED;
+    float swirlTime = churnTime * OCEAN_LACE_SWIRL_SPEED;
     vec2 swirl = noise2(p * 1.3 + swirlTime * vec2(0.02, -0.015));
     vec2 curl = noise2(p * 3.3 + swirlTime * vec2(0.031, 0.024) + 7.1);
     p += ((swirl - 0.5) + (curl - 0.5) * OCEAN_LACE_CURL) * OCEAN_LACE_SWIRL;
@@ -419,7 +429,7 @@ float oceanLace(vec2 drifted, vec2 wind) {
 
     // Main and fine lines, skipped where broken off
     float lace = 0.0;
-    float churn = time * OCEAN_LACE_CHURN_SPEED;
+    float churn = churnTime * OCEAN_LACE_CHURN_SPEED;
     if (mainGaps > 0.0)
         lace = (1.0 - smoothstep(0.0, width, cellEdges(p, churn, wind))) * mainGaps;
     if (fineGaps > 0.0) {
@@ -780,14 +790,22 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         if (oceanRoom > 0.0) {
             vec2 drifted = -worldUvs(1.0) - uboGlobal.windDrift * OCEAN_FOAM_DRIFT_SPEED;
             vec2 wind = oceanWind();
+            // Rougher water, from the wind strength, has more waves, more visible lace and faster churn. Normal
+            // before a client restart sends it.
+            float roughness = uboGlobal.waterRoughness > 0.0 ? uboGlobal.waterRoughness : 1.0;
+            float churnTime = uboGlobal.waterRoughness > 0.0 ? uboGlobal.waterChurnTime : uboGlobal.elapsedTime;
             if (OCEAN_LACE_STRENGTH > 0.0) {
-                float lace = oceanLace(drifted, wind) * oceanRoom;
-                foamAmount = max(foamAmount, oceanSpecks(lace, OCEAN_LACE_SOFTNESS, oceanMask) * OCEAN_LACE_STRENGTH);
+                float laceRoughness = pow(roughness, OCEAN_LACE_ROUGHNESS);
+                // Denser as well as stronger, up to solid line cores
+                float lace = saturate(oceanLace(drifted, wind, churnTime) * sqrt(laceRoughness)) * oceanRoom;
+                float laceStrength = OCEAN_LACE_STRENGTH * laceRoughness;
+                foamAmount = max(foamAmount, oceanSpecks(lace, OCEAN_LACE_SOFTNESS, oceanMask) * laceStrength);
             }
             if (OCEAN_WAVE_STRENGTH > 0.0) {
                 vec2 waves = oceanWaves(drifted, shoreDist, towardsShore);
                 float amount = oceanSpecks(waves.x * oceanRoom, OCEAN_WAVE_SOFTNESS, oceanMask);
-                foamAmount = max(foamAmount, amount * OCEAN_WAVE_STRENGTH * waves.y);
+                float waveStrength = OCEAN_WAVE_STRENGTH * pow(roughness, OCEAN_WAVE_ROUGHNESS_STRENGTH);
+                foamAmount = max(foamAmount, amount * waveStrength * waves.y);
             }
         }
     }

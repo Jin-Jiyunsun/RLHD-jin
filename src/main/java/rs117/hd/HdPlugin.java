@@ -119,6 +119,7 @@ import rs117.hd.scene.TextureManager;
 import rs117.hd.scene.TileOverrideManager;
 import rs117.hd.scene.WaterTypeManager;
 import rs117.hd.scene.daylight_cycle.StarField;
+import rs117.hd.scene.environments.Environment;
 import rs117.hd.utils.ColorUtils;
 import rs117.hd.utils.DestructibleHandler;
 import rs117.hd.utils.DeveloperTools;
@@ -518,15 +519,24 @@ public class HdPlugin extends Plugin {
 	// Total wind drift along local X and Z for the open water foam, in seconds at the default wind speed
 	public final float[] windDrift = new float[2];
 	// The wind angle at the start of each of the last WIND_HISTORY_LENGTH seconds, indexed by the second, so each
-	// ocean wave can keep the wind it spawned with
+	// ocean wave can keep the wind it spawned with. A multiple of 4 dividing 65536, where the shader time wraps.
 	public static final int WIND_HISTORY_LENGTH = 32;
 	public final float[] windHistory = new float[WIND_HISTORY_LENGTH];
+	// The water's roughness at the start of each of the same seconds, so ocean waves spawn at the rate from then
+	public final float[] roughnessHistory = new float[WIND_HISTORY_LENGTH];
 	private int windHistorySecond = -1;
 	// The water's wind angle, easing towards the environment's more slowly than the environment blends, since the
 	// water takes longer to turn. Two chained easings, so it starts gently.
 	public float waterWindAngle = Float.NaN;
 	private float waterWindEasing;
 	private static final float WATER_WIND_EASING_SECONDS = 12;
+	// How rough open water is, from the wind strength relative to the overworld's and the environment's waterRoughness,
+	// easing in a few seconds. 1 is the overworld's. The churn clock runs that much faster than real time.
+	public float waterRoughness = Float.NaN;
+	public float waterChurnTime;
+	private static final float WATER_ROUGHNESS_PER_WIND_STRENGTH = 1 / 100f;
+	private static final float WATER_ROUGHNESS_MAX = 2;
+	private static final float WATER_ROUGHNESS_EASING_SECONDS = 1.5f;
 	public long colorFilterChangedAt;
 
 	public float clientUnfocusedTime;
@@ -593,6 +603,7 @@ public class HdPlugin extends Plugin {
 				elapsedTime = 0;
 				windHistorySecond = -1;
 				waterWindAngle = Float.NaN;
+				waterRoughness = Float.NaN;
 				elapsedClientTime = 0;
 				deltaTime = 0;
 				deltaClientTime = 0;
@@ -1005,6 +1016,7 @@ public class HdPlugin extends Plugin {
 			.define("WATER_ENCLOSURE_SHIFT", SceneContext.WATER_ENCLOSURE_SHIFT)
 			.define("WATER_ENCLOSURE_STEPS", SceneContext.WATER_ENCLOSURE_STEPS)
 			.define("WATER_ROOM_MAX", SceneContext.WATER_ROOM_MAX)
+			.define("WIND_HISTORY_LENGTH", WIND_HISTORY_LENGTH)
 			.define("DYNAMIC_LIGHTS", configDynamicLights != DynamicLights.NONE)
 			.define("TILED_LIGHTING", configTiledLighting)
 			.define("TILED_LIGHTING_LAYER_COUNT", configDynamicLights.getTiledLightingLayers())
@@ -1330,15 +1342,35 @@ public class HdPlugin extends Plugin {
 	}
 
 	/**
-	 * Record the wind angle at the start of each second, filling the whole history the first time
+	 * Ease the water's roughness towards the environment's, and run the churn clock at that speed
 	 */
-	private void updateWindHistory(float windAngle) {
+	private void updateWaterRoughness(Environment env) {
+		// Most environments don't set a wind strength, so treat 0 as the overworld's
+		float overworldWind = environmentManager.getOverworldEnvironment().windStrength;
+		float wind = env.windStrength > 0 ? env.windStrength : overworldWind;
+		float target = (1 + wind * WATER_ROUGHNESS_PER_WIND_STRENGTH) / (1 + overworldWind * WATER_ROUGHNESS_PER_WIND_STRENGTH);
+		target = min(target * max(env.waterRoughness, 0), WATER_ROUGHNESS_MAX);
+		if (Float.isNaN(waterRoughness)) {
+			waterRoughness = target;
+		} else {
+			waterRoughness += (target - waterRoughness) * (1 - (float) Math.exp(-deltaTime / WATER_ROUGHNESS_EASING_SECONDS));
+		}
+		waterChurnTime = (waterChurnTime + deltaTime * waterRoughness) % MAX_FLOAT_WITH_128TH_PRECISION;
+	}
+
+	/**
+	 * Record the wind angle and roughness at the start of each second, filling the whole history the first time
+	 */
+	private void updateWaterHistory() {
 		int second = (int) Math.floor(elapsedTime % MAX_FLOAT_WITH_128TH_PRECISION);
 		if (second == windHistorySecond)
 			return;
-		if (windHistorySecond < 0)
-			Arrays.fill(windHistory, windAngle);
-		windHistory[second % WIND_HISTORY_LENGTH] = windAngle;
+		if (windHistorySecond < 0) {
+			Arrays.fill(windHistory, waterWindAngle);
+			Arrays.fill(roughnessHistory, waterRoughness);
+		}
+		windHistory[second % WIND_HISTORY_LENGTH] = waterWindAngle;
+		roughnessHistory[second % WIND_HISTORY_LENGTH] = waterRoughness;
 		windHistorySecond = second;
 	}
 
@@ -2250,7 +2282,8 @@ public class HdPlugin extends Plugin {
 			var env = environmentManager.getCurrentEnvironment();
 			windOffset += deltaTime * env.windSpeed;
 			updateWaterWind(env.windAngle);
-			updateWindHistory(waterWindAngle);
+			updateWaterRoughness(env);
+			updateWaterHistory();
 			float windDriftStep = deltaTime * env.windSpeed / 15f;
 			windDrift[0] = (float) ((windDrift[0] + windDriftStep * Math.cos(waterWindAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
 			windDrift[1] = (float) ((windDrift[1] + windDriftStep * Math.sin(waterWindAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
