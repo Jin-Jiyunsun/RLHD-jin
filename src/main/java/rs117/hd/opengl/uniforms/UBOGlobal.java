@@ -3,6 +3,7 @@ package rs117.hd.opengl.uniforms;
 import rs117.hd.utils.buffer.GLBuffer;
 
 import static org.lwjgl.opengl.GL33C.*;
+import static rs117.hd.HdPlugin.WIND_HISTORY_LENGTH;
 
 public class UBOGlobal extends UniformBuffer<GLBuffer> {
 	public UBOGlobal() {
@@ -81,4 +82,5 @@ public class UBOGlobal extends UniformBuffer<GLBuffer> {
 	public final Property elapsedTime = addProperty(PropertyType.Float, "elapsedTime");
 	public final Property windDirection = addProperty(PropertyType.FVec2, "windDirection");
 	public final Property windDrift = addProperty(PropertyType.FVec2, "windDrift");
+	public final Property[] windHistory = addPropertyArray(PropertyType.FVec4, "windHistory", WIND_HISTORY_LENGTH / 4);
 }

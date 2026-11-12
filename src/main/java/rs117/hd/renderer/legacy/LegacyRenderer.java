@@ -1066,8 +1066,10 @@ public class LegacyRenderer implements Renderer {
 			// Lights & lightning
 			plugin.uboGlobal.pointLightsCount.set(lightManager.getNumVisibleLights());
 			plugin.uboGlobal.lightningBrightness.set(environmentManager.getLightningBrightness());
-			plugin.uboGlobal.windDirection.set((float) Math.cos(env.windAngle), (float) Math.sin(env.windAngle));
+			plugin.uboGlobal.windDirection.set((float) Math.cos(plugin.waterWindAngle), (float) Math.sin(plugin.waterWindAngle));
 			plugin.uboGlobal.windDrift.set(plugin.windDrift);
+			for (int i = 0; i < plugin.uboGlobal.windHistory.length; i++)
+				plugin.uboGlobal.windHistory[i].set(plugin.windHistory[i * 4], plugin.windHistory[i * 4 + 1], plugin.windHistory[i * 4 + 2], plugin.windHistory[i * 4 + 3]);
 
 			plugin.uboGlobal.saturation.set(config.saturation() / 100f);
 			plugin.uboGlobal.contrast.set(config.contrast() / 100f);

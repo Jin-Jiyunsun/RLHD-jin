@@ -27,8 +27,7 @@ import static rs117.hd.utils.MathUtils.*;
 public class SceneContext {
 	public static final byte TILE_WATER_FLAG = 1;
 	public static final byte TILE_SKIP_FLAG = 1 << 1;
-	// For the shore foam: the sides of a water tile bordering land (west, east, south, north),
-	// and whether a tile has visible land of its own
+	// Sides of a water tile bordering land (west, east, south, north), and whether a tile has land of its own
 	private static final int TILE_LAND_SIDES_SHIFT = 2;
 	public static final byte TILE_LAND_WEST_FLAG = 1 << TILE_LAND_SIDES_SHIFT;
 	public static final byte TILE_LAND_EAST_FLAG = 1 << TILE_LAND_SIDES_SHIFT + 1;
@@ -51,33 +50,31 @@ public class SceneContext {
 	public static final int VERTEX_UNDER_WATER_DEPTH_MASK = 0x3FF;
 	// How enclosed the water around a vertex is, from 0 to WATER_ENCLOSURE_STEPS
 	private static final int VERTEX_WATER_ENCLOSURE_SHIFT = 15;
-	// Per-vertex shore data. The distance is stored inverted, so unset vertices read as far from land.
+	// Per-vertex shore data. Distance is stored inverted, so unset vertices read as far from land.
 	private static final int VERTEX_SHORE_DISTANCE_SHIFT = 21;
 	private static final int VERTEX_SHORE_DIRECTION_SHIFT = 28;
 
-	// Shore data packed into water surface vertex colors, passed to the water shader as defines:
-	// - Bits 0-6: distance to land, 0 only on the shore, up to SHORE_DISTANCE_STEPS at SHORE_DISTANCE_MAX tiles
-	// - Bits 7-10: direction towards land, in SHORE_DIRECTION_STEPS
+	// Shore data in water surface vertex colors. The step counts double as bit masks.
+	// - Bits 0-6: distance to land, 0 only on the shore, up to SHORE_DISTANCE_MAX tiles
+	// - Bits 7-10: direction to land
 	// - Bits 11-14: square tile sides bordering land (west, east, south, north)
 	// - Bit 15: WATER_SQUARE_TILE_BIT
-	// - Bits 24-29: how enclosed the water is, from WATER_ENCLOSURE_SHIFT, in the alpha bits water surfaces don't use
-	// The step counts double as bit masks.
-	// As far as the distance field is measured, WATER_ROOM_MAX, so whitecaps can keep clear of the shore
+	// - Bits 24-29: how enclosed the water is, in the unused alpha bits
+	// Matches WATER_ROOM_MAX
 	public static final int SHORE_DISTANCE_MAX = 12;
 	public static final int SHORE_DISTANCE_STEPS = 0x7F;
 	public static final int SHORE_DIRECTION_SHIFT = 7;
 	public static final int SHORE_DIRECTION_STEPS = 16;
 	public static final int SHORE_SIDES_SHIFT = 11;
 	/**
-	 * Set on every corner of a square water tile except the north-east. With the tile split into (ne, nw, se) and
-	 * (sw, se, nw), the second vertex marks a square tile, and the first marks the south-west triangle.
+	 * Set on every corner of a square water tile except the north-east, so the second vertex of each triangle marks a
+	 * square tile, and the first marks the south-west triangle
 	 */
 	public static final int WATER_SQUARE_TILE_BIT = 1 << 15;
-	// Furthest distance from land measured for the room around water, in tiles
+	// Furthest distance from land measured, in tiles
 	public static final int WATER_ROOM_MAX = 12;
 	/**
-	 * How enclosed the water around a vertex is. 0 is open water, where the furthest point from land nearby is at least
-	 * WATER_ROOM_MAX tiles away, up to WATER_ENCLOSURE_STEPS for fully enclosed.
+	 * How enclosed the water around a vertex is, from 0 for open water to WATER_ENCLOSURE_STEPS
 	 */
 	public static final int WATER_ENCLOSURE_SHIFT = 24;
 	public static final int WATER_ENCLOSURE_STEPS = 0x3F;
@@ -157,7 +154,7 @@ public class SceneContext {
 	 * @param distance   distance to the nearest land, in tiles
 	 * @param directionX direction towards the nearest land along the local X axis
 	 * @param directionZ direction towards the nearest land along the local Z axis
-	 * @param room       distance from land of the furthest point nearby, in tiles
+	 * @param room       largest distance from land nearby, in tiles
 	 */
 	public void setVertexShoreData(int hash, float distance, float directionX, float directionZ, float room) {
 		int distanceSteps = round(saturate(distance / SHORE_DISTANCE_MAX) * SHORE_DISTANCE_STEPS);
@@ -182,8 +179,7 @@ public class SceneContext {
 	}
 
 	/**
-	 * The vertex's distance and direction to the nearest land, and how enclosed the water is, packed for a water
-	 * surface vertex color
+	 * The vertex's shore data, packed for a water surface vertex color
 	 */
 	public int getVertexShoreData(int hash) {
 		int data = vertexTerrainData.getOrDefault(hash, 0);

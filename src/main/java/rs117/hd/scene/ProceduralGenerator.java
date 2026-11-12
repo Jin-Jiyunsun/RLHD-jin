@@ -794,13 +794,11 @@ public class ProceduralGenerator {
 		private final int[] hashes = new int[4];
 
 		private final byte[][][] underwaterDepthLevels = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		// Distance from each grid vertex to the nearest land vertex, capped at WATER_ROOM_MAX tiles.
-		// Measured in fifths of a tile, with chamfer weights of 5 per straight step and 7 per diagonal (about 5 * sqrt(2)).
+		// Distance from each grid vertex to land, up to WATER_ROOM_MAX tiles, in fifths of a tile (7 per diagonal)
 		private static final int SHORE_GRID_STEP = 5;
 		private static final int SHORE_GRID_DIAGONAL = 7;
 		private final byte[][][] shoreDistances = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
-		// The largest distance from land within WATER_ROOM_RADIUS tiles, in the same units as shoreDistances.
-		// Waves only form where there's enough room.
+		// Largest distance from land within WATER_ROOM_RADIUS tiles, in the same units, for the room for waves
 		private static final int WATER_ROOM_RADIUS = 8;
 		private final byte[][][] waterRoom = new byte[MAX_Z][EXTENDED_SCENE_SIZE + 1][EXTENDED_SCENE_SIZE + 1];
 		private final byte[] filterRow = new byte[EXTENDED_SCENE_SIZE + 1];
@@ -837,7 +835,7 @@ public class ProceduralGenerator {
 					// we will set non-water vertices to 0 in the next loop
 					Arrays.fill(underwaterDepthLevels[z][x], (byte) 1);
 				}
-				// Start far from land. Land vertices are set to 0 below.
+				// Land vertices are set to 0 below
 				for (byte[] column : shoreDistances[z])
 					Arrays.fill(column, (byte) (WATER_ROOM_MAX * SHORE_GRID_STEP));
 			}
@@ -1053,7 +1051,6 @@ public class ProceduralGenerator {
 
 			for (int z = minZ; z <= maxZ; ++z) {
 				chamferDistanceTransform(shoreDistances[z], sizeX, sizeY);
-				// The room around the water is the largest distance from land nearby
 				maxFilter(shoreDistances[z], waterRoom[z], sizeX, sizeY, WATER_ROOM_RADIUS);
 			}
 
@@ -1159,7 +1156,7 @@ public class ProceduralGenerator {
 		}
 
 		/**
-		 * Two-pass chamfer distance transform, spreading the distance from the zeros across the grid
+		 * Two-pass chamfer distance transform from the zeros
 		 */
 		private void chamferDistanceTransform(byte[][] d, int sizeX, int sizeY) {
 			for (int x = 0; x <= sizeX; x++) {
@@ -1195,7 +1192,7 @@ public class ProceduralGenerator {
 		}
 
 		/**
-		 * The largest value within a square of the given radius around each grid vertex, as a separable filter
+		 * Separable max filter over a square of the given radius
 		 */
 		private void maxFilter(byte[][] in, byte[][] out, int sizeX, int sizeY, int radius) {
 			for (int x = 0; x <= sizeX; x++) {
@@ -1224,8 +1221,7 @@ public class ProceduralGenerator {
 		}
 
 		/**
-		 * Store the distance and direction to land for a vertex at (fx, fy) within tile (x, y),
-		 * interpolated from the tile's corners
+		 * Store the shore data for a vertex at (fx, fy) within tile (x, y), interpolated from its corners
 		 */
 		private void setShoreData(SceneContext sceneContext, int hash, int z, int x, int y, float fx, float fy) {
 			final byte[][] d = shoreDistances[z];

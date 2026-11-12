@@ -34,94 +34,98 @@
 #if WATER_PASS || LEGACY_RENDERER
 
 // Shore foam
-#define SHORE_FOAM_STRENGTH 0.31           // peak foam opacity before lighting
-#define SHORE_FOAM_SOFTNESS 0.3            // width of the eroded foam edge in texture space
+#define SHORE_FOAM_STRENGTH 0.31           // peak opacity before lighting
+#define FOAM_WATER_BRIGHTNESS 5.0          // all foam is at least this much brighter than the water under it
+#define SHORE_FOAM_SOFTNESS 0.3            // width of the eroded edge, in texture space
 #define SHORE_FOAM_EDGE_NOISE 0.35         // how far the foam line wanders, in tiles
-#define SHORE_FOAM_REACH 0.8               // how far the solid shore foam fades out to between waves, in tiles
-#define SHORE_FOAM_CHURN 0.3               // how far the foam pattern is warped, in texture repeats. Much above 0.1 stretches it.
-#define SHORE_FOAM_SCALE 1.25              // tiles per foam texture repeat; lower packs the foam patches more densely
-#define SHORE_FOAM_EVOLVE_PERIOD 2.2       // seconds for each foam pattern to fade in and back out
-#define SHORE_FOAM_SWAY 0.08               // how far the foam sways in and out from its resting place, in tiles
-#define SHORE_FOAM_SWAY_PERIOD 12.0        // seconds per sway cycle, including the lull after it
-#define SHORE_FOAM_SWAY_MAX_LULL 0.4       // longest lull between sways, as a fraction of the period
-#define SHORE_FOAM_LULL_DRIFT 0.25         // how far the foam drifts during the longest lull, relative to a full sway
+#define SHORE_FOAM_REACH 0.8               // how far the solid foam reaches between waves, in tiles
+#define SHORE_FOAM_CHURN 0.3               // how far the pattern is warped, in texture repeats
+#define SHORE_FOAM_SCALE 1.25              // tiles per texture repeat
+#define SHORE_FOAM_EVOLVE_PERIOD 2.2       // seconds for each pattern to fade in and out
+#define SHORE_FOAM_SWAY 0.08               // how far the foam sways in and out, in tiles
+#define SHORE_FOAM_SWAY_PERIOD 12.0        // seconds per sway, including the lull after it
+#define SHORE_FOAM_SWAY_MAX_LULL 0.4       // longest lull, as a fraction of the period
+#define SHORE_FOAM_LULL_DRIFT 0.25         // drift during the longest lull, relative to a sway
 
-// Waves, each spawned along a stretch of shore at random and travelling in until it lands
-#define SHORE_WAVE_SPACING 2.0             // size of the stretches of shore which each spawn their own waves, in tiles
-#define SHORE_WAVE_INTERVAL 6.0            // average seconds between waves from each stretch
-#define SHORE_WAVE_MIN_GAP 5.0             // fewest seconds between waves from the same stretch, at most the interval
-#define SHORE_WAVE_SET_PERIOD 10.0         // seconds over which waves come in sets and lulls
-#define SHORE_WAVE_SET_CONTRAST 0.8        // how busy sets and how quiet lulls are, from 0 for steady to 1
-#define SHORE_WAVE_MIN_LENGTH 1.5          // range of each wave's length along the shore, in tiles
-#define SHORE_WAVE_MAX_LENGTH 4.0          // at most twice the spacing, since only the neighbouring stretches are checked
-#define SHORE_WAVE_END_TAPER 0.3           // how much of each wave's length fades out towards its ends
-#define SHORE_WAVE_START_THICKNESS 0.3     // average depth of each wave from front to back where it forms, in tiles
-#define SHORE_WAVE_END_THICKNESS 0.6      // and at the shore, growing evenly in between
-#define SHORE_WAVE_THICKNESS_RANDOMNESS 0.3 // how much each wave's thickness varies, as a fraction either way
-#define SHORE_WAVE_FRONT 0.25              // how gradually each wave's front rises, as a fraction of its thickness
-#define SHORE_WAVE_TAIL 0.6                // how gradually each wave fades out behind its crest, as a fraction of its thickness
-#define SHORE_WAVE_FRONT_BREAKUP 0.12      // how far the foam texture breaks up each wave's front, in tiles
-#define SHORE_WAVE_MIN_STRENGTH 0.6        // weakest wave's coverage, relative to the strongest
-#define SHORE_WAVE_COVERAGE 1.5            // boosts each wave's coverage before capping it, so most waves are solid
-#define SHORE_WAVE_REACH 2.25               // how far from the shore waves form, in tiles. At most about 3.6.
-#define SHORE_WAVE_SPEED 0.32              // tiles per second as waves form, slowing evenly as they come in
-#define SHORE_WAVE_END_SPEED 0.7           // waves' speed at the shore, as a fraction of their starting speed
-#define SHORE_WAVE_SPEED_RANDOMNESS 0.12   // how much each wave's speed varies, as a fraction either way
-#define SHORE_WAVE_FULL_OPACITY 0.3        // distance from the shore where waves reach full opacity, in tiles
-#define SHORE_WAVE_OPACITY_CURVE 1.5       // how late waves fade in, from 1 for steady; higher stays fainter for longer
-#define SHORE_WAVE_MIN_ROOM 5.0            // waves only form with this much open water nearby, in tiles
-#define SHORE_WAVE_FULL_ROOM 6.0           // and reach full strength with this much, up to WATER_ROOM_MAX
+// Shore waves
+#define SHORE_WAVE_SPACING 2.0             // size of the stretches of shore that each spawn waves, in tiles
+#define SHORE_WAVE_INTERVAL 6.0            // average seconds between waves from a stretch
+#define SHORE_WAVE_MIN_GAP 5.0             // fewest seconds between waves from a stretch, at most the interval
+#define SHORE_WAVE_SET_PERIOD 10.0         // seconds per set and lull
+#define SHORE_WAVE_SET_CONTRAST 0.8        // how busy sets and quiet lulls are, from 0 to 1
+#define SHORE_WAVE_MIN_LENGTH 1.5          // wave length along the shore, in tiles
+#define SHORE_WAVE_MAX_LENGTH 4.0          // at most twice the spacing
+#define SHORE_WAVE_END_TAPER 0.3           // fraction of the length fading out at the ends
+#define SHORE_WAVE_START_THICKNESS 0.3     // front to back where waves form, in tiles
+#define SHORE_WAVE_END_THICKNESS 0.6       // and at the shore
+#define SHORE_WAVE_THICKNESS_RANDOMNESS 0.3 // fraction either way
+#define SHORE_WAVE_FRONT 0.25              // how gradually the front rises, as a fraction of the thickness
+#define SHORE_WAVE_TAIL 0.6                // how gradually the back fades, as a fraction of the thickness
+#define SHORE_WAVE_FRONT_BREAKUP 0.12      // how far the texture breaks up the front, in tiles
+#define SHORE_WAVE_MIN_STRENGTH 0.6        // weakest wave, relative to the strongest
+#define SHORE_WAVE_COVERAGE 1.5            // coverage boost before capping, so most waves are solid
+#define SHORE_WAVE_REACH 2.25              // how far out waves form, in tiles. At most about 3.6.
+#define SHORE_WAVE_SPEED 0.32              // starting speed, in tiles per second
+#define SHORE_WAVE_END_SPEED 0.7           // speed at the shore, as a fraction of the start
+#define SHORE_WAVE_SPEED_RANDOMNESS 0.12   // fraction either way
+#define SHORE_WAVE_FULL_OPACITY 0.3        // distance from the shore of full opacity, in tiles
+#define SHORE_WAVE_OPACITY_CURVE 1.5       // how late waves fade in, 1 for linear
+#define SHORE_WAVE_MIN_ROOM 5.0            // open water needed nearby for waves, in tiles
+#define SHORE_WAVE_FULL_ROOM 6.0           // and for full strength, up to WATER_ROOM_MAX
 
-// Open water foam: a lace of churning foam lines blown by the wind, with whitecaps breaking across it. Only on open
-// water, using the same room as the waves.
-#define OCEAN_FOAM_STRENGTH 0.1            // the lace's opacity before lighting. 0 turns off all the open water foam.
-#define OCEAN_FOAM_SCALE 1.6               // size of the cells the foam lines surround, in tiles
-#define OCEAN_FOAM_LINE_WIDTH 0.22         // width of the foam lines, as a fraction of a cell
-#define OCEAN_FOAM_FINE_LINES 0.5          // strength of the finer lines between the main ones
-#define OCEAN_FOAM_WIDTH_VARIATION 0.6     // how much the lines' width varies along them, as a fraction either way
-#define OCEAN_FOAM_GAPS 0.4                // how much of the lines break off into gaps, from 0 to 1
-#define OCEAN_FOAM_STRETCH 1.5             // how stretched the foam is along the wind, from 1 for not at all
-#define OCEAN_FOAM_SWIRL 1.0               // how much the lines swirl and bend, in cells
-#define OCEAN_FOAM_CURL 0.85               // how much the lines curl within each cell, relative to the swirl
-#define OCEAN_FOAM_SWIRL_SPEED 2.0         // how fast the swirls shift, relative to their original speed
-#define OCEAN_FOAM_CHURN_SPEED 0.3         // how fast the cells churn and change shape
-#define OCEAN_FOAM_DRIFT_SPEED 0.08        // how fast the foam drifts in the default wind, in tiles per second, scaled by
-                                           // each area's wind speed
-#define OCEAN_FOAM_LACE_DISTANCE 50.0      // how far from the camera the lace shows, in tiles. The whitecaps show further.
-#define OCEAN_FOAM_LACE_DETAIL_DISTANCE 25.0 // how far the fine lines show, in tiles, since they're too small to make out further away
-#define OCEAN_FOAM_COVERAGE 0.72           // how densely the lines' cores fill with specks, from 0 to 1
-#define OCEAN_FOAM_DENSE_SIZE 8.0          // size of the areas where the lace is denser, in tiles
-#define OCEAN_FOAM_DENSE_AMOUNT 0.5        // how much of the water they cover, from 0 to 1
-#define OCEAN_FOAM_DENSE_COVERAGE 0.9      // and how densely the lines fill there. Near 1 fills the cores solid.
-#define OCEAN_FOAM_DENSE_SPEED 0.04        // how fast they come and go
-#define OCEAN_FOAM_PATCH_SIZE 7.0          // spacing of the whitecaps, breaking waves on open water, in tiles
-#define OCEAN_FOAM_PATCH_AMOUNT 0.55       // how often each spot has a whitecap, from 0 to 1
-#define OCEAN_FOAM_PATCH_LIFETIME 14.0     // longest seconds for a whitecap to break, sweep downwind and break up
-#define OCEAN_FOAM_PATCH_RATE_RANDOMNESS 0.4 // how much faster some whitecaps go through their life, from 0 to 1
-#define OCEAN_FOAM_PATCH_WIGGLE 1.0        // how wiggly the whitecaps' fronts are
-#define OCEAN_FOAM_PATCH_RAGGEDNESS 1.5    // how ragged the whitecaps' edges and breakup are
-#define OCEAN_FOAM_PATCH_COVERAGE 0.85     // how densely the whitecaps fill with specks, from 0 to 1
-#define OCEAN_FOAM_PATCH_STRENGTH 0.16     // the whitecaps' opacity, separate from the lines
-#define OCEAN_FOAM_PATCH_TAIL_NOISE 0.8    // how much the whitecaps' trails break into streaks and clumps, from 0 to 1
-#define OCEAN_FOAM_PATCH_FRONT_BRIGHTNESS 1.5 // how much brighter and denser the foam is at the whitecaps' fronts
-#define OCEAN_FOAM_TEXTURE_SCALE 2.5       // tiles per foam texture repeat for the specks; higher makes them bigger and calmer
-#define OCEAN_FOAM_SOFTNESS 0.45           // how softly each speck of foam fades into the water, in texture space
-#define OCEAN_FOAM_SHORE_GAP 1.8           // clear water between the shore and the foam, in tiles
-#define OCEAN_FOAM_SHORE_FADE 3.9          // distance from the shore where the foam reaches full strength, in tiles. At most 12.
+// Open water foam, shared by the lace and ocean waves
+#define OCEAN_FOAM_DRIFT_SPEED 0.08        // in tiles per second, scaled by the wind speed
+#define OCEAN_FOAM_TEXTURE_SCALE 2.5       // tiles per speck texture repeat
+#define OCEAN_FOAM_SHORE_GAP 1.8           // clear water along the shore, in tiles
+#define OCEAN_FOAM_SHORE_FADE 3.9          // distance of full strength from the shore, in tiles. At most 12.
+
+// Lace
+#define OCEAN_LACE_STRENGTH 0.1            // opacity before lighting. 0 turns it off.
+#define OCEAN_LACE_SOFTNESS 0.45           // speck softness, in texture space
+#define OCEAN_LACE_SCALE 1.6               // cell size, in tiles
+#define OCEAN_LACE_LINE_WIDTH 0.22         // fraction of a cell
+#define OCEAN_LACE_FINE_LINES 0.5          // strength of the finer lines between them
+#define OCEAN_LACE_WIDTH_VARIATION 0.6     // fraction either way
+#define OCEAN_LACE_GAPS 0.4                // how much of the lines break off, from 0 to 1
+#define OCEAN_LACE_STRETCH 1.5             // along the wind, 1 for none
+#define OCEAN_LACE_SWIRL 1.0               // how much the lines bend, in cells
+#define OCEAN_LACE_CURL 0.85               // smaller bends, relative to the swirl
+#define OCEAN_LACE_SWIRL_SPEED 2.0         // how fast the swirls shift
+#define OCEAN_LACE_CHURN_SPEED 0.3         // how fast the cells change shape
+#define OCEAN_LACE_DISTANCE 50.0           // draw distance from the camera, in tiles
+#define OCEAN_LACE_DETAIL_DISTANCE 25.0    // fine line draw distance, in tiles
+#define OCEAN_LACE_COVERAGE 0.72           // speck density in the lines, from 0 to 1
+#define OCEAN_LACE_DENSE_SIZE 8.0          // size of denser areas, in tiles
+#define OCEAN_LACE_DENSE_AMOUNT 0.5        // how much of the water they cover, from 0 to 1
+#define OCEAN_LACE_DENSE_COVERAGE 0.9      // speck density there, from 0 to 1
+#define OCEAN_LACE_DENSE_SPEED 0.04        // how fast they come and go
+
+// Ocean waves, breaking out at sea
+#define OCEAN_WAVE_STRENGTH 0.13           // opacity before lighting. 0 turns them off.
+#define OCEAN_WAVE_FRONT_BRIGHTNESS 1.45   // brightness at the front, relative to the rest
+#define OCEAN_WAVE_SOFTNESS 0.45           // speck softness, in texture space
+#define OCEAN_WAVE_STRETCH 1.5             // along the wind, 1 for none
+#define OCEAN_WAVE_SIZE 7.0                // spacing, in tiles
+#define OCEAN_WAVE_AMOUNT 0.55             // how often each spot has a wave, from 0 to 1
+#define OCEAN_WAVE_LIFETIME 14.0           // longest life, in seconds
+#define OCEAN_WAVE_RATE_RANDOMNESS 0.4     // how much faster some waves live, from 0 to 1
+#define OCEAN_WAVE_WIGGLE 1.0              // how wiggly the fronts are
+#define OCEAN_WAVE_RAGGEDNESS 1.5          // how ragged the edges and breakup are
+#define OCEAN_WAVE_COVERAGE 0.85           // speck density, from 0 to 1
+#define OCEAN_WAVE_TAIL_NOISE 0.8          // how much the trails break into streaks, from 0 to 1
 
 #if DAYLIGHT_CYCLE
     #include <utils/sky_sampling.glsl>
 #endif
 
-// Travel distance to the shore, which waves cover at a steady rate. Waves start at full speed at SHORE_WAVE_REACH and
-// slow evenly to SHORE_WAVE_END_SPEED of it at the shore. With speed falling linearly with distance, the travel
-// distance is the integral of its inverse, a logarithm.
+// Distance in steady travel units. Speed falls linearly from SHORE_WAVE_REACH to the shore, so this is the integral of
+// its inverse, a logarithm.
 float waveTravelDistance(float shoreDist) {
     const float reach = float(SHORE_WAVE_REACH);
     const float endSpeed = clamp(float(SHORE_WAVE_END_SPEED), 0.05, 1.0);
     if (endSpeed >= 0.999)
         return shoreDist;
-    // Waves keep their starting speed beyond the reach. Inside the shore the speed would reach 0, so stop short of that.
+    // Full speed beyond the reach, and stopping short of zero speed inside the shore
     float d = clamp(shoreDist, -0.9 * endSpeed / (1.0 - endSpeed) * reach, reach);
     float travel = reach / (1.0 - endSpeed) * log((endSpeed + (1.0 - endSpeed) * d / reach) / endSpeed);
     return travel + max(shoreDist - reach, 0.0);
@@ -139,22 +143,19 @@ vec2 noise2(vec2 st) {
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-// Waves travelling in to the shore, returning their foam coverage. The shore is split into stretches which spawn waves
-// at random times, each with its own place, length, thickness, speed and strength. Waves can overlap, and a fast wave
-// can catch a slower one.
-//  shorePoint: the nearest point on the shore, in world tiles
-//  foamMask:   the foam texture, which breaks up each wave's front
-//  room:       how much room there is for waves to form, from 0 to 1
+// Coverage of waves travelling in to the shore. Each stretch of shore spawns waves at random times, each with its own
+// place, length, thickness, speed and strength.
+//  shorePoint: nearest point on the shore, in world tiles
+//  foamMask:   foam texture, breaking up the fronts
+//  room:       room for waves, from 0 to 1
 float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
     float time = uboGlobal.elapsedTime;
-    // Positions are in travel distance, which waves cover at a steady rate
     float travel = waveTravelDistance(shoreDist) + (foamMask - 0.5) * SHORE_WAVE_FRONT_BREAKUP;
     float startTravel = waveTravelDistance(float(SHORE_WAVE_REACH));
     // Waves thicken as they come in
     float baseThickness = mix(float(SHORE_WAVE_END_THICKNESS), float(SHORE_WAVE_START_THICKNESS), saturate(shoreDist / SHORE_WAVE_REACH));
 
-    // Each stretch has a chance to spawn a wave once per slot, averaging one per interval, with room for sets to spawn
-    // more. Each spawns early enough in its slot that waves from the same stretch are at least SHORE_WAVE_MIN_GAP apart.
+    // Each stretch may spawn one wave per slot, early enough to stay SHORE_WAVE_MIN_GAP apart
     const float slot = max(SHORE_WAVE_INTERVAL * 0.75, float(SHORE_WAVE_MIN_GAP));
     const float baseChance = min(1.0, slot / SHORE_WAVE_INTERVAL);
     const float spawnWindow = 1.0 - SHORE_WAVE_MIN_GAP / slot;
@@ -164,7 +165,7 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
         max(float(SHORE_WAVE_START_THICKNESS), float(SHORE_WAVE_END_THICKNESS)) * (1.0 + SHORE_WAVE_THICKNESS_RANDOMNESS);
     const float maxHalfLength = SHORE_WAVE_MAX_LENGTH * 0.5;
 
-    // Only waves of an age between these can be covering this point, so only check the slots they could spawn in
+    // Only check slots whose waves could be covering this point
     float minAge = max((startTravel - travel) / maxSpeed, 0.0);
     float maxAge = (startTravel - travel + maxThickness) / minSpeed;
     if (maxAge <= 0.0)
@@ -177,16 +178,16 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
     for (int sy = -1; sy <= 1; sy++) {
         for (int sx = -1; sx <= 1; sx++) {
             vec2 cell = stretch + vec2(sx, sy);
-            // Skip stretches too far away for any of their waves to reach this point
+            // Skip stretches too far away to reach
             vec2 toCell = abs(shorePoint - (cell + 0.5) * SHORE_WAVE_SPACING) - 0.5 * SHORE_WAVE_SPACING;
             if (length(max(toCell, 0.0)) >= maxHalfLength)
                 continue;
 
-            // Offset each stretch's slots at random, so neighbouring stretches don't spawn together and line up
+            // Offset each stretch's slots so neighbours don't line up
             float slotOffset = hash12(cell + 0.73);
             float lastN = floor(newestSlot - slotOffset);
             for (float n = floor(oldestSlot - slotOffset); n <= lastN; n++) {
-                // Cheapest checks first. Spawned early in its slot, travelling in at its own speed.
+                // Cheapest checks first
                 vec2 r1 = hash22(cell + n * vec2(17.31, 5.13));
                 vec2 r2 = hash22(cell * 3.71 + n * vec2(2.27, 11.9) + 0.5);
                 float age = time - (n + slotOffset + r1.x * spawnWindow) * slot;
@@ -195,14 +196,14 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
                 float speed = SHORE_WAVE_SPEED * (1.0 + (r2.x - 0.5) * 2.0 * SHORE_WAVE_SPEED_RANDOMNESS);
                 float front = startTravel - age * speed;
 
-                // The wave's body, from 0 at its front to 1 at its back
+                // From 0 at the front to 1 at the back
                 float thickness = baseThickness *
                     (1.0 + (hash12(cell * 5.17 + n * vec2(3.31, 9.13) + 2.5) - 0.5) * 2.0 * SHORE_WAVE_THICKNESS_RANDOMNESS);
                 float across = (travel - front) / thickness;
                 if (across <= 0.0 || across >= 1.0)
                     continue;
 
-                // How far along the wave this point is, from 0 in its middle to 1 at its ends
+                // From 0 in the middle to 1 at the ends
                 vec2 r3 = hash22(cell * 1.93 - n * vec2(7.13, 3.37) + 1.5);
                 vec2 center = (cell + r2) * SHORE_WAVE_SPACING;
                 float halfLength = mix(SHORE_WAVE_MIN_LENGTH, SHORE_WAVE_MAX_LENGTH, r3.y) * 0.5;
@@ -210,8 +211,7 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
                 if (along >= 1.0)
                     continue;
 
-                // The chance rises and falls slowly, giving sets and lulls. Nearby stretches have similar chances,
-                // so a set rolls along the coast together.
+                // Sets and lulls, rolling along the coast together
                 float sets = noise(vec2(n * slot / SHORE_WAVE_SET_PERIOD, dot(cell, vec2(0.37, 0.21))));
                 float spawnChance = saturate(baseChance * (1.0 + (sets - 0.5) * 2.0 * SHORE_WAVE_SET_CONTRAST));
                 if (r3.x >= spawnChance)
@@ -219,7 +219,7 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
 
                 float strength = mix(SHORE_WAVE_MIN_STRENGTH, 1.0, r1.y) * (1.0 - smoothstep(1.0 - SHORE_WAVE_END_TAPER, 1.0, along));
                 float body = smoothstep(0.0, SHORE_WAVE_FRONT, across) * (1.0 - smoothstep(1.0 - SHORE_WAVE_TAIL, 1.0, across));
-                // Capped after the boost, so strong waves are solid and weaker ones and the tapered ends thin out
+                // Capped after the boost, so strong waves are solid
                 wave = max(wave, body * saturate(strength * room * SHORE_WAVE_COVERAGE));
             }
         }
@@ -227,9 +227,16 @@ float shoreWaves(float shoreDist, vec2 shorePoint, float foamMask, float room) {
     return wave;
 }
 
-// How close a point is to the edge between the cells of a churning Voronoi pattern, from 0 at an edge.
-// The difference between the nearest and second nearest cell points is cheap, and thickens the lines at junctions.
-float cellEdges(vec2 p, float time) {
+// Squashes an offset along the wind, which stretches shapes measured with it. Only ever applied to small local
+// offsets, since rotating a whole coordinate system with the wind would swing distant patterns around wildly.
+vec2 stretchAlongWind(vec2 offset, vec2 wind, float stretch) {
+    vec2 crossWind = vec2(-wind.y, wind.x);
+    return wind * (dot(offset, wind) / stretch) + crossWind * dot(offset, crossWind);
+}
+
+// Distance to the nearest edge of a churning Voronoi pattern, as the difference between the two nearest points,
+// measured stretched along the wind
+float cellEdges(vec2 p, float time, vec2 wind) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     float nearest = 8.0;
@@ -238,9 +245,8 @@ float cellEdges(vec2 p, float time) {
         for (int x = -1; x <= 1; x++) {
             vec2 offset = vec2(x, y);
             vec2 h = hash22(i + offset);
-            // Each cell's point wanders around its cell
             vec2 point = offset + 0.5 + 0.4 * sin(time + h * TAU);
-            float d = length(point - f);
+            float d = length(stretchAlongWind(point - f, wind, OCEAN_LACE_STRETCH));
             second = d < nearest ? nearest : min(second, d);
             nearest = min(nearest, d);
         }
@@ -248,65 +254,65 @@ float cellEdges(vec2 p, float time) {
     return second - nearest;
 }
 
-// The way the wind blows, along local X and Z, falling back to east if it isn't set, like before a client restart
+// Wind direction along local X and Z, east if unset
 vec2 oceanWind() {
     vec2 wind = uboGlobal.windDirection;
     return dot(wind, wind) > 0.25 ? normalize(wind) : vec2(1.0, 0.0);
 }
 
-// Whitecaps: waves breaking on open water. Each starts as a short crest across the wind, which sweeps downwind as it
-// breaks, leaving a spreading trail of foam behind it. The oldest foam at the back breaks up first, unevenly, until the
-// whole thing is gone. Each cell of the grid has one some of the time, at a random place in it.
-// Returns the coverage, and how old the foam is, from 0 to 1.
-//  q:            position in patch cells, stretched along the wind
-//  wind:         the way the wind blows
+// Ocean wave coverage and foam age, from 0 to 1. Each crest sweeps downwind, leaving a trail that breaks up from the
+// back. Each grid cell has a wave some of the time.
+//  q:            position in wave cells
 //  shoreDist:    distance to the shore, in tiles
-//  towardsShore: direction to the shore, in world tiles, or 0 where unknown
-vec2 oceanPatches(vec2 q, float time, vec2 wind, float shoreDist, vec2 towardsShore) {
-    const float amount = clamp(float(OCEAN_FOAM_PATCH_AMOUNT), 0.01, 1.0);
-    // Furthest a crest sweeps downwind over its life, in patch radii
+//  towardsShore: direction to the shore, or 0 where unknown
+vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
+    const float amount = clamp(float(OCEAN_WAVE_AMOUNT), 0.01, 1.0);
+    // In wave radii
     const float maxSweep = 1.7;
-    // Furthest a whitecap can reach from its center, in patch cells
-    const float maxReach = 1.6;
-    // Noise shared by every whitecap, only worked out once one is nearby
+    // In wave cells
+    const float maxReach = 1.8;
+    // Shared noise, worked out once a wave is nearby
     bool noiseReady = false;
     float ragged = 0.0;
     float breakup = 0.0;
-    // Breaking downwind, give or take
-    float driftAngle = atan(wind.y, wind.x);
     vec2 cell0 = floor(q);
     float result = 0.0;
     float age = 0.0;
     for (int y = -1; y <= 1; y++) {
         for (int x = -1; x <= 1; x++) {
             vec2 cell = cell0 + vec2(x, y);
-            // Each whitecap's center lies within the middle half of its cell
+            // Centers lie in the middle half of each cell
             vec2 toCenters = max(abs(q - (cell + 0.5)) - 0.25, 0.0);
             if (dot(toCenters, toCenters) > maxReach * maxReach)
                 continue;
             vec2 h = hash22(cell + 0.31);
-            // Each cell cycles at its own offset, with a whitecap for the first part of each cycle
-            float cycle = time * amount / OCEAN_FOAM_PATCH_LIFETIME + h.x;
+            // A wave for the first part of each cycle
+            float cycle = time * amount / OCEAN_WAVE_LIFETIME + h.x;
             float n = floor(cycle);
-            // Each has its own rate, direction, crest length and how quickly its foam fades
             vec4 r = hash42(cell * 2.9 + n * vec2(1.73, 9.21));
-            float life = fract(cycle) / amount * (1.0 + r.x * OCEAN_FOAM_PATCH_RATE_RANDOMNESS * 1.5);
+            float life = fract(cycle) / amount * (1.0 + r.x * OCEAN_WAVE_RATE_RANDOMNESS * 1.5);
             if (life >= 1.0)
                 continue;
             vec2 center = cell + 0.25 + 0.5 * hash22(cell * 1.7 + n * vec2(7.31, 3.17));
             vec2 offset = q - center;
             if (dot(offset, offset) > maxReach * maxReach)
                 continue;
+            // Each wave keeps the wind from when it spawned, so a change in the wind only affects new waves
+            float spawnTime = (n - h.x) * OCEAN_WAVE_LIFETIME / amount;
+            int historySecond = int(mod(floor(spawnTime), 32.0));
+            float windAngle = uboGlobal.windHistory[historySecond >> 2][historySecond & 3];
+            vec2 wind = vec2(cos(windAngle), sin(windAngle));
+            // Stretched along that wind around its own centre
+            offset = stretchAlongWind(offset, wind, OCEAN_WAVE_STRETCH);
             float radius = mix(0.13, 0.42, h.y);
-            float angle = driftAngle + (r.y - 0.5) * (PI / 7.0);
+            float angle = windAngle + (r.y - 0.5) * (PI / 7.0);
             vec2 downwind = vec2(cos(angle), sin(angle));
-            // Each also has its own sweep, curve, lopsidedness and waviness along the crest
             vec4 shape = hash42(cell * 4.13 + n * vec2(5.31, 2.87));
             float sweep = maxSweep * mix(0.6, 1.0, shape.x);
-            // Long crests are slimmer, keeping them within the neighbouring cells
+            // Long crests are slimmer, to fit the neighbouring cells
             float crestLength = mix(2.4, 4.0, r.z);
             radius = min(radius, 0.9 / crestLength);
-            // Position downwind in radii, and along the crest from -1 to 1 at its ends, with one side longer
+            // Downwind in radii, and along the crest from -1 to 1, one side longer
             float u = dot(offset, downwind) / radius;
             float v = dot(offset, vec2(-downwind.y, downwind.x)) / (radius * crestLength);
             v /= v > 0.0 ? mix(0.6, 1.0, shape.z) : mix(1.0, 0.6, shape.z);
@@ -315,76 +321,66 @@ vec2 oceanPatches(vec2 q, float time, vec2 wind, float shoreDist, vec2 towardsSh
 
             if (!noiseReady) {
                 noiseReady = true;
-                // Ragged, jagged edges, slowly shifting. Broad lumps, then finer tears and jags down to a fraction of a
-                // tile.
+                // Ragged edges, from broad lumps to fine tears
                 ragged = (noise(q * 2.2 + time * vec2(0.05, -0.04)) - 0.5) * 0.3;
                 ragged += (noise(q * 5.1 + time * vec2(-0.07, 0.06) + 9.3) - 0.5) * 0.18;
                 ragged += (noise(q * 11.3 + time * vec2(0.09, 0.08) + 4.1) - 0.5) * 0.14;
                 ragged += (noise(q * 23.7 + time * vec2(-0.12, 0.1) + 17.9) - 0.5) * 0.1;
-                ragged *= OCEAN_FOAM_PATCH_RAGGEDNESS;
-                // Where the foam breaks up first
+                ragged *= OCEAN_WAVE_RAGGEDNESS;
                 breakup = noise(q * 3.7 + time * vec2(-0.09, -0.05) + 21.7);
             }
 
-            // The crest sweeps downwind, its ends lagging behind so it curves, and wavering along its length. It eases
-            // up to speed as it breaks and eases back to a stop partway through the whitecap's life, leaving its foam
-            // to fade.
+            // The crest eases up to speed and back to a stop, its ends lagging so it curves
             const float breakEnd = 0.65;
             float travelled = smoothstep(0.0, 1.0, saturate(life / breakEnd)) * sweep;
             float crest = travelled - 0.5 * sweep;
             float curve = mix(0.05, 0.7, shape.y) * v * v;
-            // Wiggles along the front, from a few waves of different sizes, each whitecap with its own
+            // Wiggles along the front at three scales
             vec3 wiggleRates = mix(vec3(2.0, 5.0, 11.0), vec3(4.0, 9.0, 17.0), vec3(shape.w, r.y, shape.x));
             vec3 wiggles = sin(v * wiggleRates + vec3(r.y, shape.w, r.x) * TAU);
-            float waver = dot(wiggles, vec3(0.16, 0.09, 0.05)) * OCEAN_FOAM_PATCH_WIGGLE;
-            // A sharp front at the crest, and a trail behind it as long as the crest has travelled, fanning out
-            // sideways as it spreads. The crest stays a fairly clean line so it reads as a wave, with the trail behind
-            // it torn up much more.
+            float waver = dot(wiggles, vec3(0.16, 0.09, 0.05)) * OCEAN_WAVE_WIGGLE;
+            // A sharp front, and a trail as long as the crest has travelled, fanning out as it spreads
             float trail = travelled + 0.05;
             float behind = crest - (u + curve + waver);
-            // Scaled down while the trail is short, so a newly forming wave is a line rather than a ragged blob
+            // Less ragged at the front, and while the trail is short
             behind += ragged * mix(0.3, 1.0, saturate(behind / trail)) * saturate(trail * 1.5);
             float foamAge = saturate(behind / trail);
             float ends = 1.0 - smoothstep(0.5, 1.0, abs(v) + ragged * 0.8 - foamAge * 0.3);
-            // Thinner towards the ends, where the wave breaks less
+            // Thinner towards the ends
             float thickness = trail * (1.0 - 0.75 * saturate(v * v));
             float cover = ends * (1.0 - smoothstep(0.0, 0.06, -behind)) * (1.0 - smoothstep(0.7, 1.0, behind / thickness));
 
-            // Each bit of foam fades from when the crest passed it, gradually and unevenly, at the whitecap's own rate
-            // When the crest passed here, inverting the smoothstep it travels by
+            // Foam fades from when the crest passed it, found by inverting the crest's smoothstep
             float passedTravel = saturate((travelled - max(behind, 0.0)) / sweep);
             float passed = (0.5 - sin(asin(1.0 - 2.0 * passedTravel) / 3.0)) * breakEnd;
             float foamLife = max(life - passed, 0.0);
-            // Faster waves leave foam fading sooner, so their trails don't stretch out too far behind them
+            // Faster waves fade sooner, so their trails don't stretch too far
             float fadeTime = mix(0.3, 0.55, r.w) * (maxSweep * 0.6 / sweep);
             float lasting = 1.0 - foamLife / fadeTime;
-            lasting += (breakup - 0.5) * min(0.55 * OCEAN_FOAM_PATCH_RAGGEDNESS, 0.8);
+            lasting += (breakup - 0.5) * min(0.55 * OCEAN_WAVE_RAGGEDNESS, 0.8);
             cover *= smoothstep(0.0, 0.4, lasting);
-            // The trail breaks into streaks running downwind, more so the further behind the front, while the front
-            // stays solid. Fixed to the wave, so the streaks it leaves stay where they are as it moves on.
+            // The trail breaks into streaks, more so further behind the front
             if (cover > 0.0) {
                 float streaks = noise(vec2(u * 1.6, v * 7.0) + r.zw * 50.0);
                 streaks = smoothstep(0.25, 0.7, streaks);
-                cover *= mix(1.0, streaks, saturate(behind * 1.5) * OCEAN_FOAM_PATCH_TAIL_NOISE);
+                cover *= mix(1.0, streaks, saturate(behind * 1.5) * OCEAN_WAVE_TAIL_NOISE);
             }
-            // Fades in from nothing as it starts to break, and whatever's left fades out at the end
-            cover *= smoothstep(0.0, 0.2, life) * (1.0 - smoothstep(0.85, 1.0, life));
+            // Fade in and out over its life
+            float fade = smoothstep(0.0, 0.2, life) * (1.0 - smoothstep(0.85, 1.0, life));
 
-            // Skip whitecaps which would start or finish too close to the shore, rather than cutting them short.
-            // Estimate the shore distance at each end from the distance and direction here, undoing the stretch
-            // along the wind to get back to tiles. Only near the shore, where the distance is known.
+            // Skip waves that would start or end too near the shore, estimating its distance at each end
             if (shoreDist < SHORE_DISTANCE_MAX - 0.3) {
-                vec2 crossWind = vec2(-wind.y, wind.x);
-                vec2 startOffset = center - downwind * (0.5 * sweep * radius) - q;
-                vec2 endOffset = startOffset + downwind * (sweep * radius);
-                startOffset = (wind * dot(startOffset, wind) * OCEAN_FOAM_STRETCH + crossWind * dot(startOffset, crossWind)) * OCEAN_FOAM_PATCH_SIZE;
-                endOffset = (wind * dot(endOffset, wind) * OCEAN_FOAM_STRETCH + crossWind * dot(endOffset, crossWind)) * OCEAN_FOAM_PATCH_SIZE;
+                // The crest's path, unstretched back to tiles
+                vec2 path = stretchAlongWind(downwind * (sweep * radius), wind, 1.0 / OCEAN_WAVE_STRETCH);
+                vec2 startOffset = (center - q - 0.5 * path) * OCEAN_WAVE_SIZE;
+                vec2 endOffset = startOffset + path * OCEAN_WAVE_SIZE;
                 float pathShoreDist = shoreDist - max(dot(startOffset, towardsShore), dot(endOffset, towardsShore));
-                cover *= smoothstep(OCEAN_FOAM_SHORE_GAP, OCEAN_FOAM_SHORE_FADE, pathShoreDist);
+                fade *= smoothstep(OCEAN_FOAM_SHORE_GAP, OCEAN_FOAM_SHORE_FADE, pathShoreDist);
             }
+            cover *= fade;
             if (cover > result) {
                 result = cover;
-                // Freshest, and brightest, right at the front
+                // Freshest at the front
                 age = mix(saturate(1.0 - lasting), life, 0.5) * smoothstep(0.0, 0.5, max(behind, 0.0));
             }
         }
@@ -392,75 +388,68 @@ vec2 oceanPatches(vec2 q, float time, vec2 wind, float shoreDist, vec2 towardsSh
     return vec2(result, age);
 }
 
-// Open water foam coverage, from 0 to 1, before breaking up with the foam texture, and how much of it is patches
-//  pos: position in world tiles
-vec2 oceanFoam(vec2 pos, float shoreDist, vec2 towardsShore) {
+// Lace coverage, from 0 to 1
+//  drifted: position in world tiles, drifted with the wind
+float oceanLace(vec2 drifted, vec2 wind) {
     float time = uboGlobal.elapsedTime;
-    // Carried along by the wind, accumulated over time so a change in the wind doesn't shift the whole pattern
-    vec2 drifted = pos - uboGlobal.windDrift * OCEAN_FOAM_DRIFT_SPEED;
-    vec2 p = drifted / OCEAN_FOAM_SCALE;
+    vec2 p = drifted / OCEAN_LACE_SCALE;
 
-    // Stretch along the wind, as it pulls the foam out into streaks
-    vec2 wind = oceanWind();
-    vec2 crossWind = vec2(-wind.y, wind.x);
-    p = wind * (dot(p, wind) / OCEAN_FOAM_STRETCH) + crossWind * dot(p, crossWind);
-
-    // Whitecaps keep their own shape rather than following the lace's swirls
-    vec2 unswirled = p;
-
-    // The lace is too fine to make out far away, so fade it out and skip it beyond OCEAN_FOAM_LACE_DISTANCE from the
-    // camera, the same way shadows fade out: by straight line distance, over the last 10 tiles or the far half
+    // Fade out with distance from the camera, like shadows
     float laceDistance = length(IN.position - uboGlobal.cameraPos) / 128.0;
-    const float laceFadeStart = max(OCEAN_FOAM_LACE_DISTANCE * 0.5, OCEAN_FOAM_LACE_DISTANCE - 10.0);
-    float laceFade = 1.0 - smoothstep(laceFadeStart, OCEAN_FOAM_LACE_DISTANCE, laceDistance);
+    const float laceFadeStart = max(OCEAN_LACE_DISTANCE * 0.5, OCEAN_LACE_DISTANCE - 10.0);
+    float laceFade = 1.0 - smoothstep(laceFadeStart, OCEAN_LACE_DISTANCE, laceDistance);
+    if (laceFade <= 0.0)
+        return 0.0;
+
+    // Fine lines fade out sooner
+    float detail = 1.0 - smoothstep(OCEAN_LACE_DETAIL_DISTANCE * 0.7, OCEAN_LACE_DETAIL_DISTANCE, laceDistance);
+
+    // Bend and curl the straight cell edges
+    float swirlTime = time * OCEAN_LACE_SWIRL_SPEED;
+    vec2 swirl = noise2(p * 1.3 + swirlTime * vec2(0.02, -0.015));
+    vec2 curl = noise2(p * 3.3 + swirlTime * vec2(0.031, 0.024) + 7.1);
+    p += ((swirl - 0.5) + (curl - 0.5) * OCEAN_LACE_CURL) * OCEAN_LACE_SWIRL;
+
+    // Width variation, and gaps breaking the lines into strands
+    float width = OCEAN_LACE_LINE_WIDTH * (1.0 + (swirl.x - 0.5) * 2.0 * OCEAN_LACE_WIDTH_VARIATION);
+    vec2 gapNoise = noise2(p * 1.8 + time * vec2(-0.023, 0.019) + 13.1);
+    float gapStart = OCEAN_LACE_GAPS * 0.85;
+    float mainGaps = smoothstep(gapStart - 0.12, gapStart + 0.12, gapNoise.x);
+    float fineGaps = smoothstep(gapStart - 0.12, gapStart + 0.12, gapNoise.y) * detail * OCEAN_LACE_FINE_LINES;
+
+    // Main and fine lines, skipped where broken off
     float lace = 0.0;
-    if (laceFade > 0.0) {
-        // The finest detail fades out with distance, where it's too small to make out, and is skipped beyond that
-        float detail = 1.0 - smoothstep(OCEAN_FOAM_LACE_DETAIL_DISTANCE * 0.7, OCEAN_FOAM_LACE_DETAIL_DISTANCE, laceDistance);
-
-        // Swirl the lines with two layers of drifting noise, a little smaller than a cell to bend the straight cell
-        // edges, then much smaller to curl them
-        float swirlTime = time * OCEAN_FOAM_SWIRL_SPEED;
-        vec2 swirl = noise2(p * 1.3 + swirlTime * vec2(0.02, -0.015));
-        vec2 curl = noise2(p * 3.3 + swirlTime * vec2(0.031, 0.024) + 7.1);
-        p += ((swirl - 0.5) + (curl - 0.5) * OCEAN_FOAM_CURL) * OCEAN_FOAM_SWIRL;
-
-        // Slowly changing variation along the lines: their width, from the swirl, and where the main and fine lines
-        // break off. The gaps are about a cell apart, breaking the lines into separate strands rather than
-        // leaving whole areas empty.
-        float width = OCEAN_FOAM_LINE_WIDTH * (1.0 + (swirl.x - 0.5) * 2.0 * OCEAN_FOAM_WIDTH_VARIATION);
-        vec2 gapNoise = noise2(p * 1.8 + time * vec2(-0.023, 0.019) + 13.1);
-        float gapStart = OCEAN_FOAM_GAPS * 0.85;
-        float mainGaps = smoothstep(gapStart - 0.12, gapStart + 0.12, gapNoise.x);
-        float fineGaps = smoothstep(gapStart - 0.12, gapStart + 0.12, gapNoise.y) * detail * OCEAN_FOAM_FINE_LINES;
-
-        // Main lines, and finer ones in between churning a little faster, each skipped where it's broken off.
-        // Densest at each line's core, thinning out towards its edges.
-        float churn = time * OCEAN_FOAM_CHURN_SPEED;
-        if (mainGaps > 0.0)
-            lace = (1.0 - smoothstep(0.0, width, cellEdges(p, churn))) * mainGaps;
-        if (fineGaps > 0.0) {
-            float fine = 1.0 - smoothstep(0.0, OCEAN_FOAM_LINE_WIDTH, cellEdges(p * 2.3 + 17.0, churn * 1.4));
-            lace = max(lace, fine * fineGaps);
-        }
-
-        // Denser areas of lace come and go with slowly changing noise
-        float wt = time * OCEAN_FOAM_DENSE_SPEED;
-        float dense = noise(drifted / OCEAN_FOAM_DENSE_SIZE + vec2(wt, -0.7 * wt));
-        dense = smoothstep(1.0 - OCEAN_FOAM_DENSE_AMOUNT - 0.15, 1.0 - OCEAN_FOAM_DENSE_AMOUNT + 0.15, dense);
-
-        lace *= mix(OCEAN_FOAM_COVERAGE, OCEAN_FOAM_DENSE_COVERAGE, dense) * laceFade;
+    float churn = time * OCEAN_LACE_CHURN_SPEED;
+    if (mainGaps > 0.0)
+        lace = (1.0 - smoothstep(0.0, width, cellEdges(p, churn, wind))) * mainGaps;
+    if (fineGaps > 0.0) {
+        float fine = 1.0 - smoothstep(0.0, OCEAN_LACE_LINE_WIDTH, cellEdges(p * 2.3 + 17.0, churn * 1.4, wind));
+        lace = max(lace, fine * fineGaps);
     }
 
-    // Fresh patches are bright, dimming as they age
-    vec2 patchData = oceanPatches(
-        unswirled * (OCEAN_FOAM_SCALE / OCEAN_FOAM_PATCH_SIZE), time, wind, shoreDist, towardsShore);
-    // The front is the brightest and densest, dimming and thinning out behind it
-    float front = 1.0 - smoothstep(0.0, 0.6, patchData.y);
-    float patches = patchData.x * mix(OCEAN_FOAM_PATCH_COVERAGE, 1.0, front);
-    float patchStrength = patchData.x * mix(0.5, OCEAN_FOAM_PATCH_FRONT_BRIGHTNESS, front);
+    // Denser areas come and go
+    float wt = time * OCEAN_LACE_DENSE_SPEED;
+    float dense = noise(drifted / OCEAN_LACE_DENSE_SIZE + vec2(wt, -0.7 * wt));
+    dense = smoothstep(1.0 - OCEAN_LACE_DENSE_AMOUNT - 0.15, 1.0 - OCEAN_LACE_DENSE_AMOUNT + 0.15, dense);
 
-    return vec2(max(lace, patches), patchStrength);
+    lace *= mix(OCEAN_LACE_COVERAGE, OCEAN_LACE_DENSE_COVERAGE, dense) * laceFade;
+    return lace;
+}
+
+// Ocean wave coverage, from 0 to 1, and brightness relative to OCEAN_WAVE_STRENGTH
+//  drifted: position in world tiles, drifted with the wind
+vec2 oceanWaves(vec2 drifted, float shoreDist, vec2 towardsShore) {
+    vec2 q = drifted / OCEAN_WAVE_SIZE;
+    vec2 cells = oceanWaveCells(q, uboGlobal.elapsedTime, shoreDist, towardsShore);
+    // Brightest and densest at the front
+    float front = 1.0 - smoothstep(0.0, 0.6, cells.y);
+    float coverage = cells.x * mix(OCEAN_WAVE_COVERAGE, 1.0, front);
+    return vec2(coverage, mix(1.0, OCEAN_WAVE_FRONT_BRIGHTNESS, front));
+}
+
+// Foam built from texture specks, thinning with the coverage and fading at its edges
+float oceanSpecks(float coverage, float softness, float specks) {
+    return smoothstep(1.0 - coverage, 1.0 - coverage + softness, specks) * smoothstep(0.0, 0.7, coverage);
 }
 
 vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
@@ -659,24 +648,22 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     ivec3 shoreDistances = fAlphaBiasHsl & SHORE_DISTANCE_STEPS;
     #if IMPROVED_SHORE_FOAM
     float foamAmount = 0;
-    // Skip faces beyond the shore foam which aren't open water either. The checks are uniform per face, so texture
-    // derivatives stay valid. Cast, since max is overloaded for ints and floats, making whole number settings ambiguous.
+    // Skip faces neither near the shore nor on open water. Uniform per face, so texture derivatives stay valid. Cast,
+    // since max is ambiguous with whole number settings.
     float foamReach = max(float(SHORE_WAVE_REACH), float(SHORE_FOAM_REACH));
     int foamReachSteps = int(ceil((foamReach + SHORE_FOAM_EDGE_NOISE) / SHORE_DISTANCE_MAX * SHORE_DISTANCE_STEPS));
     ivec3 enclosureSteps = fAlphaBiasHsl >> WATER_ENCLOSURE_SHIFT & WATER_ENCLOSURE_STEPS;
-    // Open water has more room than the waves need, so is less enclosed than this
     const int openWaterSteps = int(ceil((1.0 - float(SHORE_WAVE_MIN_ROOM) / WATER_ROOM_MAX) * WATER_ENCLOSURE_STEPS));
     bool nearShore = any(lessThan(shoreDistances, ivec3(foamReachSteps)));
-    bool openWater = OCEAN_FOAM_STRENGTH > 0.0 && any(lessThan(enclosureSteps, ivec3(openWaterSteps)));
+    bool openWater = (OCEAN_LACE_STRENGTH > 0.0 || OCEAN_WAVE_STRENGTH > 0.0) &&
+        any(lessThan(enclosureSteps, ivec3(openWaterSteps)));
     if (waterType.hasFoam != 0 && (nearShore || openWater)) {
-        // Distance to the shore in tiles
         float shoreDist = dot(fTexBlend, vec3(shoreDistances)) / SHORE_DISTANCE_STEPS * SHORE_DISTANCE_MAX;
-        // Blending corners gives 0 everywhere between two shores, like in a one tile wide channel. On square tiles
-        // touching land, measure to the land corners and sides within the tile instead. WATER_SQUARE_TILE_BIT on the
-        // second vertex marks a square tile, and on the first the sw triangle (sw, se, nw) rather than (ne, nw, se).
+        // Blended corners read 0 across one tile channels, so measure to land within square tiles instead.
+        // WATER_SQUARE_TILE_BIT on the second vertex marks a square tile, and on the first the sw triangle.
         if (nearShore && (fAlphaBiasHsl[1] & WATER_SQUARE_TILE_BIT) != 0 && any(equal(shoreDistances, ivec3(0)))) {
             bool swTriangle = (fAlphaBiasHsl[0] & WATER_SQUARE_TILE_BIT) != 0;
-            // Position within the tile, from (0, 0) at sw to (1, 1) at ne
+            // From (0, 0) at sw to (1, 1) at ne
             vec2 local = swTriangle ?
                 vec2(fTexBlend.y, fTexBlend.z) :
                 vec2(fTexBlend.x + fTexBlend.z, fTexBlend.x + fTexBlend.y);
@@ -698,14 +685,13 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             if ((landSides & 8) != 0)
                 shoreDist = min(shoreDist, 1.0 - local.y);
         }
-        // Warp the distance with drifting noise to hide tile and triangle edges, which only matters near the shore
+        // Hide tile edges in the foam line
         if (nearShore) {
             float edgeNoise = noise(worldUvs(0.4) + uboGlobal.elapsedTime * vec2(0.03, -0.02));
             shoreDist += (edgeNoise - 0.5) * SHORE_FOAM_EDGE_NOISE;
         }
 
-        // Direction towards land, only where a corner is within range of it. Blending vectors rather than angles avoids
-        // wrapping, and weakens it where vertices disagree, like midway across a river.
+        // Direction to land, where known. Blending vectors avoids wrapping, and weakens where vertices disagree.
         vec2 shoreDir = vec2(0);
         vec2 towardsShore = vec2(0);
         if (any(lessThan(shoreDistances, ivec3(SHORE_DISTANCE_STEPS)))) {
@@ -714,33 +700,29 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             shoreDir = vec2(dot(fTexBlend, cos(shoreAngles)), dot(fTexBlend, sin(shoreAngles)));
             towardsShore = length(shoreDir) > 0.1 ? normalize(shoreDir) : vec2(0);
         }
-        // The nearest point on the shore, in world tiles. It stays the same as a wave travels in towards it, so patterns
-        // based on it vary along the shore without shifting as the waves move.
+        // Nearest point on the shore, in world tiles, which stays put as waves come in
         vec2 shorePoint = -worldUvs(1.0) + towardsShore * shoreDist;
 
-        // Only form waves where there's room, so not in small ponds or narrow channels
+        // No waves in small ponds or narrow channels
         float waterRoom = (1.0 - dot(fTexBlend, vec3(enclosureSteps)) / WATER_ENCLOSURE_STEPS) * WATER_ROOM_MAX;
         float roomForWaves = smoothstep(SHORE_WAVE_MIN_ROOM, SHORE_WAVE_FULL_ROOM, waterRoom);
 
-        // The open water foam's specks, coarser than the shore foam's and drifting along with the lace rather than
-        // changing in place. Sampled outside the per-pixel branches below, so texture derivatives stay valid.
+        // Open water foam specks, drifting with the wind. Sampled before per-pixel branches, for valid derivatives.
         float oceanMask = 0.0;
         if (openWater) {
             vec2 oceanUv = worldUvs(OCEAN_FOAM_TEXTURE_SCALE) + uboGlobal.windDrift * (OCEAN_FOAM_DRIFT_SPEED / OCEAN_FOAM_TEXTURE_SCALE);
             oceanMask = smoothstep(0.1, 0.65, texture(textureArray, vec3(oceanUv + uvFlow * flowMapStrength, MAT_WATER_FOAM.colorMap)).r);
-            // Shades the foam where there's no shore foam texture
             foamMask = oceanMask;
         }
 
-        // The shore foam and waves, only on faces near the shore. Uniform per face, like the checks above.
+        // Shore foam and waves
         if (nearShore) {
-            // World-space foam, warped by drifting noise so it churns in place
+            // Churning in place
             vec2 foamWarp = noise2(worldUvs(1.5) + uboGlobal.elapsedTime * vec2(0.07, 0.03)) - 0.5;
             foamWarp = foamWarp * SHORE_FOAM_CHURN + uvFlow * flowMapStrength;
             vec2 foamUv = worldUvs(SHORE_FOAM_SCALE) + foamWarp;
 
-            // Sway the foam towards the shore and back, with the same timing everywhere so it doesn't stretch.
-            // Each cycle is a sway of random strength, then a lull of random length.
+            // Sway in and out, with the same timing everywhere. Each cycle is a sway, then a lull.
             float swayCycle = uboGlobal.elapsedTime / SHORE_FOAM_SWAY_PERIOD;
             float swayIndex = floor(swayCycle);
             float swayT = fract(swayCycle);
@@ -750,20 +732,18 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
                 swayT /= 1.0 - lull;
                 swayStrength = mix(0.6, 1.0, hash11(swayIndex + 500.0));
             } else {
-                // Drift slowly during the lull, sized to keep about the same speed whatever its length
+                // Drift slowly during the lull
                 swayT = (swayT - (1.0 - lull)) / lull;
                 swayStrength = lull / SHORE_FOAM_SWAY_MAX_LULL * SHORE_FOAM_LULL_DRIFT;
             }
             // In, then out, starting and stopping smoothly
             float sway = sin(swayT * TAU) * sin(swayT * PI) * swayStrength;
-            // World UVs are negated, so adding the offset moves the pattern towards the shore. Only near the shore,
-            // since the direction is meaningless out on open water.
+            // Towards the shore, since world UVs are negated. Only near it, where the direction means something.
             sway *= 1.0 - smoothstep(foamReach, 4.0, shoreDist);
             foamUv += shoreDir * (sway * SHORE_FOAM_SWAY / SHORE_FOAM_SCALE);
 
-            // Blend three copies of the texture a third of a period apart, so the pattern keeps changing in place.
-            // Each fades in and out with a sin² weight, jumping to a random offset while invisible. The weights always
-            // sum to 1.5 and their squares to 9/8, so brightness and contrast stay constant.
+            // Three copies a third of a period apart, each fading in and out with a sin² weight and jumping while
+            // invisible. The weights sum to 1.5 and their squares to 9/8, keeping brightness and contrast steady.
             float evolveCycle = uboGlobal.elapsedTime / SHORE_FOAM_EVOLVE_PERIOD;
             float foamSum = 0;
             for (int i = 0; i < 3; i++) {
@@ -772,14 +752,13 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
                 vec2 offset = hash21(floor(copyCycle) + i * 1000.0) * 4.0;
                 foamSum += weight * weight * texture(textureArray, vec3(foamUv + offset, MAT_WATER_FOAM.colorMap)).r;
             }
-            // Blending flattens contrast by sqrt(9/8) / 1.5, so restore it around the texture's average brightness
+            // Restore the contrast blending flattens
             const float foamAverage = 0.58;
             float foamTex = (foamSum / 1.5 - foamAverage) * (1.5 / sqrt(9.0 / 8.0)) + foamAverage;
             // The texture mostly ranges from 0.4 to 0.7
             foamMask = smoothstep(0.1, 0.65, foamTex);
 
-            // Waves travelling towards the shore, fading in from nothing as they come in, over solid foam along it.
-            // Skipped where they'd be invisible.
+            // Waves fade in as they come in, over solid foam along the shore
             float waveOpacity =
                 saturate((SHORE_WAVE_REACH - shoreDist) / max(SHORE_WAVE_REACH - SHORE_WAVE_FULL_OPACITY, 0.01));
             waveOpacity = pow(waveOpacity, SHORE_WAVE_OPACITY_CURVE);
@@ -788,25 +767,28 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
                 wave = shoreWaves(shoreDist, shorePoint, foamMask, roomForWaves);
             float shoreBand = 1.0 - smoothstep(0.05, SHORE_FOAM_REACH, shoreDist);
 
-            // Erode the texture by the coverage, so thin foam breaks into patches
+            // Erode the texture, so thin foam breaks into patches
             float foamCoverage = max(shoreBand, wave);
             foamAmount = smoothstep(1.0 - foamCoverage, 1.0 - foamCoverage + SHORE_FOAM_SOFTNESS, foamMask);
-            // The shore foam keeps its own strength, but only where it's the stronger foam, so waves crossing it keep
-            // fading
+            // The shore band keeps its strength only where it dominates
             float bandDominance = smoothstep(-0.15, 0.15, shoreBand - wave);
             foamAmount *= SHORE_FOAM_STRENGTH * mix(waveOpacity, max(waveOpacity, shoreBand), bandDominance);
         }
 
-        // Lace and whitecaps on open water, fading out under the shore foam
+        // Lace and ocean waves, fading out near the shore
         float oceanRoom = roomForWaves * smoothstep(OCEAN_FOAM_SHORE_GAP, OCEAN_FOAM_SHORE_FADE, shoreDist);
-        if (OCEAN_FOAM_STRENGTH > 0.0 && oceanRoom > 0.0) {
-            vec2 ocean = oceanFoam(-worldUvs(1.0), shoreDist, towardsShore);
-            float oceanCoverage = ocean.x * oceanRoom;
-            // Built from the foam texture's specks, thinning out with the coverage, so there's no flat fill
-            float oceanAmount = smoothstep(1.0 - oceanCoverage, 1.0 - oceanCoverage + OCEAN_FOAM_SOFTNESS, oceanMask);
-            // Fainter towards the edges of the lines, so they fade into the water rather than ending sharply
-            oceanAmount *= smoothstep(0.0, 0.7, oceanCoverage);
-            foamAmount = max(foamAmount, oceanAmount * mix(OCEAN_FOAM_STRENGTH, OCEAN_FOAM_PATCH_STRENGTH, ocean.y));
+        if (oceanRoom > 0.0) {
+            vec2 drifted = -worldUvs(1.0) - uboGlobal.windDrift * OCEAN_FOAM_DRIFT_SPEED;
+            vec2 wind = oceanWind();
+            if (OCEAN_LACE_STRENGTH > 0.0) {
+                float lace = oceanLace(drifted, wind) * oceanRoom;
+                foamAmount = max(foamAmount, oceanSpecks(lace, OCEAN_LACE_SOFTNESS, oceanMask) * OCEAN_LACE_STRENGTH);
+            }
+            if (OCEAN_WAVE_STRENGTH > 0.0) {
+                vec2 waves = oceanWaves(drifted, shoreDist, towardsShore);
+                float amount = oceanSpecks(waves.x * oceanRoom, OCEAN_WAVE_SOFTNESS, oceanMask);
+                foamAmount = max(foamAmount, amount * OCEAN_WAVE_STRENGTH * waves.y);
+            }
         }
     }
     #else
@@ -858,11 +840,19 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             baseColor *= .75f; // Sailing hack
 
         #if IMPROVED_SHORE_FOAM
-            vec3 foamColor = waterType.foamColor * mix(0.5, 0.7, foamMask) * compositeLight;
-            // Weight by luminance rather than red, re-encoded to sRGB so neutral colors match. Skipped without foam.
+            vec3 foamColor = vec3(0);
             float litFoamAmount = 0;
-            if (foamAmount > 0)
-                litFoamAmount = foamAmount * linearToSrgb(linearSrgbLuminance(srgbToLinear(saturate(foamColor))));
+            if (foamAmount > 0) {
+                vec3 foamAlbedo = waterType.foamColor * mix(0.5, 0.7, foamMask);
+                foamColor = foamAlbedo * compositeLight;
+                // At least FOAM_WATER_BRIGHTNESS times the water's brightness, since in dim light like sunrise and
+                // sunset the water is lit mostly by the sky's reflection. Shaded by the texture, capped at about white.
+                float waterBrightness = linearSrgbLuminance(max(baseColor, vec3(0)));
+                foamColor = max(foamColor, foamAlbedo / 0.6 * min(waterBrightness * FOAM_WATER_BRIGHTNESS, 1.0));
+                // The color carries the lighting, so only fade the opacity in real darkness
+                float brightness = linearToSrgb(linearSrgbLuminance(srgbToLinear(saturate(foamColor))));
+                litFoamAmount = foamAmount * saturate(brightness * 4.0);
+            }
         #else
             vec3 foamColor = waterType.foamColor * foamMask * compositeLight;
             float litFoamAmount = foamAmount * foamColor.r;

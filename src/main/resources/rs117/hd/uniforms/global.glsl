@@ -72,6 +72,7 @@ layout(std140) uniform UBOGlobal {
 
     float lightningBrightness;
     float elapsedTime;
-    vec2 windDirection; // the way the wind blows, along local X and Z
-    vec2 windDrift; // how far the wind has blown in total, along each axis, in seconds of the default wind speed
+    vec2 windDirection; // along local X and Z
+    vec2 windDrift; // total drift along local X and Z, in seconds at the default wind speed
+    vec4 windHistory[8]; // wind angle at the start of each of the last 32 seconds, indexed by the second
 } uboGlobal;

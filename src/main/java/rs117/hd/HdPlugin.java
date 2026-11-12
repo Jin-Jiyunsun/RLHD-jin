@@ -515,9 +515,18 @@ public class HdPlugin extends Plugin {
 	private long lastFrameTimeMillis;
 	private double lastFrameClientTime;
 	public float windOffset;
-	// How far the wind has carried the water's surface, along local X and Z, for the open water foam. Measured in
-	// seconds of the default wind speed, so stronger winds carry it further.
+	// Total wind drift along local X and Z for the open water foam, in seconds at the default wind speed
 	public final float[] windDrift = new float[2];
+	// The wind angle at the start of each of the last WIND_HISTORY_LENGTH seconds, indexed by the second, so each
+	// ocean wave can keep the wind it spawned with
+	public static final int WIND_HISTORY_LENGTH = 32;
+	public final float[] windHistory = new float[WIND_HISTORY_LENGTH];
+	private int windHistorySecond = -1;
+	// The water's wind angle, easing towards the environment's more slowly than the environment blends, since the
+	// water takes longer to turn. Two chained easings, so it starts gently.
+	public float waterWindAngle = Float.NaN;
+	private float waterWindEasing;
+	private static final float WATER_WIND_EASING_SECONDS = 12;
 	public long colorFilterChangedAt;
 
 	public float clientUnfocusedTime;
@@ -582,6 +591,8 @@ public class HdPlugin extends Plugin {
 				fboShadowMap = 0;
 				frame = 0;
 				elapsedTime = 0;
+				windHistorySecond = -1;
+				waterWindAngle = Float.NaN;
 				elapsedClientTime = 0;
 				deltaTime = 0;
 				deltaClientTime = 0;
@@ -1303,6 +1314,32 @@ public class HdPlugin extends Plugin {
 		if (texUi != 0)
 			glDeleteTextures(texUi);
 		texUi = 0;
+	}
+
+	/**
+	 * Ease the water's wind towards the environment's, the shortest way round
+	 */
+	private void updateWaterWind(float windAngle) {
+		if (Float.isNaN(waterWindAngle)) {
+			waterWindAngle = waterWindEasing = windAngle;
+			return;
+		}
+		float rate = 1 - (float) Math.exp(-deltaTime / WATER_WIND_EASING_SECONDS);
+		waterWindEasing += (float) Math.IEEEremainder(windAngle - waterWindEasing, 2 * Math.PI) * rate;
+		waterWindAngle += (float) Math.IEEEremainder(waterWindEasing - waterWindAngle, 2 * Math.PI) * rate;
+	}
+
+	/**
+	 * Record the wind angle at the start of each second, filling the whole history the first time
+	 */
+	private void updateWindHistory(float windAngle) {
+		int second = (int) Math.floor(elapsedTime % MAX_FLOAT_WITH_128TH_PRECISION);
+		if (second == windHistorySecond)
+			return;
+		if (windHistorySecond < 0)
+			Arrays.fill(windHistory, windAngle);
+		windHistory[second % WIND_HISTORY_LENGTH] = windAngle;
+		windHistorySecond = second;
 	}
 
 	public void updateTiledLightingFbo() {
@@ -2212,9 +2249,11 @@ public class HdPlugin extends Plugin {
 			elapsedTime += deltaTime;
 			var env = environmentManager.getCurrentEnvironment();
 			windOffset += deltaTime * env.windSpeed;
+			updateWaterWind(env.windAngle);
+			updateWindHistory(waterWindAngle);
 			float windDriftStep = deltaTime * env.windSpeed / 15f;
-			windDrift[0] = (float) ((windDrift[0] + windDriftStep * Math.cos(env.windAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
-			windDrift[1] = (float) ((windDrift[1] + windDriftStep * Math.sin(env.windAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
+			windDrift[0] = (float) ((windDrift[0] + windDriftStep * Math.cos(waterWindAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
+			windDrift[1] = (float) ((windDrift[1] + windDriftStep * Math.sin(waterWindAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
 		}
 		lastFrameTimeMillis = System.currentTimeMillis();
 		lastFrameClientTime = elapsedClientTime;
