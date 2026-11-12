@@ -78,4 +78,8 @@ layout(std140) uniform UBOGlobal {
     vec4 roughnessHistory[WIND_HISTORY_LENGTH / 4]; // and the water's roughness
     float waterRoughness; // 1 for normal open water
     float waterChurnTime; // seconds, running faster the rougher the water
+    // Boat paths from each boat back, in tiles relative to the scene: position, age in seconds, and distance behind
+    vec4 boatWakePoints[BOAT_WAKE_MAX_BOATS * BOAT_WAKE_MAX_POINTS];
+    vec4 boatWakeBounds[BOAT_WAKE_MAX_BOATS]; // min x, min z, max x, max z
+    vec4 boatWakeCounts; // points per boat
 } uboGlobal;

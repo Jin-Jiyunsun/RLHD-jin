@@ -105,6 +105,7 @@ import rs117.hd.renderer.legacy.LegacyRenderer;
 import rs117.hd.renderer.zone.SceneManager;
 import rs117.hd.renderer.zone.ZoneRenderer;
 import rs117.hd.scene.AreaManager;
+import rs117.hd.scene.BoatWakes;
 import rs117.hd.scene.EnvironmentManager;
 import rs117.hd.scene.FishingSpotReplacer;
 import rs117.hd.scene.GamevalManager;
@@ -1017,6 +1018,8 @@ public class HdPlugin extends Plugin {
 			.define("WATER_ENCLOSURE_STEPS", SceneContext.WATER_ENCLOSURE_STEPS)
 			.define("WATER_ROOM_MAX", SceneContext.WATER_ROOM_MAX)
 			.define("WIND_HISTORY_LENGTH", WIND_HISTORY_LENGTH)
+			.define("BOAT_WAKE_MAX_BOATS", BoatWakes.MAX_BOATS)
+			.define("BOAT_WAKE_MAX_POINTS", BoatWakes.MAX_POINTS)
 			.define("DYNAMIC_LIGHTS", configDynamicLights != DynamicLights.NONE)
 			.define("TILED_LIGHTING", configTiledLighting)
 			.define("TILED_LIGHTING_LAYER_COUNT", configDynamicLights.getTiledLightingLayers())

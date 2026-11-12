@@ -118,6 +118,19 @@
 #define OCEAN_WAVE_ROUGHNESS_STRENGTH 1.0  // how much rougher water strengthens them, as a power of the roughness
 #define OCEAN_WAVE_ROUGHNESS_SIZE 0.5      // how much rougher water enlarges them, as a power of the roughness
 
+// Boat wakes, laid along each boat's recent path
+#define BOAT_WAKE_STRENGTH 0.3             // opacity before lighting. 0 turns them off.
+#define BOAT_WAKE_SOFTNESS 0.45            // speck softness, in texture space
+#define BOAT_WAKE_LIFETIME 15.0            // seconds until fully faded
+#define BOAT_WAKE_HULL_WIDTH 2.0           // width of the churned water behind a hull, in tiles
+#define BOAT_WAKE_ANGLE 19.5               // half angle of the V the arms spread in, in degrees
+#define BOAT_WAKE_ARM_WIDTH 0.3            // width of each arm, in tiles
+#define BOAT_WAKE_ARM_SPREAD 0.05          // how much wider the arms get per tile behind the boat
+#define BOAT_WAKE_CENTER_SPREAD 0.08       // how much wider the churned centre gets per tile behind the boat
+#define BOAT_WAKE_CENTER_LIFETIME 6.0      // seconds until the churned centre fades
+#define BOAT_WAKE_MIN_SPEED 0.3            // speed below which a boat leaves no wake, in tiles per second
+#define BOAT_WAKE_BREAKUP 0.5              // how much noise breaks the wake up, from 0 to 1
+
 #if DAYLIGHT_CYCLE
     #include <utils/sky_sampling.glsl>
 #endif
@@ -457,6 +470,66 @@ vec2 oceanWaves(vec2 drifted, float shoreDist, vec2 towardsShore) {
     return vec2(coverage, mix(1.0, OCEAN_WAVE_FRONT_BRIGHTNESS, front));
 }
 
+// Boat wake coverage, from 0 to 1: two arms spreading in a V behind each boat, and churned water down the middle.
+// Built along each boat's recorded path, so it stays where it was laid and follows turns.
+//  p: position in tiles relative to the scene
+float boatWakes(vec2 p) {
+    const float hull = BOAT_WAKE_HULL_WIDTH * 0.5;
+    const float armSlope = tan(radians(BOAT_WAKE_ANGLE));
+    float wake = 0.0;
+    for (int boat = 0; boat < BOAT_WAKE_MAX_BOATS; boat++) {
+        int count = int(uboGlobal.boatWakeCounts[boat]);
+        vec4 bounds = uboGlobal.boatWakeBounds[boat];
+        if (count < 2 || any(lessThan(p, bounds.xy)) || any(greaterThan(p, bounds.zw)))
+            continue;
+
+        // The nearest point on the path, how far behind the boat it is, how long ago the boat passed, and how fast
+        int first = boat * BOAT_WAKE_MAX_POINTS;
+        float nearest = 1e9;
+        float behind = 0.0;
+        float age = 0.0;
+        float speed = 0.0;
+        bool ahead = false;
+        for (int i = 0; i < BOAT_WAKE_MAX_POINTS - 1; i++) {
+            if (i + 1 >= count)
+                break;
+            vec4 a = uboGlobal.boatWakePoints[first + i];
+            vec4 b = uboGlobal.boatWakePoints[first + i + 1];
+            vec2 segment = b.xy - a.xy;
+            float length2 = dot(segment, segment);
+            float t = length2 > 1e-6 ? saturate(dot(p - a.xy, segment) / length2) : 0.0;
+            vec2 offset = p - (a.xy + segment * t);
+            float dist2 = dot(offset, offset);
+            if (dist2 < nearest) {
+                nearest = dist2;
+                behind = mix(a.w, b.w, t);
+                age = mix(a.z, b.z, t);
+                speed = (b.w - a.w) / max(b.z - a.z, 0.05);
+                // In front of a moving boat
+                ahead = i == 0 && t <= 0.0 && length2 > 0.01;
+            }
+        }
+        if (ahead)
+            continue;
+
+        float side = sqrt(nearest);
+        float armOffset = hull * 0.6 + behind * armSlope;
+        float armWidth = BOAT_WAKE_ARM_WIDTH + behind * BOAT_WAKE_ARM_SPREAD;
+        float arm = (side - armOffset) / armWidth;
+        arm = exp(-arm * arm) * smoothstep(0.0, hull, behind) * (1.0 - 0.5 * smoothstep(0.0, BOAT_WAKE_LIFETIME, age));
+        float centerWidth = hull * 0.8 + behind * BOAT_WAKE_CENTER_SPREAD;
+        float center = (1.0 - smoothstep(centerWidth * 0.5, centerWidth, side)) *
+            (1.0 - smoothstep(0.0, BOAT_WAKE_CENTER_LIFETIME, age));
+        float fade = (1.0 - smoothstep(BOAT_WAKE_LIFETIME * 0.5, BOAT_WAKE_LIFETIME, age)) *
+            smoothstep(BOAT_WAKE_MIN_SPEED, BOAT_WAKE_MIN_SPEED * 3.0, speed);
+        wake = max(wake, max(arm, center) * fade);
+    }
+    // Broken up by noise fixed to the water, so the foam stays as it was laid
+    if (wake > 0.0)
+        wake *= mix(1.0, smoothstep(0.2, 0.7, noise(p * 1.7)), BOAT_WAKE_BREAKUP);
+    return wake;
+}
+
 // Foam built from texture specks, thinning with the coverage and fading at its edges
 float oceanSpecks(float coverage, float softness, float specks) {
     return smoothstep(1.0 - coverage, 1.0 - coverage + softness, specks) * smoothstep(0.0, 0.7, coverage);
@@ -667,6 +740,10 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     bool nearShore = any(lessThan(shoreDistances, ivec3(foamReachSteps)));
     bool openWater = (OCEAN_LACE_STRENGTH > 0.0 || OCEAN_WAVE_STRENGTH > 0.0) &&
         any(lessThan(enclosureSteps, ivec3(openWaterSteps)));
+    // Boat wake specks, fixed to the water. Derivatives taken here, where they're valid.
+    vec2 wakeUv = worldUvs(OCEAN_FOAM_TEXTURE_SCALE);
+    vec2 wakeUvDx = dFdx(wakeUv);
+    vec2 wakeUvDy = dFdy(wakeUv);
     if (waterType.hasFoam != 0 && (nearShore || openWater)) {
         float shoreDist = dot(fTexBlend, vec3(shoreDistances)) / SHORE_DISTANCE_STEPS * SHORE_DISTANCE_MAX;
         // Blended corners read 0 across one tile channels, so measure to land within square tiles instead.
@@ -807,6 +884,16 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
                 float waveStrength = OCEAN_WAVE_STRENGTH * pow(roughness, OCEAN_WAVE_ROUGHNESS_STRENGTH);
                 foamAmount = max(foamAmount, amount * waveStrength * waves.y);
             }
+        }
+    }
+    // Boat wakes, separate from the rest of the foam
+    if (BOAT_WAKE_STRENGTH > 0.0 && waterType.hasFoam != 0) {
+        float wake = boatWakes(IN.position.xz / 128.0);
+        if (wake > 0.0) {
+            float specks = textureGrad(textureArray, vec3(wakeUv, MAT_WATER_FOAM.colorMap), wakeUvDx, wakeUvDy).r;
+            specks = smoothstep(0.1, 0.65, specks);
+            foamAmount = max(foamAmount, oceanSpecks(wake, BOAT_WAKE_SOFTNESS, specks) * BOAT_WAKE_STRENGTH);
+            foamMask = max(foamMask, specks);
         }
     }
     #else
