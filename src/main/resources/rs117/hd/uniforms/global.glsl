@@ -82,6 +82,5 @@ layout(std140) uniform UBOGlobal {
     vec4 boatWakePoints[BOAT_WAKE_MAX_BOATS * BOAT_WAKE_MAX_POINTS];
     vec4 boatWakeBounds[BOAT_WAKE_MAX_BOATS]; // each path's min x, min z, max x, max z, from the stern back
     vec4 boatWakeHeadings[BOAT_WAKE_MAX_BOATS]; // direction each boat faces, x and z, then its stern, x and z
-    vec4 boatWakeHulls[BOAT_WAKE_MAX_BOATS]; // unused, then for each boat seconds since it slowed, seconds since it moved off, and the speed that sets its wake's strength
-    vec4 boatWakeCounts; // points per boat, so there can be at most 4
+    vec4 boatWakeHulls[BOAT_WAKE_MAX_BOATS]; // for each boat, its number of points, seconds since it stopped, seconds since it moved off, and 1 going backwards
 } uboGlobal;
