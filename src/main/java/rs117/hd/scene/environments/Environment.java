@@ -92,6 +92,7 @@ public class Environment {
 	public float windSpeed = 15.0f;
 	public float windStrength = 0.0f;
 	public float windCeiling = 1280.0f;
+	public float waterRoughness = 1;
 	@JsonAdapter(SkyConfiguration.Adapter.class)
 	@Nullable
 	private SkyConfiguration sky;
@@ -216,6 +217,7 @@ public class Environment {
 		windSpeed = mix(from.windSpeed, to.windSpeed, t);
 		windStrength = mix(from.windStrength, to.windStrength, t);
 		windCeiling = mix(from.windCeiling, to.windCeiling, t);
+		waterRoughness = mix(from.waterRoughness, to.waterRoughness, t);
 		sky = t == 1 ? to.sky : from.sky;
 		return this;
 	}

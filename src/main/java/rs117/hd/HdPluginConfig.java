@@ -1440,6 +1440,51 @@ public interface HdPluginConfig extends Config
 		return false;
 	}
 
+	String KEY_IMPROVED_SHORE_FOAM = "experimentalImprovedShoreFoam";
+	@ConfigItem(
+		keyName = KEY_IMPROVED_SHORE_FOAM,
+		name = "Shore foam",
+		description = "Animated foam and waves along shorelines, which break up into patches.<br>" +
+			"With this off, shores get the old fade along tile edges instead.",
+		section = experimentalSettings
+	)
+	default boolean improvedShoreFoam() {
+		return true;
+	}
+
+	String KEY_OCEAN_LACE = "experimentalOceanLace";
+	@ConfigItem(
+		keyName = KEY_OCEAN_LACE,
+		name = "Open water lace",
+		description = "Faint churning lines of foam across open water.",
+		section = experimentalSettings
+	)
+	default boolean oceanLace() {
+		return true;
+	}
+
+	String KEY_OCEAN_WAVES = "experimentalOceanWaves";
+	@ConfigItem(
+		keyName = KEY_OCEAN_WAVES,
+		name = "Open water waves",
+		description = "Waves breaking into foam across open water, rougher in windy and stormy areas.",
+		section = experimentalSettings
+	)
+	default boolean oceanWaves() {
+		return true;
+	}
+
+	String KEY_BOAT_WAKES = "experimentalBoatWakes";
+	@ConfigItem(
+		keyName = KEY_BOAT_WAKES,
+		name = "Boat wakes",
+		description = "Foam around moving boats and along the paths behind them.",
+		section = experimentalSettings
+	)
+	default boolean boatWakes() {
+		return true;
+	}
+
 	String KEY_SIMPLE_BOAT_SILHOUETTES = "experimentalSimpleBoatSilhouettes";
 	@ConfigItem(
 		keyName = KEY_SIMPLE_BOAT_SILHOUETTES,
