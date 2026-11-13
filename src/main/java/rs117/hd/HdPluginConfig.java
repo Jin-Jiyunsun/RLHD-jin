@@ -1431,7 +1431,7 @@ public interface HdPluginConfig extends Config
 		keyName = KEY_IMPROVED_SHORE_FOAM,
 		name = "Shore foam",
 		description = "Animated foam and waves along shorelines, which break up into patches.<br>" +
-			"With this and the other foam options off, shores get the old fade along tile edges instead.",
+			"With this off, shores get the old fade along tile edges instead.",
 		section = experimentalSettings
 	)
 	default boolean improvedShoreFoam() {

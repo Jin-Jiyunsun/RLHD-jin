@@ -1025,6 +1025,7 @@ public class HdPlugin extends Plugin {
 			.define("WIND_HISTORY_LENGTH", WIND_HISTORY_LENGTH)
 			.define("BOAT_WAKE_MAX_BOATS", BoatWakes.MAX_BOATS)
 			.define("BOAT_WAKE_MAX_POINTS", BoatWakes.MAX_POINTS)
+			.define("BOAT_WAKE_MIN_SPEED", Float.toString(BoatWakes.MIN_SPEED))
 			.define("DYNAMIC_LIGHTS", configDynamicLights != DynamicLights.NONE)
 			.define("TILED_LIGHTING", configTiledLighting)
 			.define("TILED_LIGHTING_LAYER_COUNT", configDynamicLights.getTiledLightingLayers())
