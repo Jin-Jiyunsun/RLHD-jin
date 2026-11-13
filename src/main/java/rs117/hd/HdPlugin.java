@@ -1007,7 +1007,12 @@ public class HdPlugin extends Plugin {
 			.define("WATER_TYPE_COUNT", waterTypeManager.uboWaterTypes.getCount())
 			.define("WATER_SPECULAR_REFLECTIONS", config.waterSpecularReflections())
 			.define("DECOUPLE_WATER_FROM_SKY_COLOR", config.decoupleSkyAndWaterColor())
-			.define("IMPROVED_SHORE_FOAM", config.improvedShoreFoam())
+			.define("IMPROVED_SHORE_FOAM",
+				config.improvedShoreFoam() || config.oceanLace() || config.oceanWaves() || config.boatWakes())
+			.define("SHORE_FOAM", config.improvedShoreFoam())
+			.define("OCEAN_LACE", config.oceanLace())
+			.define("OCEAN_WAVES", config.oceanWaves())
+			.define("BOAT_WAKES", config.boatWakes())
 			.define("SHORE_DISTANCE_MAX", SceneContext.SHORE_DISTANCE_MAX)
 			.define("SHORE_DISTANCE_STEPS", SceneContext.SHORE_DISTANCE_STEPS)
 			.define("SHORE_DIRECTION_SHIFT", SceneContext.SHORE_DIRECTION_SHIFT)
@@ -2090,6 +2095,9 @@ public class HdPlugin extends Plugin {
 							case KEY_WATER_SPECULAR_REFLECTIONS:
 							case KEY_DECOUPLE_WATER_FROM_SKY_COLOR:
 							case KEY_IMPROVED_SHORE_FOAM:
+							case KEY_OCEAN_LACE:
+							case KEY_OCEAN_WAVES:
+							case KEY_BOAT_WAKES:
 							case KEY_CENTROID_QUALIFIER:
 							case KEY_VALIDATE_SHADERS:
 								recompilePrograms = true;

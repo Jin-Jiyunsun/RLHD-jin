@@ -118,18 +118,35 @@
 #define OCEAN_WAVE_ROUGHNESS_STRENGTH 1.0  // how much rougher water strengthens them, as a power of the roughness
 #define OCEAN_WAVE_ROUGHNESS_SIZE 0.5      // how much rougher water enlarges them, as a power of the roughness
 
-// Boat wakes, laid along each boat's recent path
-#define BOAT_WAKE_STRENGTH 0.3             // opacity before lighting. 0 turns them off.
+// Boat wakes. Each boat's hull pushes foam out onto the water as its bow passes, which then drifts outwards, spreads
+// and fades where it was laid, so a boat that stops just stops making more.
+#define BOAT_WAKE_STRENGTH 0.9             // opacity, relative to the ocean waves' brightest fronts. 0 turns them off.
 #define BOAT_WAKE_SOFTNESS 0.45            // speck softness, in texture space
-#define BOAT_WAKE_LIFETIME 15.0            // seconds until fully faded
-#define BOAT_WAKE_HULL_WIDTH 2.0           // width of the churned water behind a hull, in tiles
-#define BOAT_WAKE_ANGLE 19.5               // half angle of the V the arms spread in, in degrees
-#define BOAT_WAKE_ARM_WIDTH 0.3            // width of each arm, in tiles
-#define BOAT_WAKE_ARM_SPREAD 0.05          // how much wider the arms get per tile behind the boat
-#define BOAT_WAKE_CENTER_SPREAD 0.08       // how much wider the churned centre gets per tile behind the boat
-#define BOAT_WAKE_CENTER_LIFETIME 6.0      // seconds until the churned centre fades
-#define BOAT_WAKE_MIN_SPEED 0.3            // speed below which a boat leaves no wake, in tiles per second
-#define BOAT_WAKE_BREAKUP 0.5              // how much noise breaks the wake up, from 0 to 1
+#define BOAT_WAKE_COVERAGE 0.75            // speck density, from 0 to 1
+#define BOAT_WAKE_LIFETIME 2.0             // seconds behind the stern until fully faded, up to 3
+#define BOAT_WAKE_WIDTH 0.35               // width of the foam at the bow, in tiles
+#define BOAT_WAKE_ANGLE 5.0                // angle the foam pulls away from the hull at, in degrees
+#define BOAT_WAKE_HULL_SPREAD 0.08         // how much wider the foam gets per tile back along the hull
+#define BOAT_WAKE_DRIFT 0.6                // how fast the foam drifts outwards behind the stern, in tiles per second
+#define BOAT_WAKE_SPREAD 0.5               // how much wider the foam gets per second behind the stern
+#define BOAT_WAKE_RAGGEDNESS 0.35          // how ragged the foam's edges get, in tiles, growing as it spreads
+#define BOAT_WAKE_END_SOFTNESS 1.5         // how far the end of the tail fades over, in tiles
+#define BOAT_WAKE_END_RAGGEDNESS 2.0       // how ragged the end of the tail is, in tiles
+#define BOAT_WAKE_END_BREAKUP 0.8          // how patchy the fade at the end of the tail is
+#define BOAT_WAKE_INNER_REACH 2.0          // how much further each band reaches in towards the boat than out
+#define BOAT_WAKE_CENTER_SPREAD 0.5        // how much wider the churned water behind the stern gets per second
+#define BOAT_WAKE_CENTER_LIFETIME 1.0      // seconds until the churned water behind the stern fades
+#define BOAT_WAKE_STOP_TIME 2.5            // seconds the wake takes to break up once the boat slows
+#define BOAT_WAKE_BREAKUP_SCALE 16.0       // how much finer the wake breaks up than the ocean waves' foam
+#define BOAT_WAKE_START_TIME 1.5           // seconds a new wake takes to fade in once the boat moves off
+#define BOAT_WAKE_STOP_ALPHA_FADE 1.0      // how soon the wake turns see-through as it breaks up, lower is sooner, and the reverse fading in
+#define BOAT_WAKE_BREAKUP_SOFTNESS 0.8     // how gradually each patch fades as the wake breaks up, the waves' is 0.4
+#define BOAT_WAKE_MIN_SPEED 0.3            // speed below which a boat makes no foam, in tiles per second
+#define BOAT_WAKE_FULL_SPEED 2.0           // speed at which a boat makes the most foam, in tiles per second
+// Each boat's hull, as a simple outline: a pointed bow running into straight sides
+#define BOAT_HULL_LENGTH 5.0               // in tiles
+#define BOAT_HULL_WIDTH 2.4                // in tiles
+#define BOAT_HULL_BOW_LENGTH 2.0           // how far back from the tip the bow widens to full width, in tiles
 
 #if DAYLIGHT_CYCLE
     #include <utils/sky_sampling.glsl>
@@ -282,6 +299,29 @@ vec2 oceanWind() {
 //  q:            position in wave cells
 //  shoreDist:    distance to the shore, in tiles
 //  towardsShore: direction to the shore, or 0 where unknown
+// Noise that decides which foam fades out first, from 0 to 1, shared by the ocean waves and boat wakes
+//  q: position in ocean wave cells
+float foamBreakupNoise(vec2 q, float time) {
+    return noise(q * 3.7 + time * vec2(-0.09, -0.05) + 21.7);
+}
+
+// How much life a patch of foam has left as it fades out unevenly, from 1 down, shared by the ocean waves and boat wakes
+//  foamLife: from 0 when fresh to 1 when it's due to be gone
+//  breakup: from foamBreakupNoise
+float foamLifeLeft(float foamLife, float breakup) {
+    return 1.0 - foamLife + (breakup - 0.5) * min(0.55 * OCEAN_WAVE_RAGGEDNESS, 0.8);
+}
+
+// How much of a patch of foam is left as it fades out unevenly, from 0 to 1
+float foamLasting(float foamLife, float breakup) {
+    return smoothstep(0.0, 0.4, foamLifeLeft(foamLife, breakup));
+}
+
+// Foam fading out over the end of its life, from 1 to 0, shared by the ocean waves and boat wakes
+float foamEndFade(float life) {
+    return 1.0 - smoothstep(0.85, 1.0, life);
+}
+
 vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
     // In wave radii
     const float maxSweep = 1.7;
@@ -350,7 +390,7 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
                 ragged += (noise(q * 11.3 + time * vec2(0.09, 0.08) + 4.1) - 0.5) * 0.14;
                 ragged += (noise(q * 23.7 + time * vec2(-0.12, 0.1) + 17.9) - 0.5) * 0.1;
                 ragged *= OCEAN_WAVE_RAGGEDNESS;
-                breakup = noise(q * 3.7 + time * vec2(-0.09, -0.05) + 21.7);
+                breakup = foamBreakupNoise(q, time);
             }
 
             // The crest eases up to speed and back to a stop, its ends lagging so it curves
@@ -379,8 +419,7 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
             float foamLife = max(life - passed, 0.0);
             // Faster waves fade sooner, so their trails don't stretch too far
             float fadeTime = mix(0.3, 0.55, r.w) * (maxSweep * 0.6 / sweep);
-            float lasting = 1.0 - foamLife / fadeTime;
-            lasting += (breakup - 0.5) * min(0.55 * OCEAN_WAVE_RAGGEDNESS, 0.8);
+            float lasting = foamLifeLeft(foamLife / fadeTime, breakup);
             cover *= smoothstep(0.0, 0.4, lasting);
             // The trail breaks into streaks, more so further behind the front
             if (cover > 0.0) {
@@ -389,7 +428,7 @@ vec2 oceanWaveCells(vec2 q, float time, float shoreDist, vec2 towardsShore) {
                 cover *= mix(1.0, streaks, saturate(behind * 1.5) * OCEAN_WAVE_TAIL_NOISE);
             }
             // Fade in and out over its life
-            float fade = smoothstep(0.0, 0.2, life) * (1.0 - smoothstep(0.85, 1.0, life));
+            float fade = smoothstep(0.0, 0.2, life) * foamEndFade(life);
 
             // Skip waves that would start or end too near the shore, estimating its distance at each end
             if (shoreDist < SHORE_DISTANCE_MAX - 0.3) {
@@ -470,63 +509,138 @@ vec2 oceanWaves(vec2 drifted, float shoreDist, vec2 towardsShore) {
     return vec2(coverage, mix(1.0, OCEAN_WAVE_FRONT_BRIGHTNESS, front));
 }
 
-// Boat wake coverage, from 0 to 1: two arms spreading in a V behind each boat, and churned water down the middle.
-// Built along each boat's recorded path, so it stays where it was laid and follows turns.
+// Foam a hull pushed out, from 0 to 1. It peels off the bow and pulls away from the hull at an angle, widening as it
+// goes, then behind the stern drifts outwards, spreads and breaks up unevenly where it was laid, like the ocean waves.
+// Its strength comes from the boat's speed as it passed. Behind the stern, the water churns down the middle.
 //  p: position in tiles relative to the scene
-float boatWakes(vec2 p) {
-    const float hull = BOAT_WAKE_HULL_WIDTH * 0.5;
-    const float armSlope = tan(radians(BOAT_WAKE_ANGLE));
-    float wake = 0.0;
+//  side: distance from the hull's centre line, or the path behind the stern
+//  fromBow: distance back from the bow, in tiles
+//  age: seconds since the stern passed, 0 alongside the hull
+//  speed: the boat's speed then, in tiles per second
+float boatWakeFoam(vec2 p, float side, float fromBow, float age, float speed) {
+    const float angleSlope = tan(radians(BOAT_WAKE_ANGLE));
+    float strength = saturate((speed - BOAT_WAKE_MIN_SPEED) / (BOAT_WAKE_FULL_SPEED - BOAT_WAKE_MIN_SPEED));
+    if (strength <= 0.0 || age >= BOAT_WAKE_LIFETIME * 1.5)
+        return 0.0;
+    // In world tiles, so the noise doesn't jump when the scene's base moves at loading lines
+    vec2 world = p + vec2(uboGlobal.sceneBase) / 128.0;
+    // Fading out the same way as the ocean waves' foam
+    float breakup = foamBreakupNoise(world * BOAT_WAKE_BREAKUP_SCALE / OCEAN_WAVE_SIZE, uboGlobal.elapsedTime);
+
+    float alongHull = min(fromBow, BOAT_HULL_LENGTH);
+    float hullEdge = BOAT_HULL_WIDTH * 0.5 * sqrt(saturate(fromBow / BOAT_HULL_BOW_LENGTH));
+    float foamLine = hullEdge + alongHull * angleSlope + age * BOAT_WAKE_DRIFT;
+    float spread = BOAT_WAKE_WIDTH + alongHull * BOAT_WAKE_HULL_SPREAD + age * BOAT_WAKE_SPREAD;
+    float ragged = (noise(world * 1.3) - 0.5) * BOAT_WAKE_RAGGEDNESS * (0.3 + alongHull * 0.15 + age);
+    // Across each band, from 0 in its middle to 1 at its edge
+    float offset = side - foamLine + ragged;
+    float across = abs(offset) / (spread * 0.5 * (offset < 0.0 ? BOAT_WAKE_INNER_REACH : 1.0));
+    float foam = 1.0 - smoothstep(0.6, 1.0, across);
+    float life = age / BOAT_WAKE_LIFETIME;
+    foam *= foamLasting(life, breakup) * foamEndFade(life);
+
+    float centerWidth = BOAT_HULL_WIDTH * 0.4 + age * BOAT_WAKE_CENTER_SPREAD;
+    float centerAcross = (side + ragged) / centerWidth;
+    float center = (1.0 - smoothstep(0.5, 1.0, centerAcross)) *
+        smoothstep(BOAT_HULL_LENGTH - 0.5, BOAT_HULL_LENGTH + 0.5, fromBow);
+    float centerLife = age / BOAT_WAKE_CENTER_LIFETIME;
+    center *= foamLasting(centerLife, breakup) * foamEndFade(centerLife);
+
+    // Once the boat stops, all of it fades out together as it was, the same way and at the same time, like a wave's
+    // foam at the end of its life
+    return max(foam, center) * strength;
+}
+
+// Boat wake coverage and opacity, each from 0 to 1, along one path per boat: from its bow to its stern as it is now, so the foam hugs
+// the hull through turns, then back along the path the stern took, so the foam stays where it was laid.
+//  p: position in tiles relative to the scene
+vec2 boatWakes(vec2 p) {
+    vec2 wake = vec2(0.0);
     for (int boat = 0; boat < BOAT_WAKE_MAX_BOATS; boat++) {
         int count = int(uboGlobal.boatWakeCounts[boat]);
         vec4 bounds = uboGlobal.boatWakeBounds[boat];
-        if (count < 2 || any(lessThan(p, bounds.xy)) || any(greaterThan(p, bounds.zw)))
+        if (count < 1 || any(lessThan(p, bounds.xy)) || any(greaterThan(p, bounds.zw)))
+            continue;
+        int first = boat * BOAT_WAKE_MAX_POINTS;
+
+        // The hull's points, fading from when the boat slowed
+        vec4 headingStern = uboGlobal.boatWakeHeadings[boat];
+        vec4 hull = uboGlobal.boatWakeHulls[boat];
+        vec2 sternPos = headingStern.zw;
+        vec4 stern = vec4(sternPos, 0.0, hull.y);
+        vec4 bow = vec4(sternPos + headingStern.xy * BOAT_HULL_LENGTH, 0.0, hull.y);
+        // Nothing left once even the newest foam has broken up
+        if (hull.y >= BOAT_WAKE_STOP_TIME)
             continue;
 
-        // The nearest point on the path, how far behind the boat it is, how long ago the boat passed, and how fast
-        int first = boat * BOAT_WAKE_MAX_POINTS;
+        // The nearest point on the path, how far back from the bow it is, how long ago the stern passed it, and how
+        // long it's been fading out
         float nearest = 1e9;
-        float behind = 0.0;
+        float fromBow = 0.0;
         float age = 0.0;
-        float speed = 0.0;
-        bool ahead = false;
-        for (int i = 0; i < BOAT_WAKE_MAX_POINTS - 1; i++) {
-            if (i + 1 >= count)
+        float fading = 0.0;
+        bool outside = false;
+        bool firstSegment = true;
+        float along = 0.0;
+        int total = count + 2;
+        vec4 a = bow;
+        for (int i = 0; i < BOAT_WAKE_MAX_POINTS + 1; i++) {
+            if (i + 1 >= total)
                 break;
-            vec4 a = uboGlobal.boatWakePoints[first + i];
-            vec4 b = uboGlobal.boatWakePoints[first + i + 1];
+            vec4 b = i == 0 ? stern : uboGlobal.boatWakePoints[first + i - 1];
             vec2 segment = b.xy - a.xy;
             float length2 = dot(segment, segment);
-            float t = length2 > 1e-6 ? saturate(dot(p - a.xy, segment) / length2) : 0.0;
-            vec2 offset = p - (a.xy + segment * t);
-            float dist2 = dot(offset, offset);
-            if (dist2 < nearest) {
-                nearest = dist2;
-                behind = mix(a.w, b.w, t);
-                age = mix(a.z, b.z, t);
-                speed = (b.w - a.w) / max(b.z - a.z, 0.05);
-                // In front of a moving boat
-                ahead = i == 0 && t <= 0.0 && length2 > 0.01;
+            // Skip segments with no length, like the one just after a point is added where the path starts
+            if (length2 >= 1e-6) {
+                float t = saturate(dot(p - a.xy, segment) / length2);
+                vec2 offset = p - (a.xy + segment * t);
+                float dist2 = dot(offset, offset);
+                float segmentLength = sqrt(length2);
+                if (dist2 < nearest) {
+                    nearest = dist2;
+                    fromBow = along + segmentLength * t;
+                    age = mix(a.z, b.z, t);
+                    fading = mix(a.w, b.w, t);
+                    // In front of the bow, or past the end of the path
+                    outside = (firstSegment && t <= 0.0) || (i + 2 == total && t >= 1.0);
+                }
+                firstSegment = false;
+                along += segmentLength;
             }
+            a = b;
         }
-        if (ahead)
-            continue;
-
-        float side = sqrt(nearest);
-        float armOffset = hull * 0.6 + behind * armSlope;
-        float armWidth = BOAT_WAKE_ARM_WIDTH + behind * BOAT_WAKE_ARM_SPREAD;
-        float arm = (side - armOffset) / armWidth;
-        arm = exp(-arm * arm) * smoothstep(0.0, hull, behind) * (1.0 - 0.5 * smoothstep(0.0, BOAT_WAKE_LIFETIME, age));
-        float centerWidth = hull * 0.8 + behind * BOAT_WAKE_CENTER_SPREAD;
-        float center = (1.0 - smoothstep(centerWidth * 0.5, centerWidth, side)) *
-            (1.0 - smoothstep(0.0, BOAT_WAKE_CENTER_LIFETIME, age));
-        float fade = (1.0 - smoothstep(BOAT_WAKE_LIFETIME * 0.5, BOAT_WAKE_LIFETIME, age)) *
-            smoothstep(BOAT_WAKE_MIN_SPEED, BOAT_WAKE_MIN_SPEED * 3.0, speed);
-        wake = max(wake, max(arm, center) * fade);
+        // At one strength all along, from the boat's recent peak speed, so there's no step where parts meet
+        if (!outside) {
+            // How far the wake has broken up since the boat slowed
+            float fadeOut = saturate(fading / BOAT_WAKE_STOP_TIME);
+            // Ages are sent as of when the boat slowed, so add the time since, to keep the foam ageing after it stops
+            float foam = boatWakeFoam(p, sqrt(nearest), fromBow, age + hull.y, hull.w);
+            // Fading out raggedly towards the end of the tail, rather than cut off straight across where the path
+            // starts, which shows while a new tail is growing in
+            vec2 endWorld = p + vec2(uboGlobal.sceneBase) / 128.0;
+            float endEdge = along - fromBow - noise(endWorld * 1.3 + 7.1) * BOAT_WAKE_END_RAGGEDNESS;
+            // Broken up into patches along the fade, like the rest of the wake, so it isn't an even ramp
+            float endBreakup = foamBreakupNoise(endWorld * BOAT_WAKE_BREAKUP_SCALE / OCEAN_WAVE_SIZE, uboGlobal.elapsedTime);
+            foam *= smoothstep(0.0, 1.0, endEdge / BOAT_WAKE_END_SOFTNESS - endBreakup * BOAT_WAKE_END_BREAKUP);
+            if (fadeOut > 0.0) {
+                // Breaking up evenly across the whole wake, the same way as the waves' foam, but with each patch fading
+                // more softly. Starting from the point where its most ragged parts begin to go, so it starts breaking up
+                // straight away.
+                vec2 world = p + vec2(uboGlobal.sceneBase) / 128.0;
+                float breakup = foamBreakupNoise(world * BOAT_WAKE_BREAKUP_SCALE / OCEAN_WAVE_SIZE, uboGlobal.elapsedTime);
+                float start = 1.0 - BOAT_WAKE_BREAKUP_SOFTNESS - 0.5 * min(0.55 * OCEAN_WAVE_RAGGEDNESS, 0.8);
+                float life = mix(start, 1.0, fadeOut);
+                foam *= smoothstep(0.0, BOAT_WAKE_BREAKUP_SOFTNESS, foamLifeLeft(life, breakup)) * foamEndFade(life);
+            }
+            // Fading in as the boat gets up to speed, and out as it breaks up, too
+            // Over time since it moved off, so a new wake doesn't pop in at the speed it remembers from before a stop
+            float fadeIn = saturate((hull.w - BOAT_WAKE_MIN_SPEED) / (BOAT_WAKE_FULL_SPEED - BOAT_WAKE_MIN_SPEED));
+            fadeIn = min(fadeIn, saturate(hull.z / BOAT_WAKE_START_TIME));
+            float alpha = (1.0 - pow(1.0 - fadeIn, BOAT_WAKE_STOP_ALPHA_FADE)) * (1.0 - pow(fadeOut, BOAT_WAKE_STOP_ALPHA_FADE));
+            if (foam > wake.x)
+                wake = vec2(foam, alpha);
+        }
     }
-    // Broken up by noise fixed to the water, so the foam stays as it was laid
-    if (wake > 0.0)
-        wake *= mix(1.0, smoothstep(0.2, 0.7, noise(p * 1.7)), BOAT_WAKE_BREAKUP);
     return wake;
 }
 
@@ -737,11 +851,13 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
     int foamReachSteps = int(ceil((foamReach + SHORE_FOAM_EDGE_NOISE) / SHORE_DISTANCE_MAX * SHORE_DISTANCE_STEPS));
     ivec3 enclosureSteps = fAlphaBiasHsl >> WATER_ENCLOSURE_SHIFT & WATER_ENCLOSURE_STEPS;
     const int openWaterSteps = int(ceil((1.0 - float(SHORE_WAVE_MIN_ROOM) / WATER_ROOM_MAX) * WATER_ENCLOSURE_STEPS));
-    bool nearShore = any(lessThan(shoreDistances, ivec3(foamReachSteps)));
-    bool openWater = (OCEAN_LACE_STRENGTH > 0.0 || OCEAN_WAVE_STRENGTH > 0.0) &&
+    bool nearShore = bool(SHORE_FOAM) && any(lessThan(shoreDistances, ivec3(foamReachSteps)));
+    bool openWater = ((bool(OCEAN_LACE) && OCEAN_LACE_STRENGTH > 0.0) || (bool(OCEAN_WAVES) && OCEAN_WAVE_STRENGTH > 0.0)) &&
         any(lessThan(enclosureSteps, ivec3(openWaterSteps)));
-    // Boat wake specks, fixed to the water. Derivatives taken here, where they're valid.
-    vec2 wakeUv = worldUvs(OCEAN_FOAM_TEXTURE_SCALE);
+    // Boat wake specks, the same as the ocean waves': drifting with the wind and warped by the flow map. Derivatives
+    // taken here, where they're valid.
+    vec2 wakeUv = worldUvs(OCEAN_FOAM_TEXTURE_SCALE) + uboGlobal.windDrift * (OCEAN_FOAM_DRIFT_SPEED / OCEAN_FOAM_TEXTURE_SCALE) +
+        uvFlow * flowMapStrength;
     vec2 wakeUvDx = dFdx(wakeUv);
     vec2 wakeUvDy = dFdy(wakeUv);
     if (waterType.hasFoam != 0 && (nearShore || openWater)) {
@@ -871,14 +987,14 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             // before a client restart sends it.
             float roughness = uboGlobal.waterRoughness > 0.0 ? uboGlobal.waterRoughness : 1.0;
             float churnTime = uboGlobal.waterRoughness > 0.0 ? uboGlobal.waterChurnTime : uboGlobal.elapsedTime;
-            if (OCEAN_LACE_STRENGTH > 0.0) {
+            if (bool(OCEAN_LACE) && OCEAN_LACE_STRENGTH > 0.0) {
                 float laceRoughness = pow(roughness, OCEAN_LACE_ROUGHNESS);
                 // Denser as well as stronger, up to solid line cores
                 float lace = saturate(oceanLace(drifted, wind, churnTime) * sqrt(laceRoughness)) * oceanRoom;
                 float laceStrength = OCEAN_LACE_STRENGTH * laceRoughness;
                 foamAmount = max(foamAmount, oceanSpecks(lace, OCEAN_LACE_SOFTNESS, oceanMask) * laceStrength);
             }
-            if (OCEAN_WAVE_STRENGTH > 0.0) {
+            if (bool(OCEAN_WAVES) && OCEAN_WAVE_STRENGTH > 0.0) {
                 vec2 waves = oceanWaves(drifted, shoreDist, towardsShore);
                 float amount = oceanSpecks(waves.x * oceanRoom, OCEAN_WAVE_SOFTNESS, oceanMask);
                 float waveStrength = OCEAN_WAVE_STRENGTH * pow(roughness, OCEAN_WAVE_ROUGHNESS_STRENGTH);
@@ -887,12 +1003,16 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
         }
     }
     // Boat wakes, separate from the rest of the foam
-    if (BOAT_WAKE_STRENGTH > 0.0 && waterType.hasFoam != 0) {
-        float wake = boatWakes(IN.position.xz / 128.0);
-        if (wake > 0.0) {
-            float specks = textureGrad(textureArray, vec3(wakeUv, MAT_WATER_FOAM.colorMap), wakeUvDx, wakeUvDy).r;
-            specks = smoothstep(0.1, 0.65, specks);
-            foamAmount = max(foamAmount, oceanSpecks(wake, BOAT_WAKE_SOFTNESS, specks) * BOAT_WAKE_STRENGTH);
+    if (bool(BOAT_WAKES) && BOAT_WAKE_STRENGTH > 0.0 && waterType.hasFoam != 0) {
+        vec2 wake = boatWakes(IN.position.xz / 128.0);
+        if (wake.x > 0.0) {
+            float specks = smoothstep(0.1, 0.65,
+                textureGrad(textureArray, vec3(wakeUv, MAT_WATER_FOAM.colorMap), wakeUvDx, wakeUvDy).r);
+            // As bright as the ocean waves' fronts are here, scaled
+            float roughness = uboGlobal.waterRoughness > 0.0 ? uboGlobal.waterRoughness : 1.0;
+            float wavePeak = OCEAN_WAVE_STRENGTH * pow(roughness, OCEAN_WAVE_ROUGHNESS_STRENGTH) * OCEAN_WAVE_FRONT_BRIGHTNESS;
+            float amount = oceanSpecks(wake.x * BOAT_WAKE_COVERAGE, BOAT_WAKE_SOFTNESS, specks);
+            foamAmount = max(foamAmount, amount * wake.y * wavePeak * BOAT_WAKE_STRENGTH);
             foamMask = max(foamMask, specks);
         }
     }

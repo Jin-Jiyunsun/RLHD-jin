@@ -90,5 +90,7 @@ public class UBOGlobal extends UniformBuffer<GLBuffer> {
 	public final Property waterChurnTime = addProperty(PropertyType.Float, "waterChurnTime");
 	public final Property[] boatWakePoints = addPropertyArray(PropertyType.FVec4, "boatWakePoints", MAX_BOATS * MAX_POINTS);
 	public final Property[] boatWakeBounds = addPropertyArray(PropertyType.FVec4, "boatWakeBounds", MAX_BOATS);
+	public final Property[] boatWakeHeadings = addPropertyArray(PropertyType.FVec4, "boatWakeHeadings", MAX_BOATS);
+	public final Property[] boatWakeHulls = addPropertyArray(PropertyType.FVec4, "boatWakeHulls", MAX_BOATS);
 	public final Property boatWakeCounts = addProperty(PropertyType.FVec4, "boatWakeCounts");
 }
