@@ -65,6 +65,10 @@ public class BoatWakes {
 		float fadeStart;
 		// Whether the boat is going backwards, so it leaves only its wash, and its heading is the way it's going
 		boolean reversing;
+		// The boat's length and width, in tiles
+		float length, width;
+		// Whether the boat has a square front, like a raft, rather than a pointed bow
+		boolean squareBow;
 		// Squared distance from the camera's focal point, to pick the nearest wakes
 		double focusDistance;
 
@@ -81,6 +85,9 @@ public class BoatWakes {
 			startTime = other.startTime;
 			fadeStart = other.fadeStart;
 			reversing = other.reversing;
+			length = other.length;
+			width = other.width;
+			squareBow = other.squareBow;
 		}
 	}
 
@@ -334,6 +341,8 @@ public class BoatWakes {
 	// Old wakes left fading out where they were after their boats moved off again
 	private final List<Wake> oldWakes = new ArrayList<>();
 	private final List<Wake> active = new ArrayList<>();
+	// The time of the last update, to notice the plugin's clock restarting
+	private float lastNow = Float.NEGATIVE_INFINITY;
 
 	/**
 	 * Record the paths of visible boats, skipping flattened ones, and fill in the wake uniforms
@@ -341,6 +350,13 @@ public class BoatWakes {
 	 * @param drawnScene the scene being drawn, which can lag behind the client's across loading lines
 	 */
 	public void update(Client client, Scene drawnScene, UBOGlobal ubo, float now) {
+		// This outlives the plugin, whose clock starts again from 0 when it restarts, which would leave every recorded time in
+		// the future
+		if (now < lastNow) {
+			trails.clear();
+			oldWakes.clear();
+		}
+		lastNow = now;
 		WorldView topLevel = client.getTopLevelWorldView();
 		Scene scene = topLevel == null ? null : topLevel.getScene();
 		active.clear();
@@ -356,6 +372,12 @@ public class BoatWakes {
 				// Flattened boats keep their paths, so they don't restart if they're only flattened briefly
 				LocalPoint location = entity.getLocalLocation();
 				var trail = trails.computeIfAbsent(entity.getWorldView().getId(), id -> new Trail());
+				// The boat's size, in tiles, so its wake fits it
+				var config = entity.getConfig();
+				trail.wake.length = (float) config.getBoundsHeight() / LOCAL_TILE_SIZE;
+				trail.wake.width = (float) config.getBoundsWidth() / LOCAL_TILE_SIZE;
+				// Rafts are the only boats a single tile wide, and the only ones with a square front
+				trail.wake.squareBow = config.getBoundsWidth() <= LOCAL_TILE_SIZE;
 				Wake oldWake = trail.update(
 					location.getX() + clientBaseX, location.getY() + clientBaseZ, entity.getOrientation(), now);
 				if (oldWake != null)
@@ -388,7 +410,8 @@ public class BoatWakes {
 	}
 
 	private static void sortByDistance(List<Wake> wakes, double focusX, double focusZ) {
-		for (var wake : wakes) {
+		for (int i = 0; i < wakes.size(); i++) {
+			var wake = wakes.get(i);
 			double dx = wake.sternX - focusX;
 			double dz = wake.sternZ - focusZ;
 			wake.focusDistance = dx * dx + dz * dz;
@@ -407,6 +430,7 @@ public class BoatWakes {
 		float sternZ = (float) ((wake.sternZ - baseZ) / LOCAL_TILE_SIZE);
 		ubo.boatWakeHeadings[boat].set(wake.headingX, wake.headingZ, sternX, sternZ);
 		ubo.boatWakeHulls[boat].set(wake.count, sinceSlowed, now - wake.startTime, wake.reversing ? 1 : 0);
+		ubo.boatWakeSizes[boat].set(wake.length, wake.width, wake.squareBow ? 1 : 0, 0);
 
 		float minX = sternX, maxX = sternX;
 		float minZ = sternZ, maxZ = sternZ;
