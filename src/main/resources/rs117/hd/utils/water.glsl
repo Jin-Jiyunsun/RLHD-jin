@@ -121,7 +121,6 @@
 // Boat wakes. Each boat's hull pushes foam out onto the water as its bow passes, which then drifts outwards, spreads
 // and fades where it was laid, so a boat that stops just stops making more.
 #define BOAT_WAKE_STRENGTH 0.9             // opacity, relative to the ocean waves' brightest fronts
-#define BOAT_WAKE_SOFTNESS 0.45            // speck softness, in texture space
 #define BOAT_WAKE_COVERAGE 0.75            // speck density, from 0 to 1
 #define BOAT_WAKE_LIFETIME 2.0             // seconds behind the stern until fully faded, up to BOAT_WAKE_MAX_AGE
 #define BOAT_WAKE_WIDTH 0.35               // width of the foam at the bow, in tiles
@@ -1048,8 +1047,8 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
             // As bright as the ocean waves' fronts are here, scaled
             float roughness = uboGlobal.waterRoughness > 0.0 ? uboGlobal.waterRoughness : 1.0;
             float wavePeak = OCEAN_WAVE_STRENGTH * pow(roughness, OCEAN_WAVE_ROUGHNESS_STRENGTH) * OCEAN_WAVE_FRONT_BRIGHTNESS;
-            // Denser along the rim, like the ocean waves' fronts
-            float amount = oceanSpecks(wake.x * mix(BOAT_WAKE_COVERAGE, 1.0, wake.z), BOAT_WAKE_SOFTNESS, specks);
+            // Specks as soft as the ocean waves', denser along the rim like their fronts
+            float amount = oceanSpecks(wake.x * mix(BOAT_WAKE_COVERAGE, 1.0, wake.z), OCEAN_WAVE_SOFTNESS, specks);
             float rimBrightness = mix(1.0, BOAT_WAKE_RIM_BRIGHTNESS, wake.z);
             foamAmount = max(foamAmount, amount * wake.y * wavePeak * BOAT_WAKE_STRENGTH * rimBrightness);
             foamMask = max(foamMask, specks);
