@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.inject.Singleton;
 import net.runelite.api.*;
 import net.runelite.api.coords.*;
@@ -18,8 +19,29 @@ import static rs117.hd.utils.MathUtils.JAU_TO_RAD;
  */
 @Singleton
 public class BoatWakes {
-	public static final int MAX_BOATS = 4;
-	public static final int MAX_POINTS = 24;
+	public static final int MAX_BOATS = 16;
+	// The world entity config IDs of boats, from https://oldschool.runescape.wiki/w/World_entity, so other things that
+	// move around like trawling shoals (4) don't get wakes. NPC boats have no category, so this lists them exactly.
+	private static final Set<Integer> BOAT_CONFIGS = Set.of(
+		1, // raft
+		2, // skiff
+		3, // sloop
+		6, // charter ship
+		7, // pirate ship, Rock Island Prison
+		8, // strange ship
+		9, // The Zenith
+		10, // skiff, Barracuda Trials
+		11, // skiff, Captain Reuben and the bank boat
+		12, // pirate ships and the Fremennik ship
+		13, // The Bark of the Bight
+		14 // The Four of a Kind
+	);
+	// The big NPC ships, whose wash starts well behind them, so their paths are kept longer, and the shader shapes their
+	// wakes differently
+	private static final Set<Integer> BIG_SHIP_CONFIGS = Set.of(6, 7, 8);
+	// Long enough for the big ships' paths. With MAX_BOATS, the wakes take about 11 KB of the global uniform block, which
+	// only has to fit in 16 KB.
+	public static final int MAX_POINTS = 40;
 	// Points curving from the stern into the recorded path, so the hull and tail meet without a corner
 	private static final int CURVE_POINTS = 3;
 	// Recorded points, leaving room for the curve and the path's start
@@ -28,7 +50,9 @@ public class BoatWakes {
 	private static final float LIFETIME = RECORDED_POINTS * POINT_INTERVAL;
 	// Age the path is cut off at, sliding smoothly back along it, rather than ending at its oldest point, which steps
 	// back each time one is dropped. Early enough that the point it's cut between is never dropped first.
-	public static final float TAIL_AGE = LIFETIME - 2 * POINT_INTERVAL;
+	private static final float SHIP_TAIL_AGE = LIFETIME - 2 * POINT_INTERVAL;
+	// Other boats' paths are cut off sooner, which is all their wakes need, so the shader has less path to check
+	private static final float TAIL_AGE = 4.5f;
 	// Seconds of the boat's movement averaged into the recorded path, a game tick
 	private static final float SMOOTHING = 0.6f;
 	private static final int RAW_SAMPLES = 512;
@@ -41,8 +65,8 @@ public class BoatWakes {
 	// jumped to a new spot, rather than sailed there through a slow frame
 	private static final float JUMP_DISTANCE = 4;
 	private static final float JUMP_SPEED = 20;
-	// Seconds an old wake is kept once its boat moves off again, to finish fading out where it was. Longer than
-	// BOAT_WAKE_STOP_TIME in water.glsl, which decides when it's gone.
+	// Seconds an old wake is kept once its boat moves off again, to finish fading out where it was, and a stopped boat's
+	// wake is kept in a slot. Longer than BOAT_WAKE_STOP_TIME in water.glsl, which decides when it's gone.
 	private static final float OLD_WAKE_TIME = 8;
 	// How far a boat has to move over a game tick, in tiles, to tell which way it's going
 	private static final float DIRECTION_MIN_MOVE = 0.1f;
@@ -69,6 +93,8 @@ public class BoatWakes {
 		float length, width;
 		// Whether the boat has a square front, like a raft, rather than a pointed bow
 		boolean squareBow;
+		// Whether it's one of the big NPC ships, BIG_SHIP_CONFIGS
+		boolean bigShip;
 		// Squared distance from the camera's focal point, to pick the nearest wakes
 		double focusDistance;
 
@@ -88,6 +114,7 @@ public class BoatWakes {
 			length = other.length;
 			width = other.width;
 			squareBow = other.squareBow;
+			bigShip = other.bigShip;
 		}
 	}
 
@@ -306,15 +333,16 @@ public class BoatWakes {
 			w.z[n] = averageZ;
 			w.age[n] = startAge;
 			n++;
+			float tailAge = w.bigShip ? SHIP_TAIL_AGE : TAIL_AGE;
 			for (int i = count - 1; i >= 0; i--) {
 				float age = Math.max(ageNow - time[i], 0);
-				if (age > TAIL_AGE) {
-					// Cut off between this point and the one before, where the age reaches TAIL_AGE
+				if (age > tailAge) {
+					// Cut off between this point and the one before, where the age reaches tailAge
 					float before = w.age[n - 1];
-					double t = age > before ? (TAIL_AGE - before) / (age - before) : 0;
+					double t = age > before ? (tailAge - before) / (age - before) : 0;
 					w.x[n] = w.x[n - 1] + (x[i] - w.x[n - 1]) * t;
 					w.z[n] = w.z[n - 1] + (z[i] - w.z[n - 1]) * t;
-					w.age[n] = TAIL_AGE;
+					w.age[n] = tailAge;
 					n++;
 					break;
 				}
@@ -333,6 +361,21 @@ public class BoatWakes {
 				w.distance[i] = (float) (distance / LOCAL_TILE_SIZE);
 				prevX = w.x[i];
 				prevZ = w.z[i];
+			}
+
+			// The client's position is the boat's middle, so the path's first stretch runs alongside the back half of the
+			// hull. While turning, it lags behind the hull, which turns with the boat, leaving a step in the foam halfway
+			// along. So that stretch is bent onto the hull's centre line, fully at the middle, easing off to none at the
+			// stern, keeping its ages and distances. Going straight, it's already there.
+			double halfLength = w.length * 0.5 * LOCAL_TILE_SIZE;
+			for (int i = 0; i < n; i++) {
+				double back = w.distance[i] * LOCAL_TILE_SIZE;
+				if (back >= halfLength)
+					break;
+				double t = back / halfLength;
+				double bend = 1 - t * t * (3 - 2 * t);
+				w.x[i] += (headX - headingX * back - w.x[i]) * bend;
+				w.z[i] += (headZ - headingZ * back - w.z[i]) * bend;
 			}
 		}
 	}
@@ -369,22 +412,26 @@ public class BoatWakes {
 			for (var trail : trails.values())
 				trail.seen = false;
 			for (WorldEntity entity : topLevel.worldEntities()) {
+				var config = entity.getConfig();
+				if (!BOAT_CONFIGS.contains(config.getId()))
+					continue;
 				// Flattened boats keep their paths, so they don't restart if they're only flattened briefly
 				LocalPoint location = entity.getLocalLocation();
 				var trail = trails.computeIfAbsent(entity.getWorldView().getId(), id -> new Trail());
 				// The boat's size, in tiles, so its wake fits it
-				var config = entity.getConfig();
 				trail.wake.length = (float) config.getBoundsHeight() / LOCAL_TILE_SIZE;
 				trail.wake.width = (float) config.getBoundsWidth() / LOCAL_TILE_SIZE;
 				// Rafts are the only boats a single tile wide, and the only ones with a square front
 				trail.wake.squareBow = config.getBoundsWidth() <= LOCAL_TILE_SIZE;
+				trail.wake.bigShip = BIG_SHIP_CONFIGS.contains(config.getId());
 				Wake oldWake = trail.update(
 					location.getX() + clientBaseX, location.getY() + clientBaseZ, entity.getOrientation(), now);
 				if (oldWake != null)
 					oldWakes.add(oldWake);
 				trail.build();
 				trail.seen = true;
-				if (!entity.isHiddenForOverlap())
+				// Stopped boats whose wakes have faded don't take up a slot
+				if (!entity.isHiddenForOverlap() && now - trail.wake.fadeStart <= OLD_WAKE_TIME)
 					active.add(trail.wake);
 			}
 			trails.values().removeIf(trail -> !trail.seen);
@@ -416,8 +463,10 @@ public class BoatWakes {
 			double dz = wake.sternZ - focusZ;
 			wake.focusDistance = dx * dx + dz * dz;
 		}
-		wakes.sort(Comparator.comparingDouble(wake -> wake.focusDistance));
+		wakes.sort(BY_FOCUS_DISTANCE);
 	}
+
+	private static final Comparator<Wake> BY_FOCUS_DISTANCE = Comparator.comparingDouble(wake -> wake.focusDistance);
 
 	/**
 	 * Send a wake's heading and stern, and its path relative to the drawn scene, in tiles. Each point has its position,
@@ -430,7 +479,7 @@ public class BoatWakes {
 		float sternZ = (float) ((wake.sternZ - baseZ) / LOCAL_TILE_SIZE);
 		ubo.boatWakeHeadings[boat].set(wake.headingX, wake.headingZ, sternX, sternZ);
 		ubo.boatWakeHulls[boat].set(wake.count, sinceSlowed, now - wake.startTime, wake.reversing ? 1 : 0);
-		ubo.boatWakeSizes[boat].set(wake.length, wake.width, wake.squareBow ? 1 : 0, 0);
+		ubo.boatWakeSizes[boat].set(wake.length, wake.width, wake.squareBow ? 1 : 0, wake.bigShip ? 1 : 0);
 
 		float minX = sternX, maxX = sternX;
 		float minZ = sternZ, maxZ = sternZ;
