@@ -2005,6 +2005,7 @@
   {
     "area": "TEMPOROSS_COVE",
     "lightningEffects": true,
+    "waterRoughness": 1.5,
     "ambientColor": "#a5acbd",
     "ambientStrength": 2,
     "directionalColor": "#707070",
@@ -2036,7 +2037,7 @@
     "windStrength": 65,
     "windAngle": 40,
     "windCeiling": 750,
-    "waterRoughness": 1.25,
+    "waterRoughness": 1.2,
     "windSpeed": 20,
     "directionalColor": "#707070",
     "fogDepth": 10,

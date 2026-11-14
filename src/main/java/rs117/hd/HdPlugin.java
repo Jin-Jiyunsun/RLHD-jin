@@ -556,7 +556,8 @@ public class HdPlugin extends Plugin {
 	public float waterChurnTime;
 	private static final float WATER_ROUGHNESS_PER_WIND_STRENGTH = 1 / 100f;
 	private static final float WATER_ROUGHNESS_MAX = 2;
-	private static final float WATER_ROUGHNESS_EASING_SECONDS = 1.5f;
+	private static final float WATER_ROUGHNESS_RISE_SECONDS = 1.5f;
+	private static final float WATER_ROUGHNESS_FALL_SECONDS = 0.75f;
 	public long colorFilterChangedAt;
 
 	public float clientUnfocusedTime;
@@ -1403,7 +1404,7 @@ public class HdPlugin extends Plugin {
 		if (Float.isNaN(waterRoughness)) {
 			waterRoughness = target;
 		} else {
-			waterRoughness += (target - waterRoughness) * (1 - (float) Math.exp(-deltaTime / WATER_ROUGHNESS_EASING_SECONDS));
+			waterRoughness += (target - waterRoughness) * (1 - (float) Math.exp(-deltaTime / (target > waterRoughness ? WATER_ROUGHNESS_RISE_SECONDS : WATER_ROUGHNESS_FALL_SECONDS)));
 		}
 		waterChurnTime = (waterChurnTime + deltaTime * waterRoughness) % MAX_FLOAT_WITH_128TH_PRECISION;
 	}
@@ -2370,7 +2371,8 @@ public class HdPlugin extends Plugin {
 			var env = environmentManager.getCurrentEnvironment();
 			windOffset += deltaTime * env.windSpeed;
 			updateWaterWind(env.windAngle);
-			updateWaterRoughness(env);
+			// From the environment being transitioned to, so the water changes quickly after the easing
+			updateWaterRoughness(environmentManager.getToEnvironment());
 			updateWaterHistory();
 			float windDriftStep = deltaTime * env.windSpeed / 15f;
 			windDrift[0] = (float) ((windDrift[0] + windDriftStep * Math.cos(waterWindAngle)) % MAX_FLOAT_WITH_128TH_PRECISION);
