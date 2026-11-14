@@ -36,6 +36,7 @@
 // Shore foam
 #define SHORE_FOAM_STRENGTH 0.31           // peak opacity before lighting
 #define FOAM_WATER_BRIGHTNESS 5.0          // all foam is at least this much brighter than the water under it
+#define FOAM_LOW_SUN_OPACITY 1.0           // extra foam opacity under a low sun, 1 for double near the horizon
 #define SHORE_FOAM_SOFTNESS 0.3            // width of the eroded edge, in texture space
 #define SHORE_FOAM_EDGE_NOISE 0.35         // how far the foam line wanders, in tiles
 #define SHORE_FOAM_REACH 0.8               // how far the solid foam reaches between waves, in tiles
@@ -1139,12 +1140,25 @@ vec4 sampleWater(int waterTypeIndex, vec3 viewDir) {
                 vec3 foamAlbedo = waterType.foamColor * mix(0.5, 0.7, foamMask);
                 foamColor = foamAlbedo * compositeLight;
                 // At least FOAM_WATER_BRIGHTNESS times the water's brightness, since in dim light like sunrise and
-                // sunset the water is lit mostly by the sky's reflection. Shaded by the texture, capped at about white.
+                // sunset the water is lit mostly by the sky's reflection. Shaded by the texture, capped at about white,
+                // and tinted by the color of the light, so it isn't grey at sunrise and sunset.
                 float waterBrightness = linearSrgbLuminance(max(baseColor, vec3(0)));
-                foamColor = max(foamColor, foamAlbedo / 0.6 * min(waterBrightness * FOAM_WATER_BRIGHTNESS, 1.0));
+                vec3 lightTint = max(compositeLight, vec3(0));
+                lightTint /= max(linearSrgbLuminance(lightTint), 1e-4);
+                foamColor = max(foamColor, foamAlbedo / 0.6 * lightTint * min(waterBrightness * FOAM_WATER_BRIGHTNESS, 1.3));
                 // The color carries the lighting, so only fade the opacity in real darkness
                 float brightness = linearToSrgb(linearSrgbLuminance(srgbToLinear(saturate(foamColor))));
                 litFoamAmount = foamAmount * saturate(brightness * 4.0);
+                // More opaque under a low sun, where the sky's bright reflection would otherwise wash it out
+                float sunHeight = -uboGlobal.lightDir.y;
+                #if DAYLIGHT_CYCLE
+                // The sun itself, since the light switches over to the moon at night
+                if (uboSky.enabled)
+                    sunHeight = uboSky.sunDir.y;
+                #endif
+                // easing back off as it sets, when the sky dims too
+                float lowSun = (1.0 - smoothstep(0.0, 0.5, sunHeight)) * smoothstep(0.0, 0.2, sunHeight);
+                litFoamAmount = saturate(litFoamAmount * (1.0 + FOAM_LOW_SUN_OPACITY * lowSun));
             }
             // The original shore fade, where it's stronger
             if (!bool(SHORE_FOAM)) {
