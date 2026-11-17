@@ -29,6 +29,9 @@ import static rs117.hd.utils.MathUtils.*;
 public class FrameTimingsRecorder implements FrameTimer.Listener {
 	private static final ResourcePath SNAPSHOTS_PATH = HdPlugin.PLUGIN_DIR.resolve("snapshots");
 	private static final int SNAPSHOT_DURATION_MS = 20_000;
+	// Each recording takes this many snapshots back to back, with a pause between them
+	private static final int SNAPSHOT_COUNT = 2;
+	private static final int SNAPSHOT_PAUSE_MS = 3_000;
 
 	@Inject
 	private Gson gson;
@@ -91,6 +94,8 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
 	}
 
 	private Snapshot snapshot;
+	private int snapshotsLeft;
+	private long nextSnapshotAt;
 
 	public boolean isCapturingSnapshot() {
 		return snapshot != null;
@@ -102,8 +107,20 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
 				sendGameMessage(String.format("Already capturing a snapshot (%d%% complete)", getProgressPercentage()));
 				return;
 			}
+			// Between snapshots. Checked by time too, in case the listener was removed from elsewhere.
+			if (snapshotsLeft > 0 && System.currentTimeMillis() < nextSnapshotAt + 1000) {
+				sendGameMessage("Already capturing snapshots");
+				return;
+			}
 
-			snapshot = new Snapshot();
+			snapshotsLeft = SNAPSHOT_COUNT;
+			startSnapshot();
+			frameTimer.addTimingsListener(this);
+		});
+	}
+
+	private void startSnapshot() {
+		snapshot = new Snapshot();
 			snapshot.osName = System.getProperty("os.name");
 			snapshot.osArch = System.getProperty("os.arch");
 			snapshot.osVersion = System.getProperty("os.version");
@@ -123,9 +140,8 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
 				snapshot.settings.put(key, configManager.getConfiguration("hd", key));
 			}
 
-			frameTimer.addTimingsListener(this);
-			sendGameMessage(String.format("Capturing frame timings for %.0f seconds...", SNAPSHOT_DURATION_MS / 1e3f));
-		});
+			sendGameMessage(String.format("Capturing frame timings for %.0f seconds (%d of %d)...",
+				SNAPSHOT_DURATION_MS / 1e3f, SNAPSHOT_COUNT - snapshotsLeft + 1, SNAPSHOT_COUNT));
 	}
 
 	public int getProgressPercentage() {
@@ -137,7 +153,11 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
 	@Override
 	public void onFrameCompletion(FrameTimings timings) {
 		if (!isCapturingSnapshot()) {
-			frameTimer.removeTimingsListener(this);
+			if (snapshotsLeft <= 0) {
+				frameTimer.removeTimingsListener(this);
+			} else if (System.currentTimeMillis() >= nextSnapshotAt) {
+				startSnapshot();
+			}
 			return;
 		}
 
@@ -155,7 +175,10 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
 	}
 
 	private void saveSnapshot() {
-		frameTimer.removeTimingsListener(this);
+		// The next one starts from onFrameCompletion after the pause
+		if (--snapshotsLeft <= 0)
+			frameTimer.removeTimingsListener(this);
+		nextSnapshotAt = System.currentTimeMillis() + SNAPSHOT_PAUSE_MS;
 
 		for (var frame : snapshot.frames) {
 			frame.cpu = new LinkedHashMap<>();

@@ -1429,6 +1429,8 @@ public interface HdPluginConfig extends Config
 	String KEY_IMPROVED_SHORE_FOAM = "experimentalImprovedShoreFoam";
 	@ConfigItem(
 		keyName = KEY_IMPROVED_SHORE_FOAM,
+		// Before the other experimental settings, which default to -1, so the foam ones stay together
+		position = -6,
 		name = "Shore foam",
 		description = "Animated foam and waves along shorelines, which break up into patches.<br>" +
 			"With this off, shores get the old fade along tile edges instead.",
@@ -1441,6 +1443,7 @@ public interface HdPluginConfig extends Config
 	String KEY_OCEAN_LACE = "experimentalOceanLace";
 	@ConfigItem(
 		keyName = KEY_OCEAN_LACE,
+		position = -5,
 		name = "Open water lace",
 		description = "Faint churning lines of foam across open water.",
 		section = experimentalSettings
@@ -1452,6 +1455,7 @@ public interface HdPluginConfig extends Config
 	String KEY_OCEAN_WAVES = "experimentalOceanWaves";
 	@ConfigItem(
 		keyName = KEY_OCEAN_WAVES,
+		position = -4,
 		name = "Open water waves",
 		description = "Waves breaking into foam across open water, rougher in windy and stormy areas.",
 		section = experimentalSettings
@@ -1463,12 +1467,26 @@ public interface HdPluginConfig extends Config
 	String KEY_BOAT_WAKES = "experimentalBoatWakes";
 	@ConfigItem(
 		keyName = KEY_BOAT_WAKES,
+		position = -3,
 		name = "Boat wakes",
 		description = "Foam around moving boats and along the paths behind them.",
 		section = experimentalSettings
 	)
 	default boolean boatWakes() {
 		return true;
+	}
+
+	String KEY_TEST_BOAT_WAKES = "experimentalTestBoatWakes";
+	@ConfigItem(
+		keyName = KEY_TEST_BOAT_WAKES,
+		position = -2,
+		name = "Test boat wakes",
+		description = "For profiling. Replaces the real boat wakes with 16 boats frozen mid-sail around the camera,<br>" +
+			"placed where it is when this is turned on.",
+		section = experimentalSettings
+	)
+	default boolean testBoatWakes() {
+		return false;
 	}
 
 	String KEY_SIMPLE_BOAT_SILHOUETTES = "experimentalSimpleBoatSilhouettes";

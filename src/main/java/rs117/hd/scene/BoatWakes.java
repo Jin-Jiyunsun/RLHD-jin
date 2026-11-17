@@ -6,9 +6,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import net.runelite.api.*;
 import net.runelite.api.coords.*;
+import rs117.hd.HdPluginConfig;
 import rs117.hd.opengl.uniforms.UBOGlobal;
 
 import static net.runelite.api.Perspective.*;
@@ -87,6 +89,12 @@ public class BoatWakes {
 	private static final float SHIP_ANGLE = 0.3f;
 	private static final float SHIP_LIFETIME = 1.8f;
 	private static final float SHIP_WASH_WIDTH = 0.85f;
+
+	// Developer test wakes: every slot filled with a boat frozen mid-sail around the camera, for repeatable profiling
+	private static final int TEST_COLUMNS = 4;
+	private static final float TEST_SPEED = 3; // tiles per second
+	private static final float TEST_SPACING_ACROSS = 7; // tiles
+	private static final float TEST_SPACING_ALONG = 12; // tiles
 
 	/**
 	 * A wake as drawn, in local units. Points run from the stern back, with age in seconds and distance in tiles.
@@ -421,6 +429,12 @@ public class BoatWakes {
 	// Wakes left fading in place after their boats moved off again
 	private final List<Wake> oldWakes = new ArrayList<>();
 	private final List<Wake> active = new ArrayList<>();
+	private final List<Wake> testWakes = new ArrayList<>();
+	private double testCentreZ;
+	private float testStartTime;
+
+	@Inject
+	private HdPluginConfig config;
 
 	/**
 	 * Forget every path, since the plugin's clock restarts from 0
@@ -428,6 +442,7 @@ public class BoatWakes {
 	public void reset() {
 		trails.clear();
 		oldWakes.clear();
+		testWakes.clear();
 	}
 
 	/**
@@ -474,6 +489,15 @@ public class BoatWakes {
 			sortByDistance(active, focusX, focusZ);
 			sortByDistance(oldWakes, focusX, focusZ);
 			active.addAll(oldWakes);
+			if (config.testBoatWakes()) {
+				if (testWakes.isEmpty())
+					placeTestWakes(focusX, focusZ, now);
+				active.clear();
+				sailTestWakes(now);
+				active.addAll(testWakes);
+			} else {
+				testWakes.clear();
+			}
 			while (active.size() > MAX_BOATS)
 				active.remove(active.size() - 1);
 
@@ -483,6 +507,63 @@ public class BoatWakes {
 
 		for (int boat = active.size(); boat < MAX_BOATS; boat++)
 			ubo.boatWakeHulls[boat].set(0, 0, 0, 0);
+	}
+
+	/**
+	 * Fill every slot with a boat sailing north at full speed in a straight line, in staggered rows around the centre
+	 */
+	private void placeTestWakes(double centreX, double centreZ, float now) {
+		testWakes.clear();
+		testCentreZ = centreZ;
+		testStartTime = now;
+		for (int i = 0; i < MAX_BOATS; i++) {
+			int column = i % TEST_COLUMNS;
+			int row = i / TEST_COLUMNS;
+			var wake = new Wake();
+			wake.headingX = 0;
+			wake.headingZ = 1;
+			wake.length = REFERENCE_LENGTH;
+			wake.width = REFERENCE_WIDTH;
+			double across = (column - (TEST_COLUMNS - 1) * 0.5 + (row % 2) * 0.5) * TEST_SPACING_ACROSS;
+			wake.sternX = centreX + across * LOCAL_TILE_SIZE;
+			wake.sternZ = centreZ;
+			int n = 0;
+			while (n < MAX_POINTS) {
+				float age = Math.min((n + 1) * POINT_INTERVAL, TAIL_AGE);
+				float back = age * TEST_SPEED;
+				wake.x[n] = wake.sternX;
+				wake.z[n] = wake.sternZ - back * LOCAL_TILE_SIZE;
+				wake.age[n] = age;
+				wake.distance[n] = back;
+				n++;
+				if (age >= TAIL_AGE)
+					break;
+			}
+			wake.count = n;
+			Trail.thin(wake);
+			testWakes.add(wake);
+		}
+	}
+
+	/**
+	 * Move the test boats north, each jumping back to the bottom of the grid once it sails off the top, so the grid as a
+	 * whole stays put and looks the same every two rows' worth of sailing
+	 */
+	private void sailTestWakes(float now) {
+		float gridLength = MAX_BOATS / TEST_COLUMNS * TEST_SPACING_ALONG;
+		float sailed = (now - testStartTime) * TEST_SPEED;
+		for (int i = 0; i < testWakes.size(); i++) {
+			var wake = testWakes.get(i);
+			int row = i / TEST_COLUMNS;
+			double along = (row * TEST_SPACING_ALONG + sailed) % gridLength - gridLength * 0.5;
+			double shift = testCentreZ + along * LOCAL_TILE_SIZE - wake.sternZ;
+			wake.sternZ += shift;
+			for (int p = 0; p < wake.count; p++)
+				wake.z[p] += shift;
+			// Still sailing, and long since moved off
+			wake.fadeStart = now;
+			wake.startTime = now - 100;
+		}
 	}
 
 	private static void sortByDistance(List<Wake> wakes, double focusX, double focusZ) {
