@@ -1,0 +1,8 @@
+allprojects {
+	tasks.register('printRuntimeCp') {
+		doLast {
+			def files = sourceSets.main.runtimeClasspath.files + sourceSets.test.runtimeClasspath.files
+			new File(System.getProperty('cpOut')).text = files.join(File.pathSeparator)
+		}
+	}
+}
