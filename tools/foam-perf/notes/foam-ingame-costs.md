@@ -4,14 +4,14 @@ What the foam costs now, with the shaders at `b87d3734b` (shore-foam).
 
 ## Method
 
-- RTX 3080, zone renderer, 150% render scale, camera still.
+- RTX 3080, zone renderer, a 2560x1440 screen at 150% render scale (3840x2160 drawn), camera still.
 - About 20 s after each settings change, one Ctrl+Shift+F4 (two 20 s snapshots, 3 s apart).
 - Test boats: settings in order, then in reverse, averaging each setting's two runs.
 - Cost: the time minus no foam at the same spot. % of scene pass: the cost over that setting's own time.
 - No foam means all four foam settings off, which isn't free: with "Shore foam" off, the old fade along shore tile
   edges runs instead, reading the foam texture for every water pixel. So each cost is against that, as a player
   turning the settings off would get.
-- At 100%: the cost divided by 2.25, since 150% has 2.25 times the pixels. Probably slightly low, since a little of
+- At 100%: native 1440p, the cost divided by 2.25, since 150% has 2.25 times the pixels. At 1080p, about 0.56 of that. Probably slightly low, since a little of
   the cost doesn't scale with pixels.
 
 ### Fast frames only
@@ -125,9 +125,9 @@ despite a seven-minute gap after shore foam.
 - Shore foam is cheaper than none here: with no shore in view it does nothing, while the old fade it replaces reads
   the foam texture for every water pixel.
 - Lace adds 0.240 ms, waves 0.642 ms, boat wakes 0.181 ms with no moving boat, and the 16 test boats 0.264 ms more.
-- The waves cost about twice what offline timings suggest (0.16 ms for a 1080p screen of open water, about 0.35 ms at
-  150%). Not roughness: this is the overworld environment, roughness exactly 1. It's face size; see "Why the open sea
-  waves cost so much" below.
+- The waves cost more than offline timings first seemed to suggest, mostly because of resolution: 150% of 1440p is
+  3840x2160, four times the pixels of the 1080p benchmark (not 2.25 times, as first assumed). The rest is face size;
+  see "Why the open sea waves cost so much" below. Not roughness: this is the overworld environment, roughness 1.
 
 ### Arceuus, no water
 
@@ -156,8 +156,8 @@ boats (fastest of 100 rounds, game running, so only the differences count):
 | `20aa49d6e` (wave list) | 0.020 ms |
 | `19e464225` (noise texture), and now | 0.045 ms |
 
-At 150% that's about 0.10 ms over a screen of water, in line with the 0.104 ms (Port Khazard) and 0.090 ms
-(Kastori) in game.
+At 150% of 1440p (3840x2160, four times 1080p's pixels) that's about 0.18 ms for a screen full of water. The harbour
+views are part land, so the 0.104 ms (Port Khazard) and 0.090 ms (Kastori) measured in game fit.
 
 Most of it, about 0.03 ms, is the waves' check against `swept` in `oceanWaveCells` (waves a boat crossed stay broken).
 With wakes off `swept` is a constant and the check compiles away. The check itself is a few instructions; the cost
@@ -251,8 +251,10 @@ against either one), about 0.7% of the scene pass, or about 0.008 ms at 100%.
 An earlier version of these notes put it down to roughness 2. That was wrong: the open sea view was under the
 overworld environment, where roughness is exactly 1 (wind strength only shifts it by about a tenth elsewhere).
 
-The cause is face size. WaterBench draws water flat, 48 tiles across, so faces are about 40 px wide; looking out to
-the horizon, most faces are a few pixels wide. With `BENCH_SPAN` (tiles across the screen), 1080p, best of 40 to 60
+Mostly resolution: 150% of 1440p draws 3840x2160, four times the pixels of WaterBench's 1080p, so its 0.137 ms for a
+screen of waves predicts about 0.55 ms for a screen full of water, and the view is partly sky. The rest is face size.
+WaterBench draws water flat, 48 tiles across, so faces are about 40 px wide; looking out to the horizon, many faces are
+a few pixels wide. With `BENCH_SPAN` (tiles across the screen), 1080p, best of 40 to 60
 rounds:
 
 | Tiles across | Face size | Waves cost | Boat wakes, no boats |

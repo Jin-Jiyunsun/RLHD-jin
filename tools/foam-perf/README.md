@@ -141,7 +141,8 @@ within 0.25 ms of the 1st percentile repeats to within a few hundredths of a mil
 
 How to record:
 - Use 150% render scale on the 3080, so the GPU is the bottleneck. At 100% it often isn't, and the timings flip
-  between two levels. 16x MSAA at 100% also makes the GPU the bottleneck. Divide costs by 2.25 for 100%.
+  between two levels. 16x MSAA at 100% also makes the GPU the bottleneck. The screen is 2560x1440, so 150% draws
+  3840x2160: divide costs by 2.25 for native 1440p, or by 4 to compare with WaterBench's 1080p.
 - One keypress (two snapshots) per setting, about 20 s after any settings change.
 - Cost: a setting's time minus no foam at the same spot. With all foam off the old shore fade runs, which reads a
   texture for every water pixel, so that's the baseline a player turning the foam off gets.
