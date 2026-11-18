@@ -3,16 +3,37 @@
 Tools used to measure and optimise the water foam on the `shore-foam` branch, kept on the `foam-tools` branch so
 they don't live only in temporary folders. They're for local use on this machine and aren't meant for 117 HD itself.
 
-The `foam-tools` branch is `shore-foam` plus two things:
+The `foam-tools` branch is an older `shore-foam` plus two things:
 
 - This folder.
-- Two in-game profiling helpers, in their own commit:
-  - **"Test boat wakes"** (`HdPluginConfig`, `BoatWakes`): fills all 16 wake slots with boats sailing in a 4x4 grid
-    around the camera.
+- Two in-game profiling helpers. Their commit on this branch, `d780e25e1`, no longer applies to `shore-foam` since
+  the cleanup, so they're kept up to date as a patch instead: `patches/in-game-tools.patch`, made against `shore-foam`
+  at `41b64f252`.
+  - **"Test boat wakes"** (`HdPluginConfig`, `BoatWakes`): see below.
   - **Two snapshots per keypress** (`FrameTimingsRecorder`): one Ctrl+Shift+F4 takes two 20 s snapshots, 3 s apart.
 
-To use the in-game helpers on another branch, cherry-pick that commit. Don't merge `foam-tools` into a branch meant
-for 117 HD.
+Don't merge `foam-tools` into a branch meant for 117 HD.
+
+## In-game helpers
+
+Apply the patch to a `shore-foam` checkout, from the repo root, and take it out again before committing:
+
+```bash
+git apply tools/foam-perf/patches/in-game-tools.patch
+git apply -R tools/foam-perf/patches/in-game-tools.patch
+```
+
+(From another checkout, give the patch's full path.) Restart the client after applying; it changes Java.
+
+**Test boat wakes** replaces the real wakes with 16 boats for repeatable profiling:
+
+- Turning it on places them around the camera's focal point: 4 columns 7 tiles apart, each odd row shifted half a
+  column, rows 12 tiles apart, all facing north.
+- Each is a 10 by 3 tile boat sailing north at 3 tiles per second, with its full-length path behind it, and counts as
+  sailing the whole time.
+- A boat that sails off the top of the grid jumps back to the bottom, so the grid stays put and looks the same every
+  two rows, 8 seconds of sailing. Where the grid crosses land, the scene pass rises and falls over those 8 seconds.
+- It fills every wake slot, so real boats get no wakes while it's on. It only does anything with "Boat wakes" on.
 
 Paths in the scripts assume this machine (JDKs under `C:\Users\Jin\.jdks`, the repo at
 `C:\Users\Jin\IdeaProjects\RLHD-jin`). Keep `shadercheck` and `wavesim` side by side: `wb.sh` and `bench.sh` find
@@ -53,10 +74,17 @@ Regenerate it whenever dependencies change. It lists absolute paths, so it isn't
     | `BENCH_DIFFLIST` | Lists differences above a threshold |
     | `BENCH_SHORE`, `BENCH_SHORE_STEPS` | Shoreline data |
     | `BENCH_CYCLE=1` | Daylight cycle and glare reduction |
-    | `BENCH_SET` | Overrides UBO fields |
+    | `BENCH_SET` | Overrides UBO fields, for example `UBOGlobal.waterRoughness=f:2` |
+    | `BENCH_FACE` | Each vertex's raw shore data, comma separated, for every face: for example a river's middle |
+    | `BENCH_CAMERA` | The camera's position in wave cells for the far wave thinning, `x,z` |
     | `BENCH_DUMP=1` | Writes the program binary; `asm.py` pulls out the NVIDIA assembly |
 
   - `wb2.sh` uses `../wavesim/d45_ubo.f32` for 16 diagonal boats.
+  - The far wave thinning reads the camera's recent positions. The saved uniform data predates them, so the benchmark
+    puts the camera in the middle of its own view, where nothing counts as far. Set `BENCH_CAMERA=100000,100000` to
+    thin every wave.
+  - Roughness changes the wave cost a lot: set `waterRoughness`, `waveMaxRoughness`, `roughnessHistory[0]` (32
+    values) and `waveHistorySteady=i:1` together. Rough open sea is 2.
   - The noise texture is generated on unit 5 and bound to the `waterNoise` sampler.
   - **Time with the game closed.** With it running, timings are several times higher and noisy. Use the median of
     30 or more interleaved rounds.
@@ -82,9 +110,20 @@ Regenerate it whenever dependencies change. It lists absolute paths, so it isn't
 
 ## snapshots: in-game timing snapshots
 
-Snapshots are saved to `~/.runelite/117hd/snapshots`. Read the median of `gpu.Render scene and sky`, and compare
-only pairs recorded from the same spot and camera.
+Snapshots are saved to `~/.runelite/117hd/snapshots`. Compare only snapshots recorded from the same spot and camera.
 
+**Use the fast frames, not the plain median.** Every snapshot's frames fall into two groups about 0.5 ms apart, at
+every setting, foam or not: other GPU work (the desktop, other programs) landing during the scene pass. Their share
+swings from 0 to over 90% between snapshots, and a plain median jumps between the groups. The median of the frames
+within 0.25 ms of the 1st percentile repeats to within a few hundredths of a millisecond. See
+`notes/foam-ingame-costs.md`.
+
+- **`fast.py [since]`:** each snapshot's fast-frame time, the plain median, the foam settings and the dynamic
+  objects drawn. The main tool.
+- **`modes.py <stamp> [cut]`:** splits one snapshot into its fast and slow frames: when the slow ones come, and which
+  other timers differ.
+- **`foamkeys.py`:** which foam settings a snapshot had on, across the settings' renames (`experimentalWaterFoam`
+  now covers shore foam, lace and waves). Used by the other scripts.
 - **`snaplast.py [n]`:** the newest n snapshots, with:
   - which foam options were on and the render scale;
   - the median scene pass, and its median in each 5 s quarter, to spot a run that changed partway;
@@ -96,10 +135,14 @@ only pairs recorded from the same spot and camera.
 
 How to record:
 - Use 150% render scale on the 3080, so the GPU is the bottleneck. At 100% it often isn't, and the timings flip
-  between two levels. 16x MSAA at 100% also makes the GPU the bottleneck.
-- Two back-to-back snapshots per setting, with about 10 s of settling after any settings change.
-- For a before-and-after, swap shader files in place, since they hot-reload. If the vertex and fragment shaders both
-  change, order the swap so that the in-between pair still links.
+  between two levels. 16x MSAA at 100% also makes the GPU the bottleneck. Divide costs by 2.25 for 100%.
+- One keypress (two snapshots) per setting, about 20 s after any settings change.
+- Cost: a setting's time minus no foam at the same spot. With all foam off the old shore fade runs, which reads a
+  texture for every water pixel, so that's the baseline a player turning the foam off gets.
+- Order settings so drift shows: record no foam again at the end, or go A, B, A.
+- For a before-and-after of shaders, swap the files in place, since they hot-reload, and check each in-between state
+  compiles first. Constants such as `OCEAN_WAVE_AMOUNT` can be tuned live the same way.
+- Watch for passing NPC boats (their wakes add time) and for the number of dynamic objects jumping.
 
 ## notes
 
@@ -109,3 +152,6 @@ The handoffs and results from each round of work, newest last:
 2. `wake-perf-handoff.md`
 3. `foam-perf-handoff.md`
 4. `foam-cleanup-handoff.md`
+5. `foam-benchmarks.md`: offline results after the wave list, noise texture and cleanup
+6. `foam-ingame-costs.md`: in-game costs at six locations, the fast-frame method, why boat wakes and narrow water
+   cost what they do, and the far wave thinning, density and spacing tests

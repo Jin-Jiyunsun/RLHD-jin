@@ -1,2 +1,4 @@
 # Shell scripts need LF to run in Git Bash
 *.sh text eol=lf
+# Patches must keep LF to apply cleanly
+*.patch text eol=lf

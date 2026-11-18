@@ -7,12 +7,15 @@ import os
 import statistics
 import sys
 
+from foamkeys import foam_on
+
 folder = os.path.expanduser('~/.runelite/117hd/snapshots')
 since = sys.argv[1] if len(sys.argv) > 1 else ''
-FOAM = [('experimentalImprovedShoreFoam', 'shore'), ('experimentalOceanLace', 'lace'),
-        ('experimentalOceanWaves', 'waves'), ('experimentalBoatWakes', 'wakes')]
 # Where each run of snapshots was taken, from its first snapshot's time
-LOCATIONS = [('2026-11-16_01-24', 'Port Khazard'), ('2026-11-16_01-38', 'Kastori')]
+LOCATIONS = [('2026-11-16_01-24', 'Port Khazard'), ('2026-11-16_01-38', 'Kastori'),
+             ('2026-11-17_21-52', 'Port Khazard'), ('2026-11-17_22-32', 'Kastori'), ('2026-11-17_22-58', 'Arceuus'),
+             ('2026-11-17_23-07', 'Lumbridge'), ('2026-11-17_23-49', 'Morytania swamp'),
+             ('2026-11-18_00-02', 'Open sea')]
 
 
 def location(stamp):
@@ -33,7 +36,7 @@ for path in sorted(glob.glob(os.path.join(folder, 'snapshot-*.json'))):
     meta = json.load(open(path, encoding='utf-8'))
     settings = meta.get('settings', {})
     # Unset options are at their defaults, which are on
-    on = [label for key, label in FOAM if settings.get(key, 'true') != 'false']
+    on = foam_on(settings)
     with open(path[:-5] + '.csv', encoding='utf-8') as f:
         frames = list(csv.DictReader(f))
     # Skip the first second, while toggled shaders may still be compiling

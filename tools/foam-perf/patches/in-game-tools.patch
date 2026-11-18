@@ -1,0 +1,228 @@
+diff --git a/src/main/java/rs117/hd/HdPluginConfig.java b/src/main/java/rs117/hd/HdPluginConfig.java
+index 81b490388..fcefbea9a 100644
+--- a/src/main/java/rs117/hd/HdPluginConfig.java
++++ b/src/main/java/rs117/hd/HdPluginConfig.java
+@@ -1450,6 +1450,18 @@ public interface HdPluginConfig extends Config
+ 		return true;
+ 	}
+ 
++	String KEY_TEST_BOAT_WAKES = "experimentalTestBoatWakes";
++	@ConfigItem(
++		keyName = KEY_TEST_BOAT_WAKES,
++		name = "Test boat wakes",
++		description = "For profiling. Replaces the real boat wakes with 16 boats frozen mid-sail around the camera,<br>" +
++			"placed where it is when this is turned on.",
++		section = experimentalSettings
++	)
++	default boolean testBoatWakes() {
++		return false;
++	}
++
+ 	String KEY_SIMPLE_BOAT_SILHOUETTES = "experimentalSimpleBoatSilhouettes";
+ 	@ConfigItem(
+ 		keyName = KEY_SIMPLE_BOAT_SILHOUETTES,
+diff --git a/src/main/java/rs117/hd/scene/BoatWakes.java b/src/main/java/rs117/hd/scene/BoatWakes.java
+index 30acb3d09..07ac1575c 100644
+--- a/src/main/java/rs117/hd/scene/BoatWakes.java
++++ b/src/main/java/rs117/hd/scene/BoatWakes.java
+@@ -6,9 +6,11 @@ import java.util.HashMap;
+ import java.util.List;
+ import java.util.Map;
+ import java.util.Set;
++import javax.inject.Inject;
+ import javax.inject.Singleton;
+ import net.runelite.api.*;
+ import net.runelite.api.coords.*;
++import rs117.hd.HdPluginConfig;
+ import rs117.hd.opengl.uniforms.UBOGlobal;
+ 
+ import static net.runelite.api.Perspective.*;
+@@ -101,6 +103,18 @@ public class BoatWakes {
+ 	private final List<Wake> oldWakes = new ArrayList<>();
+ 	// The wakes to draw this frame, nearest first
+ 	private final List<Wake> active = new ArrayList<>();
++	private final List<Wake> testWakes = new ArrayList<>();
++	private double testCentreZ;
++	private float testStartTime;
++
++	@Inject
++	private HdPluginConfig config;
++
++	// Developer test wakes: every slot filled with a boat frozen mid-sail around the camera, for repeatable profiling
++	private static final int TEST_COLUMNS = 4;
++	private static final float TEST_SPEED = 3; // tiles per second
++	private static final float TEST_SPACING_ACROSS = 7; // tiles
++	private static final float TEST_SPACING_ALONG = 12; // tiles
+ 
+ 	/**
+ 	 * A wake as drawn, in local units. Points run from the stern back, with age in seconds and distance in tiles.
+@@ -448,6 +462,7 @@ public class BoatWakes {
+ 	void reset() {
+ 		trails.clear();
+ 		oldWakes.clear();
++		testWakes.clear();
+ 	}
+ 
+ 	/**
+@@ -494,6 +509,15 @@ public class BoatWakes {
+ 			sortByDistance(active, focusX, focusZ);
+ 			sortByDistance(oldWakes, focusX, focusZ);
+ 			active.addAll(oldWakes);
++			if (config.testBoatWakes()) {
++				if (testWakes.isEmpty())
++					placeTestWakes(focusX, focusZ, now);
++				active.clear();
++				sailTestWakes(now);
++				active.addAll(testWakes);
++			} else {
++				testWakes.clear();
++			}
+ 			while (active.size() > MAX_BOATS)
+ 				active.remove(active.size() - 1);
+ 
+@@ -505,6 +529,63 @@ public class BoatWakes {
+ 			ubo.boatWakeStates[boat].set(0, 0, 0, 0);
+ 	}
+ 
++	/**
++	 * Fill every slot with a boat sailing north at full speed in a straight line, in staggered rows around the centre
++	 */
++	private void placeTestWakes(double centreX, double centreZ, float now) {
++		testWakes.clear();
++		testCentreZ = centreZ;
++		testStartTime = now;
++		for (int i = 0; i < MAX_BOATS; i++) {
++			int column = i % TEST_COLUMNS;
++			int row = i / TEST_COLUMNS;
++			var wake = new Wake();
++			wake.headingX = 0;
++			wake.headingZ = 1;
++			wake.length = BOAT_REFERENCE_LENGTH;
++			wake.width = BOAT_REFERENCE_WIDTH;
++			double across = (column - (TEST_COLUMNS - 1) * 0.5 + (row % 2) * 0.5) * TEST_SPACING_ACROSS;
++			wake.sternX = centreX + across * LOCAL_TILE_SIZE;
++			wake.sternZ = centreZ;
++			int n = 0;
++			while (n < MAX_POINTS) {
++				float age = Math.min((n + 1) * POINT_INTERVAL, TAIL_AGE);
++				float back = age * TEST_SPEED;
++				wake.x[n] = wake.sternX;
++				wake.z[n] = wake.sternZ - back * LOCAL_TILE_SIZE;
++				wake.age[n] = age;
++				wake.distance[n] = back;
++				n++;
++				if (age >= TAIL_AGE)
++					break;
++			}
++			wake.count = n;
++			Trail.thin(wake);
++			testWakes.add(wake);
++		}
++	}
++
++	/**
++	 * Move the test boats north, each jumping back to the bottom of the grid once it sails off the top, so the grid as a
++	 * whole stays put and looks the same every two rows' worth of sailing
++	 */
++	private void sailTestWakes(float now) {
++		float gridLength = MAX_BOATS / TEST_COLUMNS * TEST_SPACING_ALONG;
++		float sailed = (now - testStartTime) * TEST_SPEED;
++		for (int i = 0; i < testWakes.size(); i++) {
++			var wake = testWakes.get(i);
++			int row = i / TEST_COLUMNS;
++			double along = (row * TEST_SPACING_ALONG + sailed) % gridLength - gridLength * 0.5;
++			double shift = testCentreZ + along * LOCAL_TILE_SIZE - wake.sternZ;
++			wake.sternZ += shift;
++			for (int p = 0; p < wake.count; p++)
++				wake.z[p] += shift;
++			// Still sailing, and long since moved off
++			wake.fadeStart = now;
++			wake.startTime = now - 100;
++		}
++	}
++
+ 	private static void sortByDistance(List<Wake> wakes, double focusX, double focusZ) {
+ 		for (int i = 0; i < wakes.size(); i++) {
+ 			var wake = wakes.get(i);
+diff --git a/src/main/java/rs117/hd/utils/FrameTimingsRecorder.java b/src/main/java/rs117/hd/utils/FrameTimingsRecorder.java
+index ca1101339..7817acb85 100644
+--- a/src/main/java/rs117/hd/utils/FrameTimingsRecorder.java
++++ b/src/main/java/rs117/hd/utils/FrameTimingsRecorder.java
+@@ -29,6 +29,9 @@ import static rs117.hd.utils.MathUtils.*;
+ public class FrameTimingsRecorder implements FrameTimer.Listener {
+ 	private static final ResourcePath SNAPSHOTS_PATH = HdPlugin.PLUGIN_DIR.resolve("snapshots");
+ 	private static final int SNAPSHOT_DURATION_MS = 20_000;
++	// Each recording takes this many snapshots back to back, with a pause between them
++	private static final int SNAPSHOT_COUNT = 2;
++	private static final int SNAPSHOT_PAUSE_MS = 3_000;
+ 
+ 	@Inject
+ 	private Gson gson;
+@@ -91,6 +94,8 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
+ 	}
+ 
+ 	private Snapshot snapshot;
++	private int snapshotsLeft;
++	private long nextSnapshotAt;
+ 
+ 	public boolean isCapturingSnapshot() {
+ 		return snapshot != null;
+@@ -102,8 +107,20 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
+ 				sendGameMessage(String.format("Already capturing a snapshot (%d%% complete)", getProgressPercentage()));
+ 				return;
+ 			}
++			// Between snapshots. Checked by time too, in case the listener was removed from elsewhere.
++			if (snapshotsLeft > 0 && System.currentTimeMillis() < nextSnapshotAt + 1000) {
++				sendGameMessage("Already capturing snapshots");
++				return;
++			}
++
++			snapshotsLeft = SNAPSHOT_COUNT;
++			startSnapshot();
++			frameTimer.addTimingsListener(this);
++		});
++	}
+ 
+-			snapshot = new Snapshot();
++	private void startSnapshot() {
++		snapshot = new Snapshot();
+ 			snapshot.osName = System.getProperty("os.name");
+ 			snapshot.osArch = System.getProperty("os.arch");
+ 			snapshot.osVersion = System.getProperty("os.version");
+@@ -123,9 +140,8 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
+ 				snapshot.settings.put(key, configManager.getConfiguration("hd", key));
+ 			}
+ 
+-			frameTimer.addTimingsListener(this);
+-			sendGameMessage(String.format("Capturing frame timings for %.0f seconds...", SNAPSHOT_DURATION_MS / 1e3f));
+-		});
++			sendGameMessage(String.format("Capturing frame timings for %.0f seconds (%d of %d)...",
++				SNAPSHOT_DURATION_MS / 1e3f, SNAPSHOT_COUNT - snapshotsLeft + 1, SNAPSHOT_COUNT));
+ 	}
+ 
+ 	public int getProgressPercentage() {
+@@ -137,7 +153,11 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
+ 	@Override
+ 	public void onFrameCompletion(FrameTimings timings) {
+ 		if (!isCapturingSnapshot()) {
+-			frameTimer.removeTimingsListener(this);
++			if (snapshotsLeft <= 0) {
++				frameTimer.removeTimingsListener(this);
++			} else if (System.currentTimeMillis() >= nextSnapshotAt) {
++				startSnapshot();
++			}
+ 			return;
+ 		}
+ 
+@@ -155,7 +175,10 @@ public class FrameTimingsRecorder implements FrameTimer.Listener {
+ 	}
+ 
+ 	private void saveSnapshot() {
+-		frameTimer.removeTimingsListener(this);
++		// The next one starts from onFrameCompletion after the pause
++		if (--snapshotsLeft <= 0)
++			frameTimer.removeTimingsListener(this);
++		nextSnapshotAt = System.currentTimeMillis() + SNAPSHOT_PAUSE_MS;
+ 
+ 		for (var frame : snapshot.frames) {
+ 			frame.cpu = new LinkedHashMap<>();

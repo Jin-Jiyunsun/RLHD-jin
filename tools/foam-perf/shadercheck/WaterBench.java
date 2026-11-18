@@ -412,6 +412,7 @@ public class WaterBench {
 		set.f("UBOGlobal.boatWakeBounds[0]", bounds);
 		set.f("UBOGlobal.boatWakeHeadings[0]", headings);
 		set.f("UBOGlobal.boatWakeHulls[0]", hulls);
+		set.f("UBOGlobal.boatWakeStates[0]", hulls);
 		set.f("UBOGlobal.boatWakeSizes[0]", sizes);
 
 		String wt = "UBOWaterTypes.Array[1].";
@@ -443,6 +444,33 @@ public class WaterBench {
 					set.f(kv[0], fv);
 				}
 			}
+		}
+
+		// The camera's wave-cell position at every second of the history, for the far wave thinning: by default the
+		// middle of the benchmark's view, so nothing on screen counts as far. BENCH_CAMERA=x,z sets it in wave cells.
+		int[] history = set.find("UBOGlobal.waveCameraHistory[0]");
+		if (history != null) {
+			float camX, camZ;
+			String cam = System.getenv("BENCH_CAMERA");
+			if (cam != null) {
+				camX = Float.parseFloat(cam.split(",")[0]);
+				camZ = Float.parseFloat(cam.split(",")[1]);
+			} else {
+				int[] base = set.find("UBOGlobal.sceneBase");
+				int[] drift = set.find("UBOGlobal.windDrift");
+				int[] scroll = set.find("UBOGlobal.waveScroll");
+				float tilesX = data[base[0]].getInt(base[1]) / 128f + ORIGIN + SPAN / 2;
+				float tilesZ = data[base[0]].getInt(base[1] + 4) / 128f + ORIGIN + SPAN * H / W / 2;
+				// Matches OCEAN_FOAM_DRIFT_SPEED and OCEAN_WAVE_SIZE in ocean_wave_cells.glsl
+				camX = (tilesX - data[drift[0]].getFloat(drift[1]) * 0.08f - data[scroll[0]].getFloat(scroll[1])) / 7f;
+				camZ = (tilesZ - data[drift[0]].getFloat(drift[1] + 4) * 0.08f - data[scroll[0]].getFloat(scroll[1] + 4)) / 7f;
+			}
+			float[] all = new float[64];
+			for (int k = 0; k < 32; k++) {
+				all[k * 2] = camX;
+				all[k * 2 + 1] = camZ;
+			}
+			set.f("UBOGlobal.waveCameraHistory[0]", all);
 		}
 
 		for (int b = 0; b < blocks; b++) {
@@ -527,6 +555,12 @@ public class WaterBench {
 			String[] far = System.getenv().getOrDefault("BENCH_SHORE_STEPS", "40," + steps).split(",");
 			shore = new int[] { 0 | 4 << shift | bits, Integer.parseInt(far[0]) | 5 << shift | bits, Integer.parseInt(far[1]) };
 		}
+		// BENCH_FACE: each vertex's raw shore data, comma separated, overriding the above
+		if (System.getenv("BENCH_FACE") != null) {
+			String[] raw = System.getenv("BENCH_FACE").split(",");
+			for (int i = 0; i < 3; i++)
+				shore[i] = (int) Long.parseLong(raw[i].trim());
+		}
 		int terrain = 1 | 1 << 3;
 		int[] face = { shore[0], shore[1], shore[2], 0, 0, 0, 0, 0, terrain, terrain, terrain, 0 };
 		int buffer = glGenBuffers();
@@ -565,6 +599,7 @@ public class WaterBench {
 		d.put("WIND_HISTORY_LENGTH", 32);
 		d.put("BOAT_WAKE_MAX_BOATS", BoatWakes.MAX_BOATS);
 		d.put("BOAT_WAKE_MAX_POINTS", BoatWakes.MAX_POINTS);
+		d.put("WATER_NOISE_SIZE", 256);
 		for (String zero : new String[] {
 			"UI_SCALING_MODE", "COLOR_BLINDNESS", "APPLY_COLOR_FILTER", "DECOUPLE_WATER_FROM_SKY_COLOR", "TERRAIN_ONLY_PASS",
 			"VANILLA_COLOR_BANDING", "LEGACY_GREY_COLORS", "DISABLE_DIRECTIONAL_SHADING", "FLAT_SHADING", "WIREFRAME",
