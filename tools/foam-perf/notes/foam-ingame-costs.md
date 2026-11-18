@@ -35,7 +35,7 @@ Recorded: 2026-11-17, from 21:52. Each time is the average of every snapshot of 
 
 ![Port Khazard view](foam-ingame-costs-images/port-khazard.jpg)
 
-The same view throughout. The docked boats don't count: a boat's wake stops being drawn 2.5 s after it stops moving.
+The same view throughout. The docked ships never move and aren't boats that get wakes.
 
 | Setting | Boats | Scene pass | Cost | % of scene pass | At 100% |
 |---|---|---|---|---|---|
@@ -126,7 +126,8 @@ despite a seven-minute gap after shore foam.
   the foam texture for every water pixel.
 - Lace adds 0.240 ms, waves 0.642 ms, boat wakes 0.181 ms with no moving boat, and the 16 test boats 0.264 ms more.
 - The waves cost about twice what offline timings suggest (0.16 ms for a 1080p screen of open water, about 0.35 ms at
-  150%). Not yet explained.
+  150%). Not roughness: this is the overworld environment, roughness exactly 1. It's face size; see "Why the open sea
+  waves cost so much" below.
 
 ### Arceuus, no water
 
@@ -245,9 +246,32 @@ recordings (new, old, new; each step of the swap checked to compile first):
 The two new recordings drifted 0.009 ms apart, so against their average the saving is 0.017 ms (0.013 to 0.022 ms
 against either one), about 0.7% of the scene pass, or about 0.008 ms at 100%.
 
-## Far wave switches (uncommitted, for testing)
+## Why the open sea waves cost so much
 
-Two test switches in the experimental settings, each a shader define, so turning one on recompiles:
+An earlier version of these notes put it down to roughness 2. That was wrong: the open sea view was under the
+overworld environment, where roughness is exactly 1 (wind strength only shifts it by about a tenth elsewhere).
+
+The cause is face size. WaterBench draws water flat, 48 tiles across, so faces are about 40 px wide; looking out to
+the horizon, most faces are a few pixels wide. With `BENCH_SPAN` (tiles across the screen), 1080p, best of 40 to 60
+rounds:
+
+| Tiles across | Face size | Waves cost | Boat wakes, no boats |
+|---|---|---|---|
+| 48 | 40 px | 0.137 ms | 0.042 ms |
+| 96 | 20 px | 0.150 ms | 0.056 ms |
+| 192 | 10 px | 0.179 ms | 0.061 ms |
+| 480 | 4 px | 0.375 ms | 0.047 ms |
+| 960 | 2 px | 1.29 ms | 0.146 ms |
+
+The cost is in the pixels: the GPU shades 2x2 blocks, and with faces a couple of pixels wide most blocks straddle
+several faces, so the wave code runs several times per pixel. Not the vertex shader's wave list: forcing every cell
+listed (no list work) was slower at every size, 1.849 against 1.795 ms at 2 px, though the list's saving shrinks from
+0.218 ms at 40 px to 0.054 ms at 2 px. This is why far wave thinning pays off.
+
+## Far wave thinning, density and spacing (in `41b64f252`)
+
+Tested as two switches in the experimental settings, each a shader define. Thinning is now always on, and the detail
+fade was dropped:
 
 - **Test far wave thinning** (`OCEAN_WAVE_FAR_THINNING`): a wave's spawn chance falls from 1 to `OCEAN_WAVE_FAR_KEEP`
   (0.5) between `OCEAN_WAVE_FAR_START` and `OCEAN_WAVE_FAR_END` (24 and 64 tiles) from the camera. The distance is
@@ -257,10 +281,6 @@ Two test switches in the experimental settings, each a shader define, so turning
 - **Test far wave detail** (`OCEAN_WAVE_FAR_DETAIL`): the two finest of the wave edges' four noise layers fade out
   over the same distances.
 
-Why the open sea's waves cost twice the offline estimate: roughness. The open sea was probably at the maximum, 2,
-with every cell spawning a wave and each wave larger. Offline at roughness 2 the waves cost 0.253 ms at 1080p, about
-0.57 ms at 150%, close to the 0.642 ms measured.
-
 Offline, 1080p, all foam, no boats, with every wave far from the camera (the most either can save):
 
 | | Roughness 1 | Roughness 2 |
@@ -269,7 +289,8 @@ Offline, 1080p, all foam, no boats, with every wave far from the camera (the mos
 | With far thinning | 0.005 ms less | 0.092 ms less (36%) |
 | With far detail | no change | no change |
 
-In game only the far part of the view changes, so the real saving is smaller.
+The game ran at roughness 1, where this flat benchmark, with its big faces, shows almost no saving. In game the
+far faces are tiny and their pixels expensive, so thinning saved far more there (below).
 
 ### In game: far wave thinning at the open sea
 
@@ -353,7 +374,7 @@ The two add up: thinning saves 0.063 ms on top of the lower density, close to wh
 about a fifth off the waves' 0.642 ms. The second thinning-on pair read 0.08 ms above the first, so these are rough
 to about ±0.03 ms.
 
-### Chosen values (uncommitted)
+### Chosen values (in `41b64f252`)
 
 - `OCEAN_WAVE_AMOUNT` 0.45 (was 0.55).
 - Far thinning, still a test switch: keep 0.325, from 32 to 80 tiles (moved out from 24 to 64 after the

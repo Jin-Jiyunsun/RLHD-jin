@@ -77,14 +77,20 @@ Regenerate it whenever dependencies change. It lists absolute paths, so it isn't
     | `BENCH_SET` | Overrides UBO fields, for example `UBOGlobal.waterRoughness=f:2` |
     | `BENCH_FACE` | Each vertex's raw shore data, comma separated, for every face: for example a river's middle |
     | `BENCH_CAMERA` | The camera's position in wave cells for the far wave thinning, `x,z` |
+    | `BENCH_SPAN` | Tiles across the screen, 48 by default; more makes smaller faces, like water far away |
     | `BENCH_DUMP=1` | Writes the program binary; `asm.py` pulls out the NVIDIA assembly |
 
   - `wb2.sh` uses `../wavesim/d45_ubo.f32` for 16 diagonal boats.
   - The far wave thinning reads the camera's recent positions. The saved uniform data predates them, so the benchmark
     puts the camera in the middle of its own view, where nothing counts as far. Set `BENCH_CAMERA=100000,100000` to
     thin every wave.
-  - Roughness changes the wave cost a lot: set `waterRoughness`, `waveMaxRoughness`, `roughnessHistory[0]` (32
-    values) and `waveHistorySteady=i:1` together. Rough open sea is 2.
+  - To change the roughness, set `waterRoughness`, `waveMaxRoughness`, `roughnessHistory[0]` (32 values) and
+    `waveHistorySteady=i:1` together. In game it's 1 under the overworld environment, and only a little higher in a
+    few stormy areas.
+  - **The flat view has big faces,** about 40 px wide at 48 tiles across. Looking out to the horizon, most faces are a
+    few pixels wide and the waves cost several times more per pixel (2x2 shading blocks straddling faces), so
+    open-sea timings here understate the game. Use `BENCH_SPAN` to check: at 960 tiles across, 2 px faces, the waves
+    cost about 9 times as much.
   - The noise texture is generated on unit 5 and bound to the `waterNoise` sampler.
   - **Time with the game closed.** With it running, timings are several times higher and noisy. Use the median of
     30 or more interleaved rounds.
@@ -153,5 +159,5 @@ The handoffs and results from each round of work, newest last:
 3. `foam-perf-handoff.md`
 4. `foam-cleanup-handoff.md`
 5. `foam-benchmarks.md`: offline results after the wave list, noise texture and cleanup
-6. `foam-ingame-costs.md`: in-game costs at six locations, the fast-frame method, why boat wakes and narrow water
-   cost what they do, and the far wave thinning, density and spacing tests
+6. `foam-ingame-costs.md`: in-game costs at six locations, the fast-frame method, why boat wakes, narrow water and
+   the open sea cost what they do, and the far wave thinning, density and spacing tests

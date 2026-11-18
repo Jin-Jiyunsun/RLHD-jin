@@ -30,7 +30,8 @@ import static org.lwjgl.opengl.GL33C.*;
  */
 public class WaterBench {
 	static final int W = 1920, H = 1080;
-	static final float SPAN = 48, ORIGIN = 3000;
+	// BENCH_SPAN: tiles across the screen, 48 by default. More makes smaller faces, as for water far from the camera.
+	static final float SPAN = Float.parseFloat(System.getenv().getOrDefault("BENCH_SPAN", "48")), ORIGIN = 3000;
 	static final boolean TILES = System.getenv("BENCH_TILES") != null;
 	static final int TILES_X = (int) SPAN, TILES_Z = (int) (SPAN * H / W);
 	static final int VERTS = TILES ? TILES_X * TILES_Z * 6 : 3;
